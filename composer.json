@@ -1,0 +1,13 @@
+{
+    "name": "zfmaster/extjs6",
+    "description": "ExtJS 6.2 distro",
+    "license": "GPLv2",
+    "type": "zend-extra",
+    "keywords": [
+        "zfmaster",
+        "extjs6"
+    ],
+    "require": {
+        "composer/installers": "~1.0"
+    }
+}
