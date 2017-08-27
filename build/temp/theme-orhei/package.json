@@ -1,0 +1,115 @@
+{
+  "name": "theme-orhei",
+  "namespace": "Ext",
+  "format": "1",
+  "version": "1.0.0",
+  "creator": "anonymous",
+  "summary": "Short summary",
+  "detailedDescription": "Long description of package",
+  "type": "theme",
+  "extend": "theme-triton",
+  "slicer": {
+    "js": [
+      {
+        "path": "${package.dir}/sass/example/custom.js",
+        "isWidgetManifest": true
+      }
+    ]
+  },
+  "toolkit": "classic",
+  "output": "${package.dir}/build",
+  "sass": {
+    "namespace": "Ext",
+    "etc": [
+      "${package.dir}/sass/etc/all.scss",
+      "${package.dir}/sass/etc/sencha-themer-defaults.scss"
+    ],
+    "var": [
+      "${package.dir}/sass/var",
+      "${package.dir}/sass/var/sencha-themer-defaults.scss",
+      "${package.dir}/sass/var/themer-ui-variables.scss"
+    ],
+    "src": [
+      "${package.dir}/sass/src",
+      "${package.dir}/sass/src/sencha-themer-defaults.scss"
+    ],
+    "generated": {
+      "var": "sass/save.scss",
+      "src": "sass/save"
+    }
+  },
+  "classpath": [
+    "${package.dir}/src"
+  ],
+  "overrides": [
+    "${package.dir}/overrides"
+  ],
+  "example": {
+    "path": [
+      "${package.dir}/examples"
+    ]
+  },
+  "framework": "ext",
+  "themer": {
+    "version": "1.3.0.51",
+    "palette": [
+      {
+        "variable": "base_color",
+        "displayName": "Base Color",
+        "order": 0,
+        "r": 95,
+        "g": 162,
+        "b": 221,
+        "a": 1,
+        "h": 0.578042328042328,
+        "s": 0.5701357466063348,
+        "v": 0.8666666666666667,
+        "id": "113ee496-42f4-4f58-88f5-bb54c773e477",
+        "transparent": false,
+        "sass": "",
+        "base": true,
+        "tooltip": "\u003cb\u003eBase Color\u003c/b\u003e\u003cbr/\u003e#5FA2DD",
+        "rgba": "rgba(95, 162, 221, 1)",
+        "hex": "#5FA2DD"
+      },
+      {
+        "variable": "body_background_color",
+        "displayName": "Body Background Color",
+        "order": 1,
+        "r": 255,
+        "g": 255,
+        "b": 255,
+        "a": 1,
+        "h": 0,
+        "s": 0,
+        "v": 1,
+        "id": "0639f29b-8a84-47fa-90d8-254247e4395e",
+        "transparent": false,
+        "sass": "",
+        "base": true,
+        "tooltip": "\u003cb\u003eBody Background Color\u003c/b\u003e\u003cbr/\u003e#FFFFFF",
+        "rgba": "rgba(255, 255, 255, 1)",
+        "hex": "#FFFFFF"
+      },
+      {
+        "variable": "color",
+        "displayName": "Default Font Color",
+        "order": 2,
+        "r": 64,
+        "g": 64,
+        "b": 64,
+        "a": 1,
+        "h": 0,
+        "s": 0,
+        "v": 0.25098039215686274,
+        "id": "189c0861-e431-410b-be39-57619319e2f2",
+        "transparent": false,
+        "sass": "",
+        "base": true,
+        "tooltip": "\u003cb\u003eDefault Font Color\u003c/b\u003e\u003cbr/\u003e#404040",
+        "rgba": "rgba(64, 64, 64, 1)",
+        "hex": "#404040"
+      }
+    ]
+  }
+}
