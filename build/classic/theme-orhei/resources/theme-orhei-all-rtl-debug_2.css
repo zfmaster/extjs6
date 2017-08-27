@@ -572,27 +572,27 @@
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/tab/Bar.scss:207 */
 .x-tab-bar-default-top > .x-tab-bar-body-default {
-    padding: 4px 4px 0px 8px;
+    padding: 2px 4px 0px 8px;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/tab/Bar.scss:211 */
 .x-tab-bar-default-bottom > .x-tab-bar-body-default {
-    padding: 0px 4px 4px 8px;
+    padding: 0px 4px 2px 8px;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/tab/Bar.scss:215 */
 .x-tab-bar-default-left > .x-tab-bar-body-default {
-    padding: 4px 0px 8px 4px;
+    padding: 4px 0px 8px 2px;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/tab/Bar.scss:220 */
 .x-rtl.x-tab-bar-default-left > .x-tab-bar-body-default {
-    padding: 4px 4px 8px 0px;
+    padding: 4px 2px 8px 0px;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/tab/Bar.scss:225 */
 .x-tab-bar-default-right > .x-tab-bar-body-default {
-    padding: 8px 4px 4px 0px;
+    padding: 8px 2px 4px 0px;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/tab/Bar.scss:230 */
 .x-rtl.x-tab-bar-default-right > .x-tab-bar-body-default {
-    padding: 8px 0px 4px 4px;
+    padding: 8px 0px 4px 2px;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/tab/Bar.scss:238 */
 .x-tab-bar-plain.x-tab-bar-default-top > .x-tab-bar-body-default {
@@ -634,7 +634,7 @@
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/tab/Bar.scss:390 */
 .x-tab-bar-horizontal > .x-tab-bar-body-default {
-    min-height: 32px;
+    min-height: 30px;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/tab/Bar.scss:393 */
 .x-ie8m .x-tab-bar-horizontal > .x-tab-bar-body-default {
@@ -642,7 +642,7 @@
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/tab/Bar.scss:400 */
 .x-tab-bar-vertical > .x-tab-bar-body-default {
-    min-width: 32px;
+    min-width: 30px;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/tab/Bar.scss:403 */
 .x-ie8m .x-tab-bar-vertical > .x-tab-bar-body-default {
@@ -679,7 +679,7 @@
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/layout/container/Box.scss:183 */
 .x-tab-bar-default-vertical-scroller .x-box-scroller-body-vertical {
-    margin-top: 20px;
+    margin-top: 22px;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/layout/container/Box.scss:188 */
 .x-box-scroller-tab-bar-default {
@@ -787,19 +787,19 @@
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/tab/Bar.scss:559 */
 .x-tab-bar-default-top .x-box-scroller-tab-bar-default {
-    margin-top: -10px;
+    margin-top: -11px;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/tab/Bar.scss:563 */
 .x-tab-bar-default-right .x-box-scroller-tab-bar-default {
-    margin-left: -14px;
+    margin-left: -13px;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/tab/Bar.scss:567 */
 .x-tab-bar-default-bottom .x-box-scroller-tab-bar-default {
-    margin-top: -14px;
+    margin-top: -13px;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/tab/Bar.scss:571 */
 .x-tab-bar-default-left .x-box-scroller-tab-bar-default {
-    margin-left: -10px;
+    margin-left: -11px;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/toolbar/Breadcrumb.scss:162 */
 .x-breadcrumb-btn-default {
@@ -1175,7 +1175,7 @@
     -ms-border-radius: 0;
     -o-border-radius: 0;
     border-radius: 0;
-    padding: 7px 7px 7px 7px;
+    padding: 5px 7px 5px 7px;
     border-width: 1px;
     border-style: solid;
     background-image: none;
@@ -1202,7 +1202,7 @@
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-base/sass/etc/mixins/frame.scss:281 */
 .x-btn-plain-toolbar-small-frameInfo {
-    font-family: th-1-1-1-1-1-1-1-1-7-7-7-7;
+    font-family: th-1-1-1-1-1-1-1-1-5-7-5-7;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-base/sass/etc/mixins/frame.scss:347 */
 .x-btn-plain-toolbar-small-tl {
@@ -1258,7 +1258,7 @@
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-base/sass/etc/mixins/frame.scss:464 */
 .x-btn-plain-toolbar-small-mc {
-    padding: 7px 7px 7px 7px;
+    padding: 5px 7px 5px 7px;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/button/Button.scss:445 */
 .x-btn-plain-toolbar-small {
@@ -1347,7 +1347,7 @@
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/button/Button.scss:574 */
 .x-btn-arrow-bottom > .x-btn-button-plain-toolbar-small,
 .x-btn-split-bottom > .x-btn-button-plain-toolbar-small {
-    padding-bottom: 7px;
+    padding-bottom: 5px;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/button/Button.scss:580 */
 .x-btn-wrap-plain-toolbar-small.x-btn-arrow-right:after {
@@ -1391,7 +1391,7 @@
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/button/Button.scss:673 */
 .x-btn-wrap-plain-toolbar-small.x-btn-split-bottom {
-    margin-bottom: -7px;
+    margin-bottom: -5px;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/button/Button.scss:675 */
 .x-btn-wrap-plain-toolbar-small.x-btn-split-bottom > .x-btn-button:after {
@@ -1637,7 +1637,7 @@
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/button/Button.scss:1123 */
 .x-nbr .x-segmented-button-item-vertical.x-btn-plain-toolbar-small.x-segmented-button-first .x-btn-plain-toolbar-small-mc {
-    padding-bottom: 7px !important;
+    padding-bottom: 5px !important;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/button/Button.scss:1127 */
 .x-nbr .x-segmented-button-item-vertical.x-btn-plain-toolbar-small.x-segmented-button-middle {
@@ -1645,12 +1645,12 @@
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/button/Button.scss:1129 */
 .x-nbr .x-segmented-button-item-vertical.x-btn-plain-toolbar-small.x-segmented-button-middle .x-btn-plain-toolbar-small-mc {
-    padding-top: 7px !important;
-    padding-bottom: 7px !important;
+    padding-top: 5px !important;
+    padding-bottom: 5px !important;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/button/Button.scss:1135 */
 .x-nbr .x-segmented-button-item-vertical.x-btn-plain-toolbar-small.x-segmented-button-last .x-btn-plain-toolbar-small-mc {
-    padding-top: 7px !important;
+    padding-top: 5px !important;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/button/Button.scss:1141 */
 .x-nbr .x-segmented-button-item.x-btn-plain-toolbar-small:after {
@@ -1707,8 +1707,8 @@
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/button/Button.scss:1246 */
 .x-button-plain-toolbar-small-cell > .x-grid-cell-inner {
-    padding-top: 0px;
-    padding-bottom: 0px;
+    padding-top: 2px;
+    padding-bottom: 2px;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/button/Button.scss:1251 */
 .x-button-plain-toolbar-small-cell > .x-grid-cell-inner >.x-btn-plain-toolbar-small {
