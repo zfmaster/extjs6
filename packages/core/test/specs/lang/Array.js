@@ -1,4 +1,4 @@
-describe("Ext.Array", function() {
+topSuite("Ext.Array", function() {
     var array;
 
     describe("indexOf", function() {

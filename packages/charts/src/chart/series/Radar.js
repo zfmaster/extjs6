@@ -9,7 +9,7 @@
  *
  *     @example
  *     Ext.create({
- *        xtype: 'polar', 
+ *        xtype: 'polar',
  *        renderTo: document.body,
  *        width: 500,
  *        height: 400,
@@ -114,10 +114,21 @@ Ext.define('Ext.chart.series.Radar', {
     },
 
     updateRotation: function (rotation) {
-        this.setStyle({
+        // Overrides base class method.
+        var me = this,
+            chart = me.getChart(),
+            axes = chart.getAxes(),
+            i, ln, axis;
+
+        for (i = 0, ln = axes.length; i < ln; i++) {
+            axis = axes[i];
+            axis.setRotation(rotation);
+        }
+
+        me.setStyle({
             rotationRads: rotation
         });
-        this.doUpdateStyles();
+        me.doUpdateStyles();
     },
 
     updateTotalAngle: function (totalAngle) {
@@ -162,7 +173,7 @@ Ext.define('Ext.chart.series.Radar', {
 
     getDefaultSpriteConfig: function () {
         var config = this.callParent(),
-            fx = {
+            animation = {
                 customDurations: {
                     translationX: 0,
                     translationY: 0,
@@ -173,35 +184,29 @@ Ext.define('Ext.chart.series.Radar', {
                     dataMaxX: 0
                 }
             };
-        if (config.fx) {
-            Ext.apply(config.fx, fx);
+
+        if (config.animation) {
+            Ext.apply(config.animation, animation);
         } else {
-            config.fx = fx;
+            config.animation = animation;
         }
+
         return config;
     },
 
     getSprites: function () {
         var me = this,
             chart = me.getChart(),
-            animation = me.getAnimation() || chart && chart.getAnimation(),
-            sprite = me.sprites[0],
-            marker;
-        
+            sprites = me.sprites;
+
         if (!chart) {
-            return [];
+            return Ext.emptyArray;
         }
-        if (!sprite) {
-            sprite = me.createSprite();
+        if (!sprites.length) {
+            me.createSprite();
         }
-        if (animation) {
-            marker = sprite.getMarker('markers');
-            if (marker) {
-                marker.getTemplate().setAnimation(animation);
-            }
-            sprite.setAnimation(animation);
-        }
-        return me.sprites;
+
+        return sprites;
     },
 
     provideLegendInfo: function (target) {

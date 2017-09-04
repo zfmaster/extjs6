@@ -1,22 +1,72 @@
 /**
+ * The Paging Toolbar is a specialized toolbar that is
+ * bound to a `Ext.data.Store` and provides automatic paging control.
+ *
+ *     @example
+ *     var store = Ext.create('Ext.data.Store', {
+ *         fields: ['fname', 'lname', 'talent'],
+ *         pageSize: 3,
+ *         data: [
+ *             { 'fname': 'Barry',  'lname': 'Allen',      'talent': 'Speedster' },
+ *             { 'fname': 'Oliver', 'lname': 'Queen',      'talent': 'Archery'  },
+ *             { 'fname': 'Kara',   'lname': 'Zor-El',     'talent': 'All'  },
+ *             { 'fname': 'Helena', 'lname': 'Bertinelli', 'talent': 'Weapons Expert'  },
+ *             { 'fname': 'Hal',    'lname': 'Jordan',     'talent': 'Willpower'  },
+ *         ]
+ *     });
+ *
+ *     Ext.create('Ext.grid.Grid', {
+ *         title: 'DC Personnel',
+ *
+ *         store: store,
+ *         plugins: {
+ *             pagingtoolbar: true
+ *         },
+ *
+ *         columns: [
+ *             { text: 'First Name', dataIndex: 'fname',  flex: 1 },
+ *             { text: 'Last Name',  dataIndex: 'lname',  flex: 1 },
+ *             { text: 'Talent',     dataIndex: 'talent', flex: 1 }
+ *         ],
+ *
+ *         height: 230,
+ *         layout: 'fit',
+ *         fullscreen: true
+ *     });
  */
 Ext.define('Ext.grid.plugin.PagingToolbar', {
-    extend: 'Ext.AbstractPlugin',
+    extend: 'Ext.plugin.Abstract',
     alias: ['plugin.pagingtoolbar', 'plugin.gridpagingtoolbar'],
     mixins: ['Ext.mixin.Hookable'],
 
     requires: [
-        'Ext.grid.PagingToolbar'
+        'Ext.grid.PagingToolbar',
+        'Ext.util.DelayedTask'
     ],
 
     config: {
+        /**
+         * @private
+         */
         grid: null,
-
         currentPage: 1,
-        totalPages: 0,
+
+        /**
+         * @inheritdoc Ext.data.AbstractStore#cfg!pageSize
+         */
         pageSize: 0,
+
         totalCount: 0,
+        totalPages: 0,
         loadPages: null,
+
+        /**
+         * @cfg {Number|'dragend'} buffer
+         * If a number, this is the number of milliseconds to delay after dragging stops but the drag
+         * has not ended.
+         * If it is 'dragend', fetches from the remote server will be suspended until dragging is completed.
+         */
+        buffer: 250,
 
         toolbar: {
             xtype: 'pagingtoolbar',
@@ -30,6 +80,7 @@ Ext.define('Ext.grid.plugin.PagingToolbar', {
     },
 
     destroy: function(){
+        this.setBuffer(null);
         this.setGrid(null);
         this.callParent();
     },
@@ -37,11 +88,7 @@ Ext.define('Ext.grid.plugin.PagingToolbar', {
     updateGrid: function(grid, oldGrid) {
         var me = this;
 
-        me.gridListeners = me.storeListeners = Ext.destroy(me.gridListeners, me.storeListeners);
-
-        if (oldGrid) {
-            me.unbindHook(oldGrid, 'onScrollBinder', 'checkPageChange');
-        }
+        me.gridListeners = me.storeListeners = me.scrollListeners = Ext.destroy(me.gridListeners, me.storeListeners, me.scrollListeners);
 
         if (grid) {
             me.gridListeners = grid.on({
@@ -50,9 +97,13 @@ Ext.define('Ext.grid.plugin.PagingToolbar', {
                 destroyable: true,
                 scope: me
             });
+            me.scrollListeners = grid.getScrollable().on({
+                scrollend: 'checkPageChange',
+                buffer: 100,
+                scope: me
+            });
 
             me.bindStore(grid.getStore());
-            me.bindHook(grid, 'onScrollBinder', 'checkPageChange');
         }
     },
 
@@ -83,6 +134,8 @@ Ext.define('Ext.grid.plugin.PagingToolbar', {
          entire data in the store and we need to load it page by page
          */
         me.setLoadPages(store.pageSize > 0);
+
+        me.cancelBufferTask();
 
         if(store.isLoaded()){
             me.onTotalCountChange(store);
@@ -126,6 +179,34 @@ Ext.define('Ext.grid.plugin.PagingToolbar', {
         }
     },
 
+    updateBuffer: function(buffer) {
+        var me = this,
+            bufferTask = me.bufferTask;
+
+        if (Ext.isNumber(buffer)) {
+            me.bufferTask = bufferTask || new Ext.util.DelayedTask(me.bufferTaskRun, me)
+            me.cancelBufferTask();
+        }
+        else if (bufferTask) {
+            bufferTask.cancel();
+            me.bufferTask = null;
+        }
+    },
+
+    cancelBufferTask: function() {
+        if (this.bufferTask) {
+            this.bufferTask.cancel();
+        }
+    },
+
+    loadCurrentPage: function() {
+        this.getGrid().getStore().loadPage(this.getCurrentPage());
+    },
+
+    bufferTaskRun: function() {
+        this.loadCurrentPage();
+    },
+
     applyToolbar: function(toolbar, oldToolbar) {
         return Ext.factory(toolbar, Ext.Toolbar, oldToolbar);
     },
@@ -136,7 +217,9 @@ Ext.define('Ext.grid.plugin.PagingToolbar', {
         if (toolbar) {
             toolbar.getSliderField().on({
                 change: 'onPageChange',
+                dragstart: 'onPageSliderDrag',
                 drag: 'onPageSliderDrag',
+                dragend: 'onPageSliderDragEnd',
                 scope: me
             });
 
@@ -157,7 +240,18 @@ Ext.define('Ext.grid.plugin.PagingToolbar', {
     },
 
     onPageSliderDrag: function(field, slider, value) {
+        this.isDragging = true;
         this.setCurrentPage(Ext.isArray(value) ? value[0] : value);
+    },
+
+    onPageSliderDragEnd: function() {
+        var me = this;
+
+        me.isDragging = false;
+        if (me.getBuffer() === 'dragend' || me.bufferTask.Id) {
+            me.cancelBufferTask();
+            me.loadCurrentPage();
+        }
     },
 
     onNextPageTap: function() {
@@ -203,12 +297,21 @@ Ext.define('Ext.grid.plugin.PagingToolbar', {
     },
 
     updateCurrentPage: function(page) {
-        var me = this;
+        var me = this,
+            isDragging = me.isDragging,
+            bufferTask = me.bufferTask,
+            buffer = me.getBuffer();
 
         if(!me.isConfiguring) {
             if(me.getLoadPages()){
-                me.getGrid().getStore().loadPage(page);
-            }else{
+                if (bufferTask && Ext.isNumber(buffer) && isDragging) {
+                    bufferTask.delay(buffer);
+                }
+                else if (buffer !== 'dragend' || !isDragging) {
+                    me.getGrid().getStore().loadPage(page);
+                }
+            }
+            else{
                 me.syncSummary();
             }
         }
@@ -249,6 +352,7 @@ Ext.define('Ext.grid.plugin.PagingToolbar', {
 
             sliderField.setMaxValue(totalPages || 1);
             sliderField.setValue(currentPage);
+            sliderField.setDisabled(totalPages <= 1);
 
             pageTopRecord = me.getPageTopRecord(currentPage);
             if (grid && !me.preventGridScroll && pageTopRecord) {

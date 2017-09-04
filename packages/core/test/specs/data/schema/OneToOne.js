@@ -1,5 +1,4 @@
-describe("Ext.data.schema.OneToOne", function() {
-    
+topSuite("Ext.data.schema.OneToOne", ['Ext.data.ArrayStore', 'Ext.data.Session'], function() {
     var schema, User, Address, userRole, addressRole, assoc,
         userCalled = false, 
         addressCalled = false;

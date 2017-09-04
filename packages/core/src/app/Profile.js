@@ -68,6 +68,10 @@ Ext.define('Ext.app.Profile', {
         'Ext.mixin.Observable'
     ],
 
+    requires: [
+        'Ext.app.Controller'
+    ],
+
     /**
      * @property {Boolean}
      * `true` to identify an object as an instance of `Ext.app.Profile`

@@ -1,4 +1,4 @@
-describe("Ext.util.Bag", function() {
+topSuite("Ext.util.Bag", function() {
 
     var bag, a, b, c, d;
 

@@ -1,4 +1,4 @@
-describe("Ext.data.Request", function() {
+topSuite("Ext.data.Request", function() {
     var Request = Ext.data.Request;
 
     describe("instantiation", function(){

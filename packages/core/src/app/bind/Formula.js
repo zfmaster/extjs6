@@ -168,7 +168,7 @@ Ext.define('Ext.app.bind.Formula', {
             parser = cache.get(name);
             if (!parser) {
                 // Unescaped: [^\.a-z0-9_]NAMEHERE\(\s*(['"])(.*?)\1\s*\)
-                s = '[^\\.a-z0-9_]' + name + '\\(\\s*([\'"])(.*?)\\1\\s*\\)';
+                s = '[^\\.a-z0-9_]' + Ext.String.escapeRegex(name) + '\\(\\s*([\'"])(.*?)\\1\\s*\\)';
                 parser = new RegExp(s, 'gi');
                 cache.add(name, parser);
             }
@@ -216,7 +216,11 @@ Ext.define('Ext.app.bind.Formula', {
      */
     single: false,
 
-    argumentNamesRe: /^function\s*\(\s*([^,\)\s]+)/,
+    fnKeywordArgumentNamesRe: /^function\s*[^\(]*\(\s*([^,\)\s]+)/,
+
+    fnKeywordRe: /^\s*function/,
+
+    replaceParenRe: /[\(\)]/g,
 
     constructor: function (stub, formula) {
         var me = this,
@@ -301,14 +305,27 @@ Ext.define('Ext.app.bind.Formula', {
     },
 
     parseFormula: function (formula) {
-        var str = formula.toString(),
+        var str = Ext.Function.toCode(formula),
+            defaultProp = 'get',
             expressions = {
                 $literal: true
             },
             match, getterProp, formulaRe, expr;
 
-        match = this.argumentNamesRe.exec(str);
-        getterProp = match ? match[1] : 'get';
+        if (this.fnKeywordRe.test(str)) {
+            match = this.fnKeywordArgumentNamesRe.exec(str);
+            if (match) {
+                getterProp = match[1];
+            }
+        } else {
+            match = str.split('=>')[0];
+            if (match) {
+                match = Ext.String.trim(match.replace(this.replaceParenRe, '')).split(',');
+                getterProp = match[0];
+            }
+        }
+
+        getterProp = getterProp || defaultProp;
         formulaRe = Ext.app.bind.Formula.getFormulaParser(getterProp);
 
         while ((match = formulaRe.exec(str))) {

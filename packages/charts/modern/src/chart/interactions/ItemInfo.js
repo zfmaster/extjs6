@@ -56,7 +56,6 @@ Ext.define('Ext.chart.interactions.ItemInfo', {
             centered: true,
             width: 300,
             height: 200,
-            styleHtmlContent: true,
             scrollable: 'vertical',
             hideOnMaskTap: true,
             fullscreen: false,

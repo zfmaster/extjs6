@@ -51,6 +51,13 @@ Ext.define('Ext.chart.axis.segmenter.Numeric', {
         };
     },
 
+    leadingZeros: function (n) {
+        // For example:
+        // leadingZeros(0.2) is 1,
+        // leadingZeros(-0.01) is 2.
+        return -Math.floor(Ext.Number.log10(Math.abs(n)));
+    },
+
     /**
      * Wraps the provided estimated step size of a range without altering it into a step size object.
      *
@@ -60,14 +67,6 @@ Ext.define('Ext.chart.axis.segmenter.Numeric', {
      * @return {Number} return.step The step count of units.
      * @return {Object} return.unit The unit.
      */
-
-    leadingZeros: function (n) {
-        // For example:
-        // leadingZeros(0.2) is 1,
-        // leadingZeros(-0.01) is 2.
-        return -Math.floor(Ext.Number.log10(Math.abs(n)));
-    },
-
     exactStep: function (min, estStepSize) {
         var stepZeros = this.leadingZeros(estStepSize),
             scale = Math.pow(10, stepZeros);
@@ -88,12 +87,18 @@ Ext.define('Ext.chart.axis.segmenter.Numeric', {
         var min = range[0],
             max = range[1],
             increment = step * scale,
-            remainder = min % increment;
+            remainder, multiplier;
 
+        multiplier = Math.max(1 / (min || 1), 1 / (increment || 1));
+        multiplier = multiplier > 1 ? multiplier : 1;
+        remainder = ((min * multiplier) % (increment * multiplier)) / multiplier;
         if (remainder !== 0) {
             range[0] = min - remainder + (min < 0 ? -increment : 0);
         }
-        remainder = max % increment;
+
+        multiplier = Math.max(1 / (max || 1), 1 / (increment || 1));
+        multiplier = multiplier > 1 ? multiplier : 1;
+        remainder = ((max * multiplier) % (increment * multiplier)) / multiplier;
         if (remainder !== 0) {
             range[1] = max - remainder + (max > 0 ? increment : 0);
         }

@@ -119,7 +119,7 @@ Ext.define('Ext.grid.column.Check', {
      * @param {Ext.grid.column.Check} this CheckColumn.
      * @param {Number} rowIndex The row index.
      * @param {Boolean} checked `true` if the box is to be checked.
-     * @param {Ext.data.Model} The record to be updated.
+     * @param {Ext.data.Model} record The record to be updated.
      * @param {Ext.event.Event} e The underlying event which caused the check change.
      * @param {Ext.grid.CellContext} e.position A {@link Ext.grid.CellContext CellContext} object
      * containing all contextual information about where the event was triggered.
@@ -131,7 +131,7 @@ Ext.define('Ext.grid.column.Check', {
      * @param {Ext.grid.column.Check} this CheckColumn.
      * @param {Number} rowIndex The row index.
      * @param {Boolean} checked `true` if the box is now checked.
-     * @param {Ext.data.Model} The record which was updated.
+     * @param {Ext.data.Model} record The record which was updated.
      * @param {Ext.event.Event} e The underlying event which caused the check change.
      * @param {Ext.grid.CellContext} e.position A {@link Ext.grid.CellContext CellContext} object
      */
@@ -154,12 +154,11 @@ Ext.define('Ext.grid.column.Check', {
      */
 
     constructor: function(config) {
-        // This method may be invoked more than once in an event, so defer its actual invocation.
-        // For example it's invoked in the renderer and updater and they may be called from a loop.
-        this.updateHeaderState = Ext.Function.createAnimationFrame(config.updateHeaderState || this.updateHeaderState);
+        var me = this,
+            updateHeaderState = config && config.updateHeaderState;
 
-        this.scope = this;
-        this.callParent(arguments);
+        me.scope = me;
+        me.callParent([config]);
     },
 
     afterComponentLayout: function() {
@@ -315,9 +314,21 @@ Ext.define('Ext.grid.column.Check', {
     },
 
     updateHeaderState: function(e) {
+        var me = this;
+
+        if (!me.headerStateTimer) {
+            me.headerStateTimer = Ext.raf(me.doUpdateHeaderState, me);
+        }
+    },
+
+    doUpdateHeaderState: function(e) {
+        var me = this;
+
+        me.headerStateTimer = null;
+
         // This is called on a timer, so ignore if it fires after destruction
-        if (!this.destroyed && this.headerCheckbox) {
-            this.setHeaderStatus(this.areAllChecked(), e);
+        if (!me.destroyed && me.headerCheckbox) {
+            me.setHeaderStatus(me.areAllChecked(), e);
         }
     },
 
@@ -473,10 +484,15 @@ Ext.define('Ext.grid.column.Check', {
             cell = cell || me.getView().getCell(record, me);
             
             if (cell) {
-                cell.dom.setAttribute('aria-describedby', me.id + '-cell-description' + 
+                cell.setAttribute('aria-describedby', me.id + '-cell-description' + 
                                         (!isSelected ? '-not' : '') + '-selected');
             }
         }
+    },
+
+    doDestroy: function() {
+        Ext.unraf(this.headerStateTimer);
+        this.callParent();
     },
 
     privates: {

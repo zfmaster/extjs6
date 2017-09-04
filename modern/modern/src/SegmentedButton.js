@@ -35,7 +35,7 @@ Ext.define('Ext.SegmentedButton', {
 
     requires: [
         'Ext.Button',
-        'Ext.layout.FlexBox'
+        'Ext.layout.Box'
     ],
 
     isSegmentedButton: true,
@@ -166,6 +166,12 @@ Ext.define('Ext.SegmentedButton', {
         vertical: false
     },
 
+    defaults: {
+        flex: '1 1 auto'
+    },
+
+    autoSize: null,
+
     /**
      * @cfg
      * @inheritdoc
@@ -179,6 +185,12 @@ Ext.define('Ext.SegmentedButton', {
     defaultBindProperty: 'value',
 
     twoWayBindable: 'value',
+
+    /**
+     * @cfg
+     * @inheritdoc
+     */
+    publishes: 'value',
 
     /**
      * @event toggle
@@ -254,124 +266,146 @@ Ext.define('Ext.SegmentedButton', {
         return ret;
     },
 
-    applyValue: function(value, oldValue) {
+    applyValue: function (value, oldValue) {
         var me = this,
-            firstPass = oldValue === undefined,
+            buttons = me.getItems(),
             allowMultiple = me.getAllowMultiple(),
-            items = me.getItems(),
-            len = items.getCount(),
-            values = [],
-            forceSelection = me.getForceSelection(),
-            pressingItem = me.pressingItem,
-            hasPressed, button, buttonValue, changed, id, initialState, i;
+            values, i, length, button, buttonValue;
 
-        me.settingValue = true;
+        if (me.isConfiguring) {
+            //if no value, look if any buttons are configured as pressed
+            if (value == null) {
+                values = [];
+                length = buttons.length;
 
-        values = Ext.Array.from(value);
-        oldValue = Ext.Array.from(oldValue);
+                for (i = 0; i < length; i++) {
+                    button = buttons.getAt(i);
 
-        // First time getting a value, so we need to include any items
-        // with a pressed: true config
-        if (firstPass) {
-            initialState = {};
-            for (i = items.getCount() - 1; i >= 0; --i) {
-                button = items.getAt(i);
-                if (forceSelection && !values.length && i === 0 && !hasPressed) {
-                    button.setPressed(true);
-                }
+                    if (button.isPressed()) {
+                        buttonValue = me.getButtonValue(button);
 
-                if (button.getPressed()) {
-                    hasPressed = true;
-                    buttonValue = button.getValue();
-                    // If the value is null, we need to include the value as the index
-                    if (buttonValue === null) {
-                        buttonValue = items.indexOf(button);
-                    }
-                    if (!Ext.Array.contains(values, buttonValue)) {
-                        values.unshift(buttonValue);
+                        if (!Ext.Array.contains(values, buttonValue)) {
+                            values.push(buttonValue);
+                        }
                     }
                 }
+
+                value = values;
+            } else {
+                value = Ext.Array.from(value);
+
+                //<debug>
+                values = value;
+                length = values.length;
+
+                for (i = 0; i < length; i++) {
+                    button = me.lookupButtonByValue(values[i]);
+
+                    if (!button) {
+                        Ext.raise('Invalid value "' + value + '" for segmented button: "' + me.id + '"');
+                    }
+                }
+                //</debug>
             }
         } else {
-            initialState = me.getAllPressed(items);
-        }
+            value = Ext.Array.from(value);
 
-        len = values.length;
-
-        //<debug>
-        if (len > 1 && !me.getAllowMultiple()) {
-            Ext.raise('Cannot set multiple values when allowMultiple is false');
-        }
-        //</debug>
-
-        // press all buttons corresponding to the values
-        for (i = 0; i < len; i++) {
-            value = values[i];
-            button = me.lookupButtonByValue(value);
-
-            if (button) {
-                buttonValue = button.getValue();
-
-                if (buttonValue !== null && buttonValue !== value) {
-                    // button has a value, but it was matched by index.
-                    // transform the index into the button value
-                    values[i] = buttonValue;
-                }
-
-                if (initialState[button.id]) {
-                    delete initialState[button.id];
-                } else {
-                    button.setPressed(true);
-                    if (!firstPass) {
-                        (changed || (changed = [])).push(button);
-                    }
-                }
-            }
             //<debug>
-            else {
-                // no matched button. fail.
-                Ext.raise("Invalid value '" + value + "' for segmented button: '" + me.id + "'");
+            values = value;
+            length = values.length;
+
+            for (i = 0; i < length; i++) {
+                button = me.lookupButtonByValue(values[i]);
+
+                if (!button) {
+                    Ext.raise('Invalid value "' + value + '" for segmented button: "' + me.id + '"');
+                }
             }
             //</debug>
         }
 
-        // If we have anything left in the initialState, that means they were
-        // pressed when we started, but not now, toggle them off.
-        for (id in initialState) {
-            button = initialState[id];
-            button.setPressed(false);
-            if (!firstPass) {
-                (changed || (changed = [])).push(button);
+        //<debug>
+        if (value.length > 1 && !allowMultiple) {
+            Ext.raise('Cannot set multiple values when allowMultiple is false');
+        }
+        //</debug>
+
+        value = allowMultiple ? me.sortValues(value) : value[0];
+
+        if ((allowMultiple ? !value.length : value == null) && me.getForceSelection()) {
+            value = me.getButtonValue(buttons.getAt(0));
+
+            if (allowMultiple) {
+                value = [value];
             }
         }
 
-        if (allowMultiple) {
-            value = values = me.sortValues(values);
-        } else {
-            value = values.length ? values[0] : null;
-            oldValue = oldValue.length ? oldValue[0] : null;
+        return Ext.isDefined(value) ? value : null;
+    },
+
+    updateValue: function (value, oldValue) {
+        var me = this,
+            changed = [],
+            newValues = Ext.Array.from(value),
+            oldValues = Ext.Array.from(oldValue),
+            button, i, length;
+
+        me.settingValue = true;
+
+        if (oldValues.length) {
+            length = oldValues.length;
+
+            for (i = 0; i < length; i++) {
+                button = me.lookupButtonByValue(oldValues[i]);
+
+                //unpress this button if it's not in the new value
+                if (!Ext.Array.contains(newValues, oldValues[i])) {
+                    button.setPressed(false);
+
+                    changed.push(button);
+                }
+            }
         }
 
-        me.settingValue = false;
+        if (newValues.length) {
+            length = newValues.length;
 
-        if (!firstPass && changed) {
+            for (i = 0; i < length; i++) {
+                button = me.lookupButtonByValue(newValues[i]);
+
+                //detect if this button was already pressed
+                if (!Ext.Array.contains(oldValues, newValues[i])) {
+                    button.setPressed(true);
+
+                    changed.push(button);
+                }
+            }
+        }
+
+        //we shouldn't fire any events on initial instantiation
+        if (!me.isConfiguring) {
             if (me.hasListeners.toggle) {
+                length = changed.length;
+
                 me.sortToggleItems(changed);
-                for (i = 0, len = changed.length; i < len; ++i) {
+
+                for (i = 0; i < length; i++) {
                     button = changed[i];
+
                     me.fireEvent('toggle', me, button, button.getPressed());
                 }
             }
 
             if (me.hasListeners.change) {
-                changed = allowMultiple ? !Ext.Array.equals(value, oldValue) : value !== oldValue;
+                changed = me.getAllowMultiple() ? !Ext.Array.equals(value, oldValue) : value !== oldValue;
+
                 if (changed) {
                     me.fireEvent('change', me, value, oldValue);
                 }
             }
         }
 
-        return value;
+        me.settingValue = false;
     },
 
     updateAllowMultiple: function(allowMultiple) {
@@ -546,30 +580,46 @@ Ext.define('Ext.SegmentedButton', {
          * @return {Ext.button.Button}
          */
         lookupButtonByValue: function(value) {
-            var button;
+            return this.useValueMap ? this.valueMap[value] : this.getItems().getAt(value);
+        },
+
+        /**
+         * Gets a button's value. If the button doesn't have a value,
+         * the value will be the button's index.
+         * @param {Ext.Button} button
+         * @return {String/Number} value The button's value or index.
+         *
+         * @since 6.5.0
+         */
+        getButtonValue: function(button) {
+            var value;
 
             if (this.useValueMap) {
-                button = this.valueMap[value];
-            } else {
-                button = this.getItems().getAt(value);
+                value = button.getValue();
             }
 
-            return button;
+            if (value == null) {
+                value = this.getItems().indexOf(button);
+            }
+
+            return value;
         },
 
         onBeforePressedChange: function(button, pressed) {
             // If we allow multiple selections, and we are forcing a selection, and we are unpressing
             // and we only have one value, then veto this. we are not allowing the selection length
             // to fall to zero.
-            var ret;
+            var value = this.getValue(),
+                ret;
 
             if (this.getForceSelection() && !pressed) {
                 if (this.getAllowMultiple()) {
-                    ret = this.getValue().length === 1;
-                } else {
+                    ret = value.length === 1;
+                } else if (value === this.getButtonValue(button)) {
                     ret = false;
                 }
             }
+
             return ret;
         },
 
@@ -581,7 +631,7 @@ Ext.define('Ext.SegmentedButton', {
             var me = this,
                 Array = Ext.Array,
                 allowMultiple = me.getAllowMultiple(),
-                buttonValue = me.useValueMap ? button.getValue() : me.items.indexOf(button),
+                buttonValue = me.getButtonValue(button),
                 value = me.getValue(),
                 valueIndex;
 

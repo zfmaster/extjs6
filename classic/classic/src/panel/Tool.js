@@ -258,7 +258,16 @@ Ext.define('Ext.panel.Tool', {
         ENTER: 'onClick'
     },
 
+    /**
+     * @cfg {Boolean} cacheHeight
+     * Set to `false` to use a custom tool height and not the cached tool height.
+     */
     cacheHeight: true,
+
+    /**
+     * @cfg {Boolean} cacheWidth
+     * Set to `false` to use a custom tool width and not the cached tool width.
+     */
     cacheWidth: true,
 
     //<debug>
@@ -446,7 +455,7 @@ Ext.define('Ext.panel.Tool', {
 
     /**
      * Sets the icon class. Allows the icon to be changed.
-     * @param {String} type The new icon class. See the {@link #type} config.
+     * @param {String} iconCls The new icon class. See the {@link #type} config.
      * @return {Ext.panel.Tool} this
      */
     setIconCls: function(iconCls) {

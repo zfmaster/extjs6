@@ -1,4 +1,4 @@
-describe("Ext.Date", function() {
+topSuite("Ext.Date", function() {
     describe('Elapsed time between dates', function () {
         var dateValue = 0,
             increment = 3,

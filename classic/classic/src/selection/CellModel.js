@@ -45,7 +45,7 @@ Ext.define('Ext.selection.CellModel', {
     isCellModel: true,
 
     /**
-     * @inheritdoc
+     * @inheritdoc Ext.mixin.Selectable#cfg!deselectOnContainerClick
      */
     deselectOnContainerClick: false,
 
@@ -256,11 +256,14 @@ Ext.define('Ext.selection.CellModel', {
 
     /**
      * Sets the current position.
-     * @deprecated 5.0.1 This API uses column indices which include hidden columns in the count. Use {@link #setPosition} instead.
-     * @param {Ext.grid.CellContext/Object} position The position to set. May be an object of the form `{row:1, column:2}`
+     * @deprecated 5.0.1 This API uses column indices which include hidden columns in the
+     * count. Use {@link #setPosition} instead.
+     * @param {Ext.grid.CellContext/Object} pos The position to set. May be an object of
+     * the form `{row:1, column:2}`
      * @param {Boolean} suppressEvent True to suppress selection events
+     * @param {Boolean} preventCheck (private)
      */
-    setCurrentPosition: function(pos, suppressEvent, /* private */ preventCheck) {
+    setCurrentPosition: function(pos, suppressEvent, preventCheck) {
         if (pos && !pos.isCellContext) {
             pos = new Ext.grid.CellContext(this.view).setPosition({
                 row: pos.row,
@@ -277,10 +280,11 @@ Ext.define('Ext.selection.CellModel', {
      *
      * Note that if passing a column index, it is the index within the *visible* column set.
      *
-     * @param {Ext.grid.CellContext/Object} position The position to set. May be an object of the form `{row:1, column:2}`
+     * @param {Ext.grid.CellContext/Object} pos The position to set. May be an object of the form `{row:1, column:2}`
      * @param {Boolean} suppressEvent True to suppress selection events
+     * @param {Boolean} preventCheck (private)
      */
-    setPosition: function(pos, suppressEvent, /* private */ preventCheck) {
+    setPosition: function(pos, suppressEvent, preventCheck) {
         var me = this,
             last = me.selection;
 
@@ -380,6 +384,10 @@ Ext.define('Ext.selection.CellModel', {
             pos.setRow(selRec);
         }
         this.callParent([selected]);
+        // If the record has been removed, fix up the position.
+        if (selected.length === 0 && selRec) {
+            this.selection = null;
+        }
     },
 
     /**
@@ -493,10 +501,10 @@ Ext.define('Ext.selection.CellModel', {
             column = view.getColumnByPosition(pos);
 
             // After a refresh, recreate the selection using the same record and grid column as before
-            if (!column.isDescendantOf(headerCt)) {
+            if (column && !column.isDescendantOf(headerCt)) {
                 // column header is not a child of the header container
                 // this happens when the grid is reconfigured with new columns
-                // make a best effor to select something by matching on id, then text, then dataIndex
+                // make a best effort to select something by matching on id, then text, then dataIndex
                 column = headerCt.queryById(column.id) || 
                                headerCt.down('[text="' + column.text + '"]') ||
                                headerCt.down('[dataIndex="' + column.dataIndex + '"]');
@@ -506,8 +514,8 @@ Ext.define('Ext.selection.CellModel', {
             // the headerCt, or a suitable match that was found after reconfiguration)
             // AND the record still exists in the store (or a record matching the id of
             // the previously selected record) We are ok to go ahead and set the selection
-            if (pos.record) {
-                if (column && (view.store.indexOfId(record.getId()) !== -1)) {
+            if (column && record) {
+                if (view.store.indexOfId(record.getId()) !== -1) {
                     newPos = new Ext.grid.CellContext(view).setPosition({
                         row: record,
                         column: column

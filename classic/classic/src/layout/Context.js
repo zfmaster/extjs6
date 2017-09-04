@@ -558,7 +558,7 @@ Ext.define('Ext.layout.Context', {
      * @param {Ext.dom.Element} el
      */
     getEl: function (parent, el) {
-        var item = this.getItem(el, el);
+        var item = this.getItem(el, el, parent);
 
         if (!item.parent) {
             item.parent = parent;
@@ -576,14 +576,25 @@ Ext.define('Ext.layout.Context', {
         return item;
     },
 
-    getItem: function (target, el) {
+    /**
+     * Get a context item, if a cached item already exists it will
+     * be returned.
+     * @param {Ext.Component/Ext.dom.Element} target The target.
+     * @param {Ext.dom.Element} el The element for the context item. If `target`,
+     * is an element, these should be the same.
+     * @param {Ext.layout.ContextItem} [componentContext] The owning component
+     * context. This is used for element contexts.
+     * @return {Ext.layout.ContextItem} The context item.
+     */
+    getItem: function (target, el, componentContext) {
         var id = el.id,
             items = this.items,
             item = items[id] ||
                   (items[id] = new Ext.layout.ContextItem({
                                     context: this,
                                     target: target,
-                                    el: el
+                                    el: el,
+                                    componentContext: componentContext
                                 }));
 
         return item;

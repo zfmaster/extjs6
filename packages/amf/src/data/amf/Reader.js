@@ -7,7 +7,8 @@
  * allows its superclass ({@link Ext.data.reader.Json}) to handle converting the
  * raw javascript objects into {@link Ext.data.Model} instances.
  * 
- * For a more detailed tutorial see the [AMF Guide](#/guide/amf).
+ * For a more detailed tutorial see the
+ * [AMF Guide](../guides/backend_connectors/amf.html).
  */
 Ext.define('Ext.data.amf.Reader', {
 

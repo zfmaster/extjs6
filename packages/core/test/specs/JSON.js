@@ -1,4 +1,4 @@
-describe("Ext.JSON", function() {
+topSuite("Ext.JSON", function() {
     var nativeJson;
 
     beforeEach(function() {

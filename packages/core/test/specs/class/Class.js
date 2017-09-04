@@ -1,4 +1,4 @@
-describe("Ext.Class", function() {
+topSuite("Ext.Class", function() {
     var emptyFn = function(){},
         defaultInitConfig = function(config) {
             this.initConfig(config);
@@ -555,7 +555,11 @@ describe("Ext.Class", function() {
                 cls = Ext.define(null, {
                     config: {
                         foo: 1,
-                        bar: 2
+                        bar: 2,
+                        bletch: {
+                            lazy: true,
+                            $value: 3
+                        }
                     },
                     constructor: defaultInitConfig
                 });
@@ -623,21 +627,35 @@ describe("Ext.Class", function() {
                     o = new cls();
                     expect(o.getConfig('bar')).toBe(2);
                 });
-            
+
+                it("should be able to get a config only if initialized", function() {
+                    o = new cls();
+
+                    // Peek should still return the configured value even if the config
+                    // has not yet been initialized.
+                    expect(o.getConfig('bletch', true)).toBe(3);
+
+                    // Only if initialized, should return undefined, and the
+                    // above call must not have done that.
+                    expect(o.getConfig('bletch', false, true)).toBe(null);
+
+                    // Initialize if not there
+                    expect(o.getConfig('bletch')).toBe(3);
+                });
+
                 it("should return all configs if no name is passed", function() {
                     o = new cls();
                     expect(o.getConfig()).toEqual({
                         foo: 1,
-                        bar: 2
+                        bar: 2,
+                        bletch: 3
                     });    
                 });
             
-                it("should throw an exception when asking for a config name that does not exist", function() {
+                it("should return undefined when asking for a config name that does not exist", function() {
                     spyOn(Ext, 'log');
                     o = new cls();
-                    expect(function() {
-                        o.getConfig('fake');
-                    }).toThrow();
+                    expect(o.getConfig('fake')).toBeUndefined();
                 });
 
                 describe("peek", function() {
@@ -654,12 +672,37 @@ describe("Ext.Class", function() {
                     });
 
                     it("should not call the getter if the initGetter has not yet been called", function() {
+                        var applierCalled = false,
+                            getFooSpy,
+                            fooValue;
+
                         o = new cls({
-                            foo: 1
+                            foo: 1,
+                            applyFoo: function(foo) {
+                                applierCalled = true;
+
+                                // Value gets changed when config is pulled in
+                                return 2;
+                            }
                         });
-                        spyOn(o, 'getFoo');
-                        o.getConfig('foo', true);
+                        getFooSpy = spyOn(o, 'getFoo');
+                        getFooSpy.andCallThrough();
+
+                        fooValue = o.getConfig('foo', true);
+
+                        // getFoo is still the initial getter which pulls the config in.
+                        expect(o.getFoo).not.toBe(cls.prototype.getFoo);
                         expect(o.getFoo).not.toHaveBeenCalled();
+                        expect(fooValue).toBe(1);
+
+                        // When calling without peek, it should call the getter and pull the config in
+                        fooValue = o.getConfig('foo');
+
+                        // The initial getter which was being spied upon has been removed
+                        expect(o.getFoo).not.toBe(getFooSpy);
+                        expect(o.getFoo).toBe(cls.prototype.getFoo);
+
+                        expect(fooValue).toBe(2);
                     });
 
                     it("should return the pending value configured on the instance", function() {
@@ -1328,6 +1371,70 @@ describe("Ext.Class", function() {
 
                     expect(Ext.log.warn).not.toHaveBeenCalled();
                 });
+
+                describe('defaults', function () {
+                    it('should set default value', function () {
+                        cls = Ext.define(null, {
+                            config: {
+                                foo: null
+                            },
+
+                            constructor: defaultInitConfig
+                        });
+
+                        o = new cls();
+
+                        o.setConfig({
+                            foo: 'bar'
+                        }, null, {
+                            defaults: true
+                        });
+
+                        expect(o.getFoo()).toBe('bar');
+                    });
+
+                    it('should set default value when config has default value', function () {
+                        cls = Ext.define(null, {
+                            config: {
+                                foo: 'foobar'
+                            },
+
+                            constructor: defaultInitConfig
+                        });
+
+                        o = new cls();
+
+                        o.setConfig({
+                            foo: 'bar'
+                        }, null, {
+                            defaults: true
+                        });
+
+                        expect(o.getFoo()).toBe('bar');
+                    });
+
+                    it('should not set default value', function () {
+                        cls = Ext.define(null, {
+                            config: {
+                                foo: null
+                            },
+
+                            constructor: defaultInitConfig
+                        });
+
+                        o = new cls({
+                            foo: 'foobar'
+                        });
+
+                        o.setConfig({
+                            foo: 'bar'
+                        }, null, {
+                            defaults: true
+                        });
+
+                        expect(o.getFoo()).toBe('foobar');
+                    });
+                });
             });
         });
 
@@ -1488,43 +1595,64 @@ describe("Ext.Class", function() {
                     });
 
                     it("should stamp all values on the prototype after the first instance is created", function() {
-                        var calls = 0;
+                        var log = [];
 
                         cls = Ext.define(null, {
                             constructor: defaultInitConfig,
                             cachedConfig: {
-                                foo: 21,
-                                bar: 1,
+                                foo: 4,
+                                bar: 2,
                                 baz: 3
                             },
+
                             applyFoo: function (foo) {
-                                ++calls;
-                                return foo * this.getBar(); // fwd dependency
+                                var v = foo * this.getBar(); // fwd dependency
+                                log.push('applyFoo:' + foo);
+                                log.push('applyFoo:' + v);
+                                return v;
                             },
+
                             applyBar: function (bar) {
-                                ++calls;
-                                return bar * 2;
+                                log.push('applyBar:' + bar);
+
+                                return bar * 5;
                             },
+
                             applyBaz: function (baz) {
-                                ++calls;
-                                return baz * this.getFoo(); // backward dependency
+                                var v = baz * this.getFoo(); // backward dependency
+                                log.push('applyBaz:' + baz);
+                                log.push('applyBaz:' + v);
+
+                                return v;
                             }
                         });
 
                         o = new cls();
 
-                        expect(cls.prototype._foo).toBe(42);
-                        expect(cls.prototype._bar).toBe(2);
-                        expect(cls.prototype._baz).toBe(3 * 42);
+                        expect(cls.prototype._foo).toBe(4 * 2 * 5);
+                        expect(cls.prototype._bar).toBe(2 * 5);
+                        expect(cls.prototype._baz).toBe(3 * 4 * 2 * 5);
 
-                        expect(calls).toBe(3);
+                        expect(cls.prototype.hasOwnProperty('_foo')).toBe(true);
+                        expect(cls.prototype.hasOwnProperty('_bar')).toBe(true);
+                        expect(cls.prototype.hasOwnProperty('_baz')).toBe(true);
+
                         expect(o.hasOwnProperty('_foo')).toBe(false);
                         expect(o.hasOwnProperty('_bar')).toBe(false);
                         expect(o.hasOwnProperty('_baz')).toBe(false);
 
-                        o = new cls();
+                        expect(log).toEqual([
+                            'applyBar:2',
+                            'applyFoo:4',
+                            'applyFoo:40',
+                            'applyBaz:3',
+                            'applyBaz:120'
+                        ]);
 
-                        expect(calls).toBe(3);
+                        log.length = 0;
+                        o = new cls();
+                        expect(log).toEqual([]);
+
                         expect(o.hasOwnProperty('_foo')).toBe(false);
                         expect(o.hasOwnProperty('_bar')).toBe(false);
                         expect(o.hasOwnProperty('_baz')).toBe(false);
@@ -1864,7 +1992,7 @@ describe("Ext.Class", function() {
                                     $value: 'bar'
                                 },
                                 bar: 'text'
-                            },
+                            }
                         });
                         var cfg = cls.getConfigurator();
                         expect(cfg.cachedConfigs).toEqual({
@@ -2915,6 +3043,27 @@ describe("Ext.Class", function() {
                 });
 
                 expect(sub.foo()).toBe('mixinfoosub');
+            });
+
+            it("should make the mixin available when the mixin has inheritableStatics", function() {
+                var M = Ext.define(null, {
+                    extend: 'Ext.Mixin',
+
+                    mixinConfig: {
+                        id: 'mymixin'
+                    },
+
+                    inheritableStatics: {
+                        foo: Ext.emptyFn
+                    }
+                });
+
+                cls = Ext.define(null, {
+                    mixins: [M]
+                });
+
+                o = new cls();
+                expect(o.mixins.mymixin).toBe(M.prototype);
             });
         });
     });

@@ -24,10 +24,10 @@
  *         }
  *     });
  *
- *     // a new MixedCollection with the 3 names longer than 4 characters
+ *     // a new MixedCollection with the 2 names longer than 4 characters
  *     var longNames = allNames.filter(longNameFilter);
  *
- *     // a new MixedCollection with the 2 people of age 32:
+ *     // a new MixedCollection with the 1 person of age 32:
  *     var youngFolk = allNames.filter(ageFilter);
  */
 Ext.define('Ext.util.Filter', {
@@ -170,6 +170,15 @@ Ext.define('Ext.util.Filter', {
     // identity.
     $configStrict: false,
 
+    /**
+     * @property {Number} generation
+     * Mutation counter which is incremented when the filter changes in ways that mean reevaluation of
+     * the filtered state is necessary.
+     * @readonly
+     * @since 6.5.0
+     */
+    generation: 0,
+
     statics: {
         /**
          * Creates a single filter function which encapsulates the passed Filter array or
@@ -205,8 +214,8 @@ Ext.define('Ext.util.Filter', {
         /**
          * Checks if two filters have the same properties (Property, Operator and Value).
          *
-         * @param {Ext.util.Filter} filter The first filter to be compared
-         * @param {Ext.util.Filter} filter The second filter to be compared
+         * @param {Ext.util.Filter} filter1 The first filter to be compared
+         * @param {Ext.util.Filter} filter2 The second filter to be compared
          * @return {Boolean} `true` if they have the same properties.
          * @since 6.2.0
          */
@@ -416,16 +425,44 @@ Ext.define('Ext.util.Filter', {
         return result;
     },
 
+    updateDisabled: function() {
+        // Developers may use this to see if a filter has changed in ways that must cause a reevaluation of filtering
+        this.generation++;
+    },
+
     updateOperator: function() {
-        if (this.generatedFilterFn) {
-            this._filterFn = null;
-        }
+        // Need to clear any generated local filter fn and increment generation
+        this.onConfigMutation();
+    },
+
+    updateConvert: function() {
+        // Need to clear any generated local filter fn and increment generation
+        this.onConfigMutation();
+    },
+
+    updateProperty: function() {
+        // Need to clear any generated local filter fn and increment generation
+        this.onConfigMutation();
+    },
+
+    updateAnyMatch: function() {
+        // Need to clear any generated local filter fn and increment generation
+        this.onConfigMutation();
+    },
+
+    updateExactMatch: function() {
+        // Need to clear any generated local filter fn and increment generation
+        this.onConfigMutation();
+    },
+
+    updateCaseSensitive: function() {
+        // Need to clear any generated local filter fn and increment generation
+        this.onConfigMutation();
     },
 
     updateValue: function(value) {
-        if (this.generatedFilterFn) {
-            this._filterFn = null;
-        }
+        // Need to clear any generated local filter fn and increment generation
+        this.onConfigMutation();
         
         if (this.getDisableOnEmpty()) {
             this.setDisabled(Ext.isEmpty(value));
@@ -434,6 +471,14 @@ Ext.define('Ext.util.Filter', {
 
     updateFilterFn: function (filterFn) {
         delete this.generatedFilterFn;
+    },
+
+    onConfigMutation: function() {
+        // Developers may use this to see if a filter has changed in ways that must cause a reevaluation of filtering
+        this.generation++;
+        if (this.generatedFilterFn) {
+            this._filterFn = null;
+        }
     },
 
     updateDisableOnEmpty: function(disableOnEmpty) {

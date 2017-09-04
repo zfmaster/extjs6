@@ -11,7 +11,9 @@
 // TODO: mini
 // TODO: placeholder vs header collapse
 
-describe('Ext.layout.container.Border', function() {
+topSuite("Ext.layout.container.Border",
+    ['Ext.container.Viewport', 'Ext.Panel', 'Ext.Button', 'Ext.layout.*'],
+function() {
     // Assertions based on placeholders are tricky as the default placeholder size could change without that
     // necessarily counting as a failure. To handle this we capture that size in these 'constants'.
     var HORIZONTAL_PLACEHOLDER_HEIGHT = 28;

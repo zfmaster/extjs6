@@ -1,4 +1,4 @@
-describe("Ext.slider.Tip", function() {
+topSuite("Ext.slider.Tip", ['Ext.slider.Single'], function() {
     var slider, tip, thumb0, spaceEl,
         createSlider = function(config) {
             tip = new Ext.slider.Tip();

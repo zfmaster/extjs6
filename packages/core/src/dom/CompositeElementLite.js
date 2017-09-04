@@ -41,6 +41,7 @@ Ext.define('Ext.dom.CompositeElementLite', {
 
     /**
      * @cfg bubbleEvents
+     * @hide
      */
 
     /**
@@ -77,9 +78,10 @@ Ext.define('Ext.dom.CompositeElementLite', {
         }
     },
 
-    constructor: function(elements, /* private */ skipValidation) {
+    constructor: function(elements, skipValidation) {
         /**
          * @property {HTMLElement[]} elements
+         * @param skipValidation (private)
          * @readonly
          * The Array of DOM elements which this CompositeElement encapsulates.
          *
@@ -405,7 +407,7 @@ Ext.define('Ext.dom.CompositeElementLite', {
 
     /**
      * Removes the specified element(s).
-     * @param {String/HTMLElement/Ext.dom.Element/Number} el The id of an element, the Element itself, the index of the
+     * @param {String/HTMLElement/Ext.dom.Element/Number} keys The id of an element, the Element itself, the index of the
      * element in this composite or an array of any of those.
      * @param {Boolean} [removeDom] `true` to also remove the element from the document
      * @return {Ext.dom.CompositeElementLite} this
@@ -437,8 +439,7 @@ Ext.define('Ext.dom.CompositeElementLite', {
     },
 
     destroy: function() {
-        // TOUCH-4761: ensure Element#destroy() gets called and not Base#destroy()
-        return this.invoke('destroy', arguments);
+        this.invoke('destroy', arguments);
         this.callParent();
     }
 

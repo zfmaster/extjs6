@@ -1,4 +1,4 @@
-describe("Ext.data.proxy.SessionStorage", function() {
+topSuite("Ext.data.proxy.SessionStorage", ['Ext.data.ArrayStore'], function() {
     var proxy;
 
     if (window.sessionStorage) {    

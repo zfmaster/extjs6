@@ -85,7 +85,7 @@ Ext.define('Ext.button.Segmented', {
          * @cfg {String/Number/String[]/Number[]}
          * @accessor
          * The value of this button.  When {@link #allowMultiple} is `false`, value is a
-         * String or Number.  When {@link #allowMultiple is `true`, value is an array
+         * String or Number.  When {@link #allowMultiple} is `true`, value is an array
          * of values.  A value corresponds to a child button's {@link Ext.button.Button#value
          * value}, or its index if no child button values match the given value.
          *
@@ -146,6 +146,10 @@ Ext.define('Ext.button.Segmented', {
      */
     defaultBindProperty: 'value',
 
+    /**
+     * @cfg
+     * @inheritdoc
+     */
     publishes: ['value'],
     twoWayBindable: ['value'],
 

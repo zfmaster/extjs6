@@ -1,4 +1,12 @@
-describe("Ext.data.Model", function() {
+topSuite("Ext.data.Model", [
+    'Ext.data.Store', 
+    'Ext.data.proxy.JsonP', 
+    'Ext.data.TreeModel', 
+    'Ext.data.identifier.*',
+    'Ext.data.validator.*', 
+    'Ext.data.summary.*',
+    'Ext.data.Session'
+], function() {
     
     beforeEach(function() {
         Ext.ClassManager.enableNamespaceParseCache = false;
@@ -8,6 +16,196 @@ describe("Ext.data.Model", function() {
     afterEach(function() {
         Ext.ClassManager.enableNamespaceParseCache = true; 
         Ext.data.Model.schema.clear(true);
+    });
+
+    describe("loadData", function() {
+        var session;
+
+        beforeEach(function() {
+            Ext.define('spec.User', {
+                extend: 'Ext.data.Model',
+                fields: ['name']
+            });
+
+            Ext.define('spec.Order', {
+                extend: 'Ext.data.Model',
+                fields: ['discountCode', {
+                    name: 'userId',
+                    reference: 'User'
+                }]
+            });
+        });
+
+        afterEach(function() {
+            Ext.undefine('spec.User');
+            Ext.undefine('spec.Order');
+        });
+
+        function create(data) {
+            return spec.User.loadData(data, session);
+        }
+
+        describe("without session", function() {
+            it("should return a model of the same type", function() {
+                var rec = create({
+                    name: 'Foo'
+                });
+                expect(rec.$className).toBe('spec.User');
+                expect(rec.get('name')).toBe('Foo');
+            });
+
+            it("should create with no data", function() {
+                var rec = create();
+                expect(rec.$className).toBe('spec.User');
+                expect(rec.get('name')).toBeUndefined();
+            });
+
+            it("should parse associations", function() {
+                var rec = create({
+                    name: 'Foo',
+                    orders: [{
+                        id: 101,
+                        discountCode: 'abc'
+                    }, {
+                        id: 102,
+                        discountCode: 'xyz'
+                    }]
+                });
+
+                expect(rec.$className).toBe('spec.User');
+                expect(rec.get('name')).toBe('Foo');
+
+                var orders = rec.orders();
+
+                expect(orders.getCount()).toBe(2);
+
+                expect(orders.getAt(0).$className).toBe('spec.Order');
+                expect(orders.getAt(0).id).toBe(101);
+                expect(orders.getAt(0).get('discountCode')).toBe('abc');
+
+                expect(orders.getAt(1).$className).toBe('spec.Order');
+                expect(orders.getAt(1).id).toBe(102);
+                expect(orders.getAt(1).get('discountCode')).toBe('xyz');
+            });
+        });
+
+        describe("with session", function() {
+            beforeEach(function() {
+                session = new Ext.data.Session();
+            });
+
+            afterEach(function() {
+                session = Ext.destroy(session);
+            });
+
+            it("should return a model of the same type", function() {
+                var rec = create({
+                    name: 'Foo'
+                });
+                expect(rec.$className).toBe('spec.User');
+                expect(rec.get('name')).toBe('Foo');
+                expect(rec.session).toBe(session);
+            });
+
+            it("should create with no data", function() {
+                var rec = create();
+                expect(rec.$className).toBe('spec.User');
+                expect(rec.get('name')).toBeUndefined();
+                expect(rec.session).toBe(session);
+            });
+
+            it("should parse associations", function() {
+                var rec = create({
+                    name: 'Foo',
+                    orders: [{
+                        id: 101,
+                        discountCode: 'abc'
+                    }, {
+                        id: 102,
+                        discountCode: 'xyz'
+                    }]
+                });
+
+                expect(rec.$className).toBe('spec.User');
+                expect(rec.get('name')).toBe('Foo');
+                expect(rec.session).toBe(session);
+
+                var orders = rec.orders();
+
+                expect(orders.getCount()).toBe(2);
+
+                expect(orders.getAt(0).$className).toBe('spec.Order');
+                expect(orders.getAt(0).id).toBe(101);
+                expect(orders.getAt(0).get('discountCode')).toBe('abc');
+                expect(orders.getAt(0).session).toBe(session);
+
+                expect(orders.getAt(1).$className).toBe('spec.Order');
+                expect(orders.getAt(1).id).toBe(102);
+                expect(orders.getAt(1).get('discountCode')).toBe('xyz');
+                expect(orders.getAt(0).session).toBe(session);
+            });
+
+            it("should read records from the session", function() {
+                var order = session.createRecord('Order', {
+                    id: 101
+                });
+
+                var rec = create({
+                    name: 'Foo',
+                    orders: [{
+                        id: 101
+                    }, {
+                        id: 102
+                    }]
+                });
+
+                var orders = rec.orders();
+
+                expect(orders.getCount()).toBe(2);
+
+                expect(orders.getAt(0)).toBe(order);
+            });
+        });
+    });
+
+    describe("mergeData", function() {
+        var User;
+
+        beforeEach(function() {
+            User = Ext.define('spec.User', {
+                extend: 'Ext.data.Model',
+                fields: ['name']
+            });
+        });
+
+        afterEach(function() {
+            User = null;
+            Ext.undefine('spec.User');
+        });
+
+        it("should not set data if dirty", function() {
+            var rec = new User({
+                id: 1
+            });
+            rec.set('name', 'Foo');
+            rec.mergeData({
+                name: 'Bar'
+            });
+            expect(rec.get('name')).toBe('Foo');
+            expect(rec.dirty).toBe(true);
+        });
+
+        it("should set and commit if not dirty", function() {
+            var rec = new User({
+                id: 1,
+                name: 'Foo'
+            });
+            rec.mergeData({
+                name: 'Bar'
+            });
+            expect(rec.get('name')).toBe('Bar');
+            expect(rec.dirty).toBe(false);
+        });
     });
 
     describe('use of raw Model class', function() {
@@ -24,6 +222,7 @@ describe("Ext.data.Model", function() {
                 model: Ext.data.Model,
                 data: data
             });
+            data = store.getProxy().getData();
 
             // The raw data object should be inported directly as the records' data objects
             expect(store.getAt(0).data).toEqual(data[0]);
@@ -80,6 +279,60 @@ describe("Ext.data.Model", function() {
             it("should be able to be called on an instance", function() {
                 var o = new A();
                 expect(o.getField('name').isField).toBe(true);  
+            });
+        });
+    });
+
+    describe("replaceFields", function() {
+        describe("dependencies", function() {
+            it("should keep dependencies when replaced with the same fields", function() {
+                function getFields() {
+                    return [{
+                        name: 'a'
+                    }, {
+                        name: 'b',
+                        depends: ['a'],
+                        calculate: function(data) {
+                            return 'x' + data.a;
+                        }
+                    }];
+                }
+
+                var M = Ext.define(null, {
+                    extend: 'Ext.data.Model',
+                    fields: getFields()
+                });
+
+                var rec = new M();
+
+                M.replaceFields(getFields());
+                rec.set('a', 'foo');
+                expect(rec.get('b')).toBe('xfoo');
+            });
+
+            it("should calculate any new dependencies", function() {
+                function getFields() {
+                    return [{
+                        name: 'a'
+                    }];
+                }
+
+                var M = Ext.define(null, {
+                    extend: 'Ext.data.Model',
+                    fields: getFields()
+                });
+
+                var rec = new M();
+
+                M.replaceFields(getFields().concat([{
+                    name: 'b',
+                    depends: ['a'],
+                    calculate: function(data) {
+                        return 'x' + data.a;
+                    }
+                }]));
+                rec.set('a', 'foo');
+                expect(rec.get('b')).toBe('xfoo');
             });
         });
     });
@@ -140,6 +393,7 @@ describe("Ext.data.Model", function() {
                 A = Ext.define('spec.A', cfg);
             }
             
+            // @define B
             function defineB(fields, cfg) {
                 cfg = Ext.apply({
                     extend: A,  
@@ -304,6 +558,44 @@ describe("Ext.data.Model", function() {
                     
                     Ext.undefine('spec.C');
                     Ext.undefine('spec.D');
+                });
+
+                describe("empty fields", function() {
+                    function makeSuite(emptyValue) {
+                        it("should retain fields", function() {
+                            var A = Ext.define(null, {
+                                extend: 'Ext.data.Model',
+                                fields: ['id', 'name']
+                            });
+
+                            var B = Ext.define(null, {
+                                extend: A,
+                                fields: emptyValue
+                            });
+
+                            var C = Ext.define(null, {
+                                extend: B,
+                                fields: ['extra']
+                            });
+
+                            expect(B.getFields().length).toBe(2);
+                            expect(B.getFields()[0].getName()).toBe('id');
+                            expect(B.getFields()[1].getName()).toBe('name');
+
+                            expect(C.getFields().length).toBe(3);
+                            expect(C.getFields()[0].getName()).toBe('id');
+                            expect(C.getFields()[1].getName()).toBe('name');
+                            expect(C.getFields()[2].getName()).toBe('extra');
+                        });
+                    }
+
+                    describe("with undefined", function() {
+                        makeSuite(undefined);
+                    });
+
+                    describe("with null", function() {
+                        makeSuite(null);
+                    });
                 });
 
                 describe("id field", function() {
@@ -597,6 +889,43 @@ describe("Ext.data.Model", function() {
             });
 
             describe("calculated fields", function() {
+                it("should parse the comments inside the calculated method out", function() {
+                    defineA(['foo', {
+                        name: 'bar',
+                        calculate: function(data) {
+                            // FOO
+                            // BAR
+                            // return data.dummyField;
+                            return data.foo * 2;
+                        }
+                    }]);
+
+                    var rec = new A({
+                        foo: 10
+                    });
+
+                    expect(rec.get('bar')).toBe(20);
+                });
+
+                it("should parse the block comments inside the calculated method out", function() {
+                    defineA(['foo', {
+                        name: 'bar',
+                        calculate: function(data) {
+                            /* FOO
+                               BAR
+                               return data.dummyField;
+                            */
+                            return data.foo * 2;
+                        }
+                    }]);
+
+                    var rec = new A({
+                        foo: 10
+                    });
+
+                    expect(rec.get('bar')).toBe(20);
+                });
+
                 describe("subclassing", function() {
                     it("should inherit calculated fields", function() {
                         defineA(['foo', {
@@ -632,7 +961,7 @@ describe("Ext.data.Model", function() {
                         });
                         expect(rec.get('bar')).toBe(40);
                     });
-                })
+                });
             });
         });
         
@@ -977,7 +1306,7 @@ describe("Ext.data.Model", function() {
                 expect(msg).toEqual(expected);
             }
 
-            var presenceMsg = 'Must be present',
+            var urlMsg = 'Is not a valid URL',
                 formatMsg = 'Is in the wrong format',
                 emailMsg = 'Is not a valid email address';
 
@@ -994,8 +1323,8 @@ describe("Ext.data.Model", function() {
                 }
 
                 it("should accept a validator string name", function() {
-                    defineA('presence');
-                    expectError(A, 'name', null, [presenceMsg]);
+                    defineA('url');
+                    expectError(A, 'name', null, [urlMsg]);
                 });
 
                 it("should accept an object configuration", function() {
@@ -1014,18 +1343,18 @@ describe("Ext.data.Model", function() {
                 });
 
                 it("should accept an array of strings", function() {
-                    defineA(['presence', 'email']);
-                    expectError(A, 'name', null, [presenceMsg, emailMsg]);
+                    defineA(['url', 'email']);
+                    expectError(A, 'name', null, [urlMsg, emailMsg]);
                 });
 
                 it("should accept an array of configs", function() {
                     defineA([{
-                        type: 'presence'
+                        type: 'url'
                     }, {
                         type: 'format',
                         matcher: /foo/
                     }]);
-                    expectError(A, 'name', null, [presenceMsg, formatMsg]);
+                    expectError(A, 'name', null, [urlMsg, formatMsg]);
                 });
 
                 it("should accept an array of functions", function() {
@@ -1040,12 +1369,12 @@ describe("Ext.data.Model", function() {
                 it("should be able to define multiple fields", function() {
                     defineA(null, [{
                         name: 'name',
-                        validators: 'presence'
+                        validators: 'url'
                     }, {
                         name: 'email',
                         validators: 'email'
                     }]);
-                    expectError(A, 'name', null, [presenceMsg]);
+                    expectError(A, 'name', null, [urlMsg]);
                     expectError(A, 'email', null, [emailMsg]);
                 });
             });
@@ -1064,33 +1393,33 @@ describe("Ext.data.Model", function() {
                     it("should accept an array of validators", function() {
                         defineA([{
                             field: 'name',
-                            type: 'presence'
+                            type: 'url'
                         }]);     
-                        expectError(A, 'name', null, [presenceMsg]);
+                        expectError(A, 'name', null, [urlMsg]);
                     });
                     
                     it("should accept multiple validators for a single field", function() {
                         defineA([{
                             field: 'name',
-                            type: 'presence'
+                            type: 'url'
                         }, {
                             field: 'name',
                             type: 'format',
                             matcher: /foo/
                         }]);
-                        expectError(A, 'name', null, [presenceMsg, formatMsg]);
+                        expectError(A, 'name', null, [urlMsg, formatMsg]);
                     });
                     
                     it("should be able to pass validators for multiple fields", function() {
                         defineA([{
                             field: 'name',
-                            type: 'presence'
+                            type: 'url'
                         }, {
                             field: 'email',
                             type: 'email'
                         }]);         
                         
-                        expectError(A, 'name', null, [presenceMsg]);
+                        expectError(A, 'name', null, [urlMsg]);
                         expectError(A, 'email', null, [emailMsg]);
                     });
                     
@@ -1111,9 +1440,9 @@ describe("Ext.data.Model", function() {
                 describe("object style", function() {
                     it("should accept a string", function() {
                         defineA({
-                            name: 'presence'
+                            name: 'url'
                         });
-                        expectError(A, 'name', null, [presenceMsg]);
+                        expectError(A, 'name', null, [urlMsg]);
                     });  
                     
                     it("should accept a function", function() {
@@ -1138,9 +1467,9 @@ describe("Ext.data.Model", function() {
                     
                     it("should accept an array of strings", function() {
                         defineA({
-                            name: ['presence', 'email']
+                            name: ['url', 'email']
                         });
-                        expectError(A, 'name', null, [presenceMsg, emailMsg]);
+                        expectError(A, 'name', null, [urlMsg, emailMsg]);
                     });
                     
                     it("should accept an array of functions", function() {
@@ -1148,7 +1477,7 @@ describe("Ext.data.Model", function() {
                             return 'Fail1';
                         },
                             fn2 = function(){
-                                return 'Fail2'
+                                return 'Fail2';
                             };
                             
                         defineA({
@@ -1187,11 +1516,11 @@ describe("Ext.data.Model", function() {
                     
                     it("should be able to declare multiple fields at once", function() {
                         defineA({
-                            name: 'presence',
+                            name: 'url',
                             email: 'email'
                         });
                         
-                        expectError(A, 'name', null, [presenceMsg]);
+                        expectError(A, 'name', null, [urlMsg]);
                         expectError(A, 'email', null, [emailMsg]);
                     });
                 });
@@ -1211,18 +1540,18 @@ describe("Ext.data.Model", function() {
                     it("should merge with a string", function() {
                         defineA([{
                             field: 'name',
-                            type: 'presence'
+                            type: 'url'
                         }], [{
                             name: 'name',
                             validators: 'email'
                         }]);
-                        expectError(A, 'name', null, [presenceMsg, emailMsg]);
+                        expectError(A, 'name', null, [urlMsg, emailMsg]);
                     });
 
                     it("should merge with an object", function() {
                         defineA([{
                             field: 'name',
-                            type: 'presence'
+                            type: 'url'
                         }], [{
                             name: 'name',
                             validators: {
@@ -1230,20 +1559,20 @@ describe("Ext.data.Model", function() {
                                 matcher: /foo/
                             }
                         }]);
-                        expectError(A, 'name', null, [presenceMsg, formatMsg]);
+                        expectError(A, 'name', null, [urlMsg, formatMsg]);
                     });
 
                     it("should merge with an array", function() {
                         defineA([{
                             field: 'name',
-                            type: 'presence'
+                            type: 'url'
                         }], [{
                             name: 'name',
                             validators: ['email', function() {
                                 return 'Fail';
                             }]
                         }]);
-                        expectError(A, 'name', null, [presenceMsg, emailMsg, 'Fail']);
+                        expectError(A, 'name', null, [urlMsg, emailMsg, 'Fail']);
                     });
                 });
 
@@ -1251,17 +1580,17 @@ describe("Ext.data.Model", function() {
                     describe("model object with string", function() {
                         it("should merge with a string", function() {
                             defineA({
-                                name: 'presence'
+                                name: 'url'
                             }, [{
                                 name: 'name',
                                 validators: 'email'
                             }]);
-                            expectError(A, 'name', null, [presenceMsg, emailMsg]);
+                            expectError(A, 'name', null, [urlMsg, emailMsg]);
                         });
 
                         it("should merge with an object", function() {
                             defineA({
-                                name: 'presence'
+                                name: 'url'
                             }, [{
                                 name: 'name',
                                 validators: {
@@ -1269,17 +1598,17 @@ describe("Ext.data.Model", function() {
                                     matcher: /foo/
                                 }
                             }]);
-                            expectError(A, 'name', null, [presenceMsg, formatMsg]);
+                            expectError(A, 'name', null, [urlMsg, formatMsg]);
                         });
 
                         it("should merge with an array", function() {
                             defineA({
-                                name: 'presence'
+                                name: 'url'
                             }, [{
                                 name: 'name',
                                 validators: ['email']
                             }]);
-                            expectError(A, 'name', null, [presenceMsg, emailMsg]);
+                            expectError(A, 'name', null, [urlMsg, emailMsg]);
                         });
                     });
 
@@ -1287,19 +1616,19 @@ describe("Ext.data.Model", function() {
                         it("should merge with a string", function() {
                             defineA({
                                 name: {
-                                    type: 'presence'
+                                    type: 'url'
                                 }
                             }, [{
                                 name: 'name',
                                 validators: 'email'
                             }]);
-                            expectError(A, 'name', null, [presenceMsg, emailMsg]);
+                            expectError(A, 'name', null, [urlMsg, emailMsg]);
                         });
 
                         it("should merge with an object", function() {
                             defineA({
                                 name: {
-                                    type: 'presence'
+                                    type: 'url'
                                 }
                             }, [{
                                 name: 'name',
@@ -1308,36 +1637,36 @@ describe("Ext.data.Model", function() {
                                     matcher: /foo/
                                 }
                             }]);
-                            expectError(A, 'name', null, [presenceMsg, formatMsg]);
+                            expectError(A, 'name', null, [urlMsg, formatMsg]);
                         });
 
                         it("should merge with an array", function() {
                             defineA({
                                 name: {
-                                    type: 'presence'
+                                    type: 'url'
                                 }
                             }, [{
                                 name: 'name',
                                 validators: ['email']
                             }]);
-                            expectError(A, 'name', null, [presenceMsg, emailMsg]);
+                            expectError(A, 'name', null, [urlMsg, emailMsg]);
                         });
                     });
 
                     describe("model object with array", function() {
                         it("should merge with a string", function() {
                             defineA({
-                                name: ['presence']
+                                name: ['url']
                             }, [{
                                 name: 'name',
                                 validators: 'email'
                             }]);
-                            expectError(A, 'name', null, [presenceMsg, emailMsg]);
+                            expectError(A, 'name', null, [urlMsg, emailMsg]);
                         });
 
                         it("should merge with an object", function() {
                             defineA({
-                                name: ['presence']
+                                name: ['url']
                             }, [{
                                 name: 'name',
                                 validators: {
@@ -1345,17 +1674,17 @@ describe("Ext.data.Model", function() {
                                     matcher: /foo/
                                 }
                             }]);
-                            expectError(A, 'name', null, [presenceMsg, formatMsg]);
+                            expectError(A, 'name', null, [urlMsg, formatMsg]);
                         });
 
                         it("should merge with an array", function() {
                             defineA({
-                                name: ['presence']
+                                name: ['url']
                             }, [{
                                 name: 'name',
                                 validators: ['email']
                             }]);
-                            expectError(A, 'name', null, [presenceMsg, emailMsg]);
+                            expectError(A, 'name', null, [urlMsg, emailMsg]);
                         });
                     });
                 });
@@ -1385,26 +1714,26 @@ describe("Ext.data.Model", function() {
                     it("should use the field validator", function() {
                         defineA(null, [{
                             name: 'name',
-                            validators: 'presence'
+                            validators: 'url'
                         }]);
                         defineB();
-                        expectError(B, 'name', null, [presenceMsg]);
+                        expectError(B, 'name', null, [urlMsg]);
                     });
 
                     it("should use the superclass model validator", function() {
                         defineA({
-                            name: 'presence'
+                            name: 'url'
                         });
                         defineB();
-                        expectError(B, 'name', null, [presenceMsg]);
+                        expectError(B, 'name', null, [urlMsg]);
                     });
 
                     it("should use the subclass model validator", function() {
                         defineA();
                         defineB({
-                            name: 'presence'
+                            name: 'url'
                         });
-                        expectError(B, 'name', null, [presenceMsg]);
+                        expectError(B, 'name', null, [urlMsg]);
                     });
 
                     it("should combine a field validator & a superclass model validator", function() {
@@ -1412,36 +1741,36 @@ describe("Ext.data.Model", function() {
                             name: 'email'
                         }, [{
                             name: 'name',
-                            validators: 'presence'
+                            validators: 'url'
                         }]);
                         defineB();
-                        expectError(B, 'name', null, [emailMsg, presenceMsg]);
+                        expectError(B, 'name', null, [emailMsg, urlMsg]);
                     });
 
                     it("should combine a field validator & a subclass model validator", function() {
                         defineA(null, [{
                             name: 'name',
-                            validators: 'presence'
+                            validators: 'url'
                         }]);
                         defineB({
                             name: 'email'
                         });
-                        expectError(B, 'name', null, [emailMsg, presenceMsg]);
+                        expectError(B, 'name', null, [emailMsg, urlMsg]);
                     });
 
                     it("should combine a superclass model validator & subclass model validator", function() {
                         defineA({
-                            name: 'presence'
+                            name: 'url'
                         });
                         defineB({
                             name: 'email'
                         });
-                        expectError(B, 'name', null, [presenceMsg, emailMsg]);
+                        expectError(B, 'name', null, [urlMsg, emailMsg]);
                     });
 
                     it("should combine a field validator, superclass model validator & subclass model validator", function() {
                         defineA({
-                            name: 'presence'
+                            name: 'url'
                         }, [{
                             name: 'name',
                             validators: {
@@ -1454,28 +1783,28 @@ describe("Ext.data.Model", function() {
                             name: 'email'
                         });
 
-                        expectError(B, 'name', null, [presenceMsg, emailMsg, formatMsg]);
+                        expectError(B, 'name', null, [urlMsg, emailMsg, formatMsg]);
                     });
 
                     describe("not modifying the superclass", function() {
                         it("should not push subclass validators onto the superclass", function() {
                             defineA();
                             defineB({
-                                name: 'presence'
+                                name: 'url'
                             });
                             expectError(A, 'name', null, []);
-                            expectError(B, 'name', null, [presenceMsg]);
+                            expectError(B, 'name', null, [urlMsg]);
                         });
 
                         it("should retain superclass validators", function() {
                             defineA({
-                                name: 'presence'
+                                name: 'url'
                             });
                             defineB({
                                 name: 'email'
                             });
-                            expectError(A, 'name', null, [presenceMsg]);
-                            expectError(B, 'name', null, [presenceMsg, emailMsg]);
+                            expectError(A, 'name', null, [urlMsg]);
+                            expectError(B, 'name', null, [urlMsg, emailMsg]);
                         });
                     });
                 });
@@ -1488,7 +1817,7 @@ describe("Ext.data.Model", function() {
                     it("should not inherit a field validator", function() {
                         defineA(null, [{
                             name: 'name',
-                            validators: 'presence'
+                            validators: 'url'
                         }]);
                         defineB(null, ['name']);
                         expectError(B, 'name', null, []);
@@ -1497,7 +1826,7 @@ describe("Ext.data.Model", function() {
                     it("should overwrite a field validator", function() {
                         defineA(null, [{
                             name: 'name',
-                            validators: 'presence'
+                            validators: 'url'
                         }]);
                         defineB(null, [{
                             name: 'name',
@@ -1508,55 +1837,55 @@ describe("Ext.data.Model", function() {
 
                     it("should inherit a superclass model validator", function() {
                         defineA({
-                            name: 'presence'
+                            name: 'url'
                         });
                         defineB(['name']);
-                        expectError(B, 'name', null, [presenceMsg]);
+                        expectError(B, 'name', null, [urlMsg]);
                     });
 
                     it("should use a subclass model validator", function() {
                         defineA();
                         defineB({
-                            name: 'presence'
+                            name: 'url'
                         }, ['name']);
-                        expectError(B, 'name', null, [presenceMsg]);
+                        expectError(B, 'name', null, [urlMsg]);
                     });
 
                     it("should combine a field validator & a superclass model validator", function() {
                         defineA({
-                            name: 'presence'
+                            name: 'url'
                         });
                         defineB(null, [{
                             name: 'name',
                             validators: 'email'
                         }]);
-                        expectError(B, 'name', null, [presenceMsg, emailMsg]);
+                        expectError(B, 'name', null, [urlMsg, emailMsg]);
                     });
 
                     it("should combine a field validator & a subclass model validator", function() {
                         defineA();
                         defineB({
-                            name: 'presence'
+                            name: 'url'
                         }, [{
                             name: 'name',
                             validators: 'email'
                         }]);
-                        expectError(B, 'name', null, [presenceMsg, emailMsg]);
+                        expectError(B, 'name', null, [urlMsg, emailMsg]);
                     });
 
                     it("should combine a superclass model validator & a subclass model validator", function() {
                         defineA({
-                            name: 'presence'
+                            name: 'url'
                         });
                         defineB({
                             name: 'email'
                         }, ['name']);
-                        expectError(B, 'name', null, [presenceMsg, emailMsg]);
+                        expectError(B, 'name', null, [urlMsg, emailMsg]);
                     });
 
                     it("should combine a field validator, superclass model validator & subclass model validator", function() {
                         defineA({
-                            name: 'presence'
+                            name: 'url'
                         });
 
                         defineB({
@@ -1569,7 +1898,7 @@ describe("Ext.data.Model", function() {
                             }
                         }]);
 
-                        expectError(B, 'name', null, [presenceMsg, emailMsg, formatMsg]);
+                        expectError(B, 'name', null, [urlMsg, emailMsg, formatMsg]);
                     });
 
                     describe("not modifying the superclass", function() {
@@ -1577,46 +1906,529 @@ describe("Ext.data.Model", function() {
                             defineA();
                             defineB(null, [{
                                 name: 'name',
-                                validators: 'presence'
+                                validators: 'url'
                             }]);
 
                             expectError(A, 'name', null, []);
-                            expectError(B, 'name', null, [presenceMsg]);
+                            expectError(B, 'name', null, [urlMsg]);
                         });
 
                         it("should not modify the superclass when overwriting a field validator", function() {
                             defineA(null, [{
                                 name: 'name',
-                                validators: 'presence'
+                                validators: 'url'
                             }]);
                             defineB(null, [{
                                 name: 'name',
                                 validators: 'email'
                             }]);
 
-                            expectError(A, 'name', null, [presenceMsg]);
+                            expectError(A, 'name', null, [urlMsg]);
                             expectError(B, 'name', null, [emailMsg]);
                         });
 
                         it("should not push subclass validators into the superclass", function() {
                             defineA();
                             defineB({
-                                name: 'presence'
+                                name: 'url'
                             }, ['name']);
 
                             expectError(A, 'name', null, []);
-                            expectError(B, 'name', null, [presenceMsg]);
+                            expectError(B, 'name', null, [urlMsg]);
                         });
 
                         it("should retain superclass validators", function() {
                             defineA({
-                                name: 'presence'
+                                name: 'url'
                             });
                             defineB({
                                 name: 'email'
                             }, ['name']);
-                            expectError(A, 'name', null, [presenceMsg]);
-                            expectError(B, 'name', null, [presenceMsg, emailMsg]);
+                            expectError(A, 'name', null, [urlMsg]);
+                            expectError(B, 'name', null, [urlMsg, emailMsg]);
+                        });
+                    });
+                });
+            });
+        });
+
+        describe("summary", function() {
+            function expectFieldNames(Model, names) {
+                var expected = Ext.Array.map(Model.getFields(), function(f) {
+                    return f.getName();
+                });
+
+                expect(names).toEqual(expected);
+            }
+
+            function defineA(summary, fields, cfg) {
+                cfg = Ext.apply({
+                    extend: Ext.data.Model,
+                    fields: fields || ['id', 'rate'],
+                    summary: summary
+                }, cfg);
+                A = Ext.define('spec.A', cfg);
+            }
+
+            it("should generate a summary model by default", function() {
+                defineA();
+                var M = A.getSummaryModel();
+                expect(M.superclass).toBe(A.prototype);
+                // The default id field
+                expectFieldNames(M, ['id', 'rate']);
+            });
+
+            it("should generate a summary model if there are no summary fields", function() {
+                defineA(null, ['id', 'rate', 'name']);
+                var M = A.getSummaryModel();
+                expect(M.superclass).toBe(A.prototype);
+                expectFieldNames(M, ['id', 'rate', 'name']);
+            });
+
+            it("should generate a summary model if there are only summaries in the fields", function() {
+                defineA(null, [{
+                    name: 'rate',
+                    summary: 'average'
+                }]);
+                var M = A.getSummaryModel();
+                expect(M).not.toBeNull();
+                expect(M.superclass).toBe(A.prototype);
+            });
+
+            it("should generate a summary model if there is only a summary block specified", function() {
+                defineA({
+                    maxRate: 'max'
+                });
+                var M = A.getSummaryModel();
+                expect(M).not.toBeNull();
+                expect(M.superclass).toBe(A.prototype);
+            });
+
+            it("should generate a summary model if there are summary fields and a summary block", function() {
+                defineA({
+                    maxRate: 'max'
+                }, [{
+                    name: 'rate',
+                    summary: 'average'
+                }]);
+                var M = A.getSummaryModel();
+                expect(M).not.toBeNull();
+                expect(M.superclass).toBe(A.prototype);
+            });
+
+            it("should retain fields from the model and add the new fields", function() {
+                defineA({
+                    maxRate: 'max'
+                });
+
+                expectFieldNames(A.getSummaryModel(), ['id', 'rate', 'maxRate']);
+                expectFieldNames(A, ['id', 'rate']);
+            });
+
+            describe("as a function", function() {
+                it("should set the summary type", function() {
+                    var spy = jasmine.createSpy();
+                    defineA({
+                        maxRate: spy
+                    });
+                    expect(A.getSummaryModel().getFields()[2].getSummary().calculate).toBe(spy);
+                });
+            });
+
+            describe("as an object", function() {
+                it("should use other field properties", function() {
+                    defineA({
+                        maxRate: {
+                            type: 'int',
+                            summary: 'max'
+                        }
+                    });
+
+                    var T = A.getSummaryModel();
+                    var rec = new T({
+                        maxRate: '100'
+                    });
+                    expect(rec.get('maxRate')).toBe(100);
+                });
+            });
+
+            describe("subclassing", function() {
+                function defineB (summary, fields, cfg) {
+                    cfg = Ext.apply({
+                        extend: A,
+                        fields: fields,
+                        summary: summary
+                    }, cfg);
+                    B = Ext.define('spec.B', cfg);
+                }
+
+                describe("no summary model in the superclass", function() {
+                    beforeEach(function() {
+                        defineA(null, ['id', 'name']);
+                    });
+
+                    describe("no summaries", function() {
+                        it("should create a summary model", function() {
+                            defineB(null, [{
+                                name: 'income'
+                            }]);
+
+                            var M = B.getSummaryModel();
+                            expect(M.superclass).toBe(B.prototype);
+                            expectFieldNames(M, ['id', 'name', 'income']);
+
+                            M = A.getSummaryModel();
+                            expect(M.superclass).toBe(A.prototype);
+                            expectFieldNames(M, ['id', 'name']);
+                        });
+                    });
+
+                    describe("summary fields only", function() {
+                        it("should create a summary model", function() {
+                            defineB(null, [{
+                                name: 'income',
+                                summary: 'average'
+                            }]);
+
+                            var M = B.getSummaryModel();
+                            expect(M.superclass).toBe(B.prototype);
+                            expectFieldNames(M, ['id', 'name', 'income']);
+                            expectFieldNames(B, ['id', 'name', 'income']);
+
+                            M = A.getSummaryModel();
+                            expect(M.superclass).toBe(A.prototype);
+                            expectFieldNames(M, ['id', 'name']);
+                        });
+                    });
+
+                    describe("summary block only", function() {
+                        it("should create a summary model", function() {
+                            defineB({
+                                maxIncome: {
+                                    field: 'income',
+                                    summary: 'max'
+                                }
+                            });
+
+                            var M = B.getSummaryModel();
+                            expect(M.superclass).toBe(B.prototype);
+                            expectFieldNames(M, ['id', 'name', 'maxIncome']);
+                            expectFieldNames(B, ['id', 'name']);
+
+                            M = A.getSummaryModel();
+                            expect(M.superclass).toBe(A.prototype);
+                            expectFieldNames(M, ['id', 'name']);
+                        });
+                    });
+
+                    describe("summary fields + summary block", function() {
+                        it("should create a summary model", function() {
+                            defineB({
+                                maxIncome: {
+                                    field: 'income',
+                                    summary: 'max'
+                                }
+                            }, [{
+                                name: 'income',
+                                summary: 'average'
+                            }]);
+
+                            var M = B.getSummaryModel();
+                            expect(M.superclass).toBe(B.prototype);
+                            expectFieldNames(M, ['id', 'name', 'income', 'maxIncome']);
+                            expectFieldNames(B, ['id', 'name', 'income']);
+
+                            M = A.getSummaryModel();
+                            expect(M.superclass).toBe(A.prototype);
+                            expectFieldNames(M, ['id', 'name']);
+                        });
+                    });
+                });
+
+                describe("summary model in the superclass", function() {
+                    describe("with summary fields only in superclass", function() {
+                        beforeEach(function() {
+                            defineA(null, ['id', 'name', {
+                                name: 'income',
+                                summary: 'average'
+                            }]);
+                        });
+
+                        describe("no summary info in subclass", function() {
+                            it("should generate a summary model", function() {
+                                defineB();
+
+                                var M = B.getSummaryModel();
+                                expect(M.superclass).toBe(B.prototype);
+                                expectFieldNames(M, ['id', 'name', 'income']);
+                                expectFieldNames(B, ['id', 'name', 'income']);
+                            });
+                        });
+
+                        describe("summary fields only in subclass", function() {
+                            it("should generate a summary model", function() {
+                                defineB(null, [{
+                                    name: 'rate',
+                                    summary: 'min'
+                                }]);
+
+                                var M = B.getSummaryModel();
+                                expect(M.superclass).toBe(B.prototype);
+                                expectFieldNames(M, ['id', 'name', 'income', 'rate']);
+                                expectFieldNames(B, ['id', 'name', 'income', 'rate']);
+                            });
+                        });
+
+                        describe("summary block only in subclass", function() {
+                            it("should generate a summary model", function() {
+                                defineB({
+                                    maxIncome: {
+                                        field: 'income',
+                                        summary: 'max'
+                                    }
+                                });
+
+                                var M = B.getSummaryModel();
+                                expect(M.superclass).toBe(B.prototype);
+                                expectFieldNames(M, ['id', 'name', 'income', 'maxIncome']);
+                                expectFieldNames(B, ['id', 'name', 'income']);
+                            });
+                        });
+
+                        describe("with summary fields and summary block in subclass", function() {
+                            it("should generate a summary model", function() {
+                                defineB({
+                                    maxIncome: {
+                                        field: 'income',
+                                        summary: 'max'
+                                    }
+                                }, [{
+                                    name: 'rate',
+                                    summary: 'min'
+                                }]);
+
+                                var M = B.getSummaryModel();
+                                expect(M.superclass).toBe(B.prototype);
+                                expectFieldNames(M, ['id', 'name', 'income', 'rate', 'maxIncome']);
+                                expectFieldNames(B, ['id', 'name', 'income', 'rate']);
+                            });
+                        });
+                    });
+
+                    describe("with summary block only in superclass", function() {
+                        beforeEach(function() {
+                            defineA({
+                                maxIncome: {
+                                    field: 'income',
+                                    summary: 'average',
+                                    mapping: 'foo'
+                                }
+                            }, ['id', 'name']);
+                        });
+
+                        describe("no summary info in subclass", function() {
+                            it("should generate a summary model", function() {
+                                defineB();
+
+                                var M = B.getSummaryModel();
+                                expect(M.superclass).toBe(B.prototype);
+                                expectFieldNames(M, ['id', 'name', 'maxIncome']);
+                                expectFieldNames(B, ['id', 'name']);
+                            });
+                        });
+
+                        describe("summary fields only in subclass", function() {
+                            it("should generate a summary model", function() {
+                                defineB(null, [{
+                                    name: 'rate',
+                                    summary: 'min'
+                                }]);
+
+                                var M = B.getSummaryModel();
+                                expect(M.superclass).toBe(B.prototype);
+                                expectFieldNames(M, ['id', 'name', 'rate', 'maxIncome']);
+                                expectFieldNames(B, ['id', 'name', 'rate']);
+                            });
+                        });
+
+                        describe("summary block only in subclass", function() {
+                            it("should generate a summary model", function() {
+                                defineB({
+                                    maxRate: {
+                                        field: 'income',
+                                        summary: 'max'
+                                    }
+                                });
+
+                                var M = B.getSummaryModel();
+                                expect(M.superclass).toBe(B.prototype);
+                                expectFieldNames(M, ['id', 'name', 'maxIncome', 'maxRate']);
+                                expectFieldNames(B, ['id', 'name']);
+                            });
+
+                            it("should overwrite summary fields", function() {
+                                defineB({
+                                    maxIncome: {
+                                        field: 'income',
+                                        summary: 'max'
+                                    }
+                                });
+
+                                var M = B.getSummaryModel();
+                                expect(M.superclass).toBe(B.prototype);
+                                expectFieldNames(M, ['id', 'name', 'maxIncome']);
+                                expectFieldNames(B, ['id', 'name']);
+
+                                expect(M.getFields()[2].mapping).toBeNull();
+                            });
+                        });
+
+                        describe("with summary fields and summary block in subclass", function() {
+                            it("should generate a summary model", function() {
+                                defineB({
+                                    maxRate: {
+                                        field: 'income',
+                                        summary: 'max'
+                                    }
+                                }, [{
+                                    name: 'rate',
+                                    summary: 'min'
+                                }]);
+
+                                var M = B.getSummaryModel();
+                                expect(M.superclass).toBe(B.prototype);
+                                expectFieldNames(M, ['id', 'name', 'rate', 'maxIncome', 'maxRate']);
+                                expectFieldNames(B, ['id', 'name', 'rate']);
+                            });
+
+                            it("should overwrite summary fields", function() {
+                                defineB({
+                                    maxIncome: {
+                                        field: 'income',
+                                        summary: 'max'
+                                    }
+                                }, [{
+                                    name: 'rate',
+                                    summary: 'min'
+                                }]);
+
+                                var M = B.getSummaryModel();
+                                expect(M.superclass).toBe(B.prototype);
+                                expectFieldNames(M, ['id', 'name', 'rate', 'maxIncome']);
+                                expectFieldNames(B, ['id', 'name', 'rate']);
+
+                                expect(M.getFields()[3].mapping).toBeNull();
+                            });
+                        });
+                    });
+
+                    describe("with summary fields and summary block in superclass", function() {
+                        beforeEach(function() {
+                            defineA({
+                                maxIncome: {
+                                    field: 'income',
+                                    summary: 'average',
+                                    mapping: 'foo'
+                                }
+                            }, ['id', 'name', {
+                                name: 'income',
+                                summary: 'average'
+                            }]);
+                        });
+
+                        describe("no summary info in subclass", function() {
+                            it("should generate a summary model", function() {
+                                defineB();
+
+                                var M = B.getSummaryModel();
+                                expect(M.superclass).toBe(B.prototype);
+                                expectFieldNames(M, ['id', 'name', 'income', 'maxIncome']);
+                                expectFieldNames(B, ['id', 'name', 'income']);
+                            });
+                        });
+
+                        describe("summary fields only in subclass", function() {
+                            it("should generate a summary model", function() {
+                                defineB(null, [{
+                                    name: 'rate',
+                                    summary: 'min'
+                                }]);
+
+                                var M = B.getSummaryModel();
+                                expect(M.superclass).toBe(B.prototype);
+                                expectFieldNames(M, ['id', 'name', 'income', 'rate', 'maxIncome']);
+                                expectFieldNames(B, ['id', 'name', 'income', 'rate']);
+                            });
+                        });
+
+                        describe("summary block only in subclass", function() {
+                            it("should generate a summary model", function() {
+                                defineB({
+                                    maxRate: {
+                                        field: 'income',
+                                        summary: 'max'
+                                    }
+                                });
+
+                                var M = B.getSummaryModel();
+                                expect(M.superclass).toBe(B.prototype);
+                                expectFieldNames(M, ['id', 'name', 'income', 'maxIncome', 'maxRate']);
+                                expectFieldNames(B, ['id', 'name', 'income']);
+                            });
+
+                            it("should overwrite summary fields", function() {
+                                defineB({
+                                    maxIncome: {
+                                        field: 'income',
+                                        summary: 'max'
+                                    }
+                                });
+
+                                var M = B.getSummaryModel();
+                                expect(M.superclass).toBe(B.prototype);
+                                expectFieldNames(M, ['id', 'name', 'income', 'maxIncome']);
+                                expectFieldNames(B, ['id', 'name', 'income']);
+
+                                expect(M.getFields()[2].mapping).toBeNull();
+                            });
+                        });
+
+                        describe("with summary fields and summary block in subclass", function() {
+                            it("should generate a summary model", function() {
+                                defineB({
+                                    maxRate: {
+                                        field: 'income',
+                                        summary: 'max'
+                                    }
+                                }, [{
+                                    name: 'rate',
+                                    summary: 'min'
+                                }]);
+
+                                var M = B.getSummaryModel();
+                                expect(M.superclass).toBe(B.prototype);
+                                expectFieldNames(M, ['id', 'name', 'income', 'rate', 'maxIncome', 'maxRate']);
+                                expectFieldNames(B, ['id', 'name', 'income', 'rate']);
+                            });
+
+                            it("should overwrite summary fields", function() {
+                                defineB({
+                                    maxIncome: {
+                                        field: 'income',
+                                        summary: 'max'
+                                    }
+                                }, [{
+                                    name: 'rate',
+                                    summary: 'min'
+                                }]);
+
+                                var M = B.getSummaryModel();
+                                expect(M.superclass).toBe(B.prototype);
+                                expectFieldNames(M, ['id', 'name', 'income', 'rate', 'maxIncome']);
+                                expectFieldNames(B, ['id', 'name', 'income', 'rate']);
+
+                                expect(M.getFields()[3].mapping).toBeNull();
+                            });
                         });
                     });
                 });
@@ -1907,6 +2719,19 @@ describe("Ext.data.Model", function() {
                     expect(rec.dirty).toBe(false);
                 });
 
+                describe("with session", function() {
+                    it("should not call mergeData on complete", function() {
+                        make(3, {});
+                        spyOn(rec, 'mergeData');
+                        complete({
+                            name: 'QQQ'
+                        });
+                        expect(rec.mergeData).not.toHaveBeenCalled();
+                        expect(rec.dirty).toBe(false);
+                        expect(rec.get('name')).toBe('QQQ');
+                    });
+                });
+
                 describe("associations", function() {
                     beforeEach(function() {
                         Ext.define('spec.Post', {
@@ -1996,14 +2821,6 @@ describe("Ext.data.Model", function() {
                     A.load(1, options);
                     expect(spy).toHaveBeenCalledWith(options);
                 });
- 
-                it("should create the record in the session if passed", function() {
-                    var session = new Ext.data.Session();
-                    rec = A.load(12, null, session);
-                    expect(rec.session).toBe(session);
-                    expect(session.getRecord('A', 12)).toBe(rec);
-                    session.destroy();
-                });
 
                 it("should set a custom idProperty", function() {
                     var CustomId = Ext.define('spec.CustomId', {
@@ -2014,6 +2831,44 @@ describe("Ext.data.Model", function() {
                     rec = CustomId.load(1);
                     expect(rec.get('foo')).toBe(1);
                     Ext.undefine('spec.CustomId');
+                });
+
+                describe("with session", function() {
+                    var session;
+
+                    beforeEach(function() {
+                        session = new Ext.data.Session();
+                    });
+
+                    afterEach(function() {
+                        session.destroy();
+                    });
+
+                    it("should create the record in the session if it doesn't exist", function() {
+                        rec = A.load(12, null, session);
+                        expect(rec.session).toBe(session);
+                        expect(session.getRecord('A', 12)).toBe(rec);
+                        session.destroy();
+                    });
+
+                    it("should use an existing session record", function() {
+                        rec = session.createRecord(A, {
+                            id: 101
+                        });
+                        expect(A.load(101, null, session)).toBe(rec);
+                    });
+
+                    it("should not call mergeData on complete", function() {
+                        rec = A.load(102, null, session);
+                        spyOn(rec, 'mergeData');
+                        complete({
+                            id: 102,
+                            name: 'Foo'
+                        });
+                        expect(rec.mergeData).not.toHaveBeenCalled();
+                        expect(rec.dirty).toBe(false);
+                        expect(rec.get('name')).toBe('Foo');
+                    });
                 });
             });
 
@@ -3512,7 +4367,7 @@ describe("Ext.data.Model", function() {
                 expect(function() {
                     o.set('addressId', 1);
                 }).not.toThrow();
-            })
+            });
         });
         
         it("should update the id property if the id changes", function() {
@@ -5161,7 +6016,29 @@ describe("Ext.data.Model", function() {
                             }
                         });
                     });
-                    
+
+                    it("should include the single nested record", function() {
+                        rec = read(Post, {
+                            id: 1,
+                            user: {
+                                id: 17,
+                                name: 'Foo'
+                            }
+                        });
+                        var data = rec.getData({
+                            associated: {
+                                user: true
+                            }
+                        });
+                        expect(data).toEqual({
+                            id: 1,
+                            user: {
+                                id: 17,
+                                name: 'Foo'
+                            }
+                        });
+                    });
+
                     it("should not include the many on each item", function() {
                         rec = read(Post, {
                             id: 1,
@@ -5224,6 +6101,28 @@ describe("Ext.data.Model", function() {
 
                         var data = rec.getAssociatedData();
                         expect(data).toEqual({
+                            posts: [{
+                                id: 1,
+                                content: 'PostA',
+                                userId: 17
+                            }, {
+                                id: 2,
+                                content: 'PostB',
+                                userId: 17
+                            }, {
+                                id: 3,
+                                content: 'PostC',
+                                userId: 17
+                            }]
+                        });
+
+                        data = rec.getData({
+                            associated: {
+                                posts: true
+                            }
+                        });
+                        expect(data).toEqual({
+                            id: 17,
                             posts: [{
                                 id: 1,
                                 content: 'PostA',
@@ -5307,6 +6206,21 @@ describe("Ext.data.Model", function() {
                                     content: 'PostB',
                                     userId: 17
                                 }]
+                            }
+                        });
+
+                        data = post1.getData({
+                            associated: {
+                                user: true
+                            }
+                        });
+
+                        expect(data).toEqual({
+                            id: 1,
+                            content: 'PostA',
+                            userId: 17,
+                            user: {
+                                id: 17
                             }
                         });
                     });
@@ -5398,6 +6312,70 @@ describe("Ext.data.Model", function() {
                         });
                     });
 
+                    it('should produce all levels with getNestedData()', function () {
+                        var data = rec.getData({
+                            associated: {
+                                posts: true
+                            }
+                        });
+
+                        expect(data).toEqual({
+                            id: 17,
+                            posts: [{
+                                id: 1,
+                                content: 'PostA',
+                                userId: 17
+                            }, {
+                                id: 2,
+                                content: 'PostB',
+                                userId: 17
+                            }]
+                        });
+
+                        data = rec.getData({
+                            associated: {
+                                posts: {
+                                    comments: true
+                                }
+                            }
+                        });
+
+                        expect(data).toEqual({
+                            id: 17,
+                            posts: [{
+                                id: 1,
+                                content: 'PostA',
+                                userId: 17,
+                                comments: [{
+                                    id: 42,
+                                    content: 'This is wrong!',
+                                    postId: 1
+                                },{
+                                    id: 427,
+                                    content: 'No, you are wrong!',
+                                    postId: 1
+                                }]
+                            }, {
+                                id: 2,
+                                content: 'PostB',
+                                userId: 17,
+                                comments: [{
+                                    id: 420,
+                                    content: 'This is wrong too!',
+                                    postId: 2
+                                },{
+                                    id: 4270,
+                                    content: 'No, you are wrong again!',
+                                    postId: 2
+                                },{
+                                    id: 4271,
+                                    content: 'Yeah, you are wrong again!',
+                                    postId: 2
+                                }]
+                            }]
+                        });
+                    });
+
                     //----
 
                     it("should have PostA first", function() {
@@ -5406,6 +6384,49 @@ describe("Ext.data.Model", function() {
                             id: 1,
                             content: 'PostA',
                             userId: 17
+                        });
+                    });
+
+                    it('should limit traversal from children to parent', function () {
+                        var post = rec.posts().getAt(0);
+                        var data = post.getData({
+                            associated: {
+                                user: true
+                            }
+                        });
+
+                        expect(data).toEqual({
+                            id: 1,
+                            content: 'PostA',
+                            userId: 17,
+                            user: {
+                                id: 17
+                            }
+                        });
+
+                        data = post.getData({
+                            associated: {
+                                user: true,
+                                comments: true
+                            }
+                        });
+
+                        expect(data).toEqual({
+                            id: 1,
+                            content: 'PostA',
+                            userId: 17,
+                            user: {
+                                id: 17
+                            },
+                            comments: [{
+                                id: 42,
+                                content: 'This is wrong!',
+                                postId: 1
+                            },{
+                                id: 427,
+                                content: 'No, you are wrong!',
+                                postId: 1
+                            }]
                         });
                     });
 
@@ -6607,13 +7628,13 @@ describe("Ext.data.Model", function() {
             }, cfg);
             A = Ext.define('spec.A', cfg);
         }
-        
+
         afterEach(function() {
             A = o = null;
             Ext.undefine('spec.A');
         });
 
-        var presenceMsg = 'Must be present',
+        var lengthMsg = 'Length must be at least 2',
             formatMsg = 'Is in the wrong format',
             emailMsg = 'Is not a valid email address';
 
@@ -6639,10 +7660,13 @@ describe("Ext.data.Model", function() {
             describe("when valid", function() {
                 beforeEach(function() {
                     defineA({
-                        name: 'presence'
+                        name: {
+                            type: 'length',
+                            min: 2
+                        }
                     });
                     o = new A({
-                        name: 'x'
+                        name: 'asdf'
                     });
                 });
 
@@ -6661,7 +7685,7 @@ describe("Ext.data.Model", function() {
             describe("when not valid", function() {
                 it("should return an ErrorCollection", function() {
                     defineA({
-                        name: 'presence'
+                        name: 'url'
                     });
                     o = new A();
                     var errors = o.validate();
@@ -6671,7 +7695,10 @@ describe("Ext.data.Model", function() {
                 it("should put an error for each invalid field", function() {
                     defineA(null, [{
                         name: 'name',
-                        validators: 'presence'
+                        validators: {
+                            type: 'length',
+                            min: 2
+                        }
                     }, {
                         name: 'rank',
                         validators: {
@@ -6684,7 +7711,7 @@ describe("Ext.data.Model", function() {
                     }]);
 
                     o = new A({
-                        name: 'X'
+                        name: 'ASDF'
                     });
 
                     var errors = o.validate(),
@@ -6704,10 +7731,15 @@ describe("Ext.data.Model", function() {
                 it("should return multiple errors for a field", function() {
                     defineA(null, [{
                         name: 'name',
-                        validators: ['presence', 'email']
-                    }])
+                        validators: [{
+                            type: 'length',
+                            min: 2
+                        }, 'email']
+                    }]);
 
-                    o = new A();
+                    o = new A({
+                        name: 'a'
+                    });
 
                     var errors = o.validate(),
                         name = errors.get('name');
@@ -6716,12 +7748,12 @@ describe("Ext.data.Model", function() {
                     expect(errors.isValid()).toBe(false);
 
                     expect(name[0].field).toBe('name');
-                    expect(name[0].message).toBe(presenceMsg);
+                    expect(name[0].message).toBe(lengthMsg);
 
                     expect(name[1].field).toBe('name');
                     expect(name[1].message).toBe(emailMsg);
                 });
-            })
+            });
         });
         
         describe("isValid", function() {
@@ -6764,6 +7796,47 @@ describe("Ext.data.Model", function() {
                 });
                 expect(o.isValid()).toBe(false);
             });
+
+            describe("using cancelEdit", function() {
+                beforeEach(function() {
+                    defineA({
+                        name: 'presence',
+                        rank: 'presence'
+                    });
+                });
+
+                it("should validate correctly when using cancelEdit on an invalid edit after calling set", function() {
+                    var o = new A();
+
+                    o.beginEdit();
+                    o.set('name', 'foo');
+                    expect(o.isValid()).toBe(false);
+                    o.cancelEdit();
+
+                    o.set({
+                        name: 'foo',
+                        rank: 'bar'
+                    });
+
+                    expect(o.isValid()).toBe(true);
+                });
+
+                it("should validate correctly when using cancelEdit on a valid edit after calling set", function() {
+                    var o = new A();
+
+                    o.beginEdit();
+                    o.set({
+                        name: 'foo',
+                        rank: 'bar'
+                    });
+                    expect(o.isValid()).toBe(true);
+                    o.cancelEdit();
+
+                    o.set('name', 'foo');
+
+                    expect(o.isValid()).toBe(false);
+                });
+            });
         });
 
         describe("validation via getValidation", function() {
@@ -6771,7 +7844,7 @@ describe("Ext.data.Model", function() {
                 defineA({
                     name: 'presence'
                 });
-                
+
                 var o = new A({
                     name: 'Foo'
                 });
@@ -6790,16 +7863,57 @@ describe("Ext.data.Model", function() {
                 });
                 expect(o.getValidation().isValid()).toBe(false);
             });
-            
+
             it("should return false if all fields in the model are not valid", function() {
                 defineA({
                     name: 'presence'
                 });
-                
+
                 var o = new A({
                     name: null
                 });
                 expect(o.getValidation().isValid()).toBe(false);
+            });
+
+            describe("using cancelEdit", function() {
+                beforeEach(function() {
+                    defineA({
+                        name: 'presence',
+                        rank: 'presence'
+                    });
+                });
+
+                it("should validate correctly when using cancelEdit on an invalid edit after calling set", function() {
+                    var o = new A();
+
+                    o.beginEdit();
+                    o.set('name', 'foo');
+                    expect(o.getValidation().isValid()).toBe(false);
+                    o.cancelEdit();
+
+                    o.set({
+                        name: 'foo',
+                        rank: 'bar'
+                    });
+
+                    expect(o.getValidation().isValid()).toBe(true);
+                });
+
+                it("should validate correctly when using cancelEdit on a valid edit after calling set", function() {
+                    var o = new A();
+
+                    o.beginEdit();
+                    o.set({
+                        name: 'foo',
+                        rank: 'bar'
+                    });
+                    expect(o.getValidation().isValid()).toBe(true);
+                    o.cancelEdit();
+
+                    o.set('name', 'foo');
+
+                    expect(o.getValidation().isValid()).toBe(false);
+                });
             });
         });
     });
@@ -6824,13 +7938,12 @@ describe("Ext.data.Model", function() {
                 ],
 
                 validators: {
-                    last:        'presence',
                     description: { type: 'length', min: 10, max: 200 },
                     color:       { type: 'inclusion', list: [ 'red', 'white', 'blue' ] },
                     first:       { type: 'exclusion', list: [ 'Ed' ] },
                     formatField: { type: 'format', matcher: /123/ },
                     email:       'email',
-                    phone:       { type: 'presence', message: 'Phone number required' }
+                    phone:       { type: 'format', matcher: /\d{3}\-\d{4}/, message: 'Phone number required' }
                 },
 
                 doValidate: function () {
@@ -6851,8 +7964,12 @@ describe("Ext.data.Model", function() {
         });
 
         describe("the legacy Errors object", function() {
-            var Val = Ext.data.validator.Validator.all,
+            var V = Ext.data.validator,
                 errors;
+
+            function getMessage(T) {
+                return T.prototype.config.message;
+            }
 
             beforeEach(function() {
                 instance = new User({
@@ -6890,16 +8007,11 @@ describe("Ext.data.Model", function() {
             });
 
             it("should have the correct number of error messages", function() {
-                expect(errors.length).toEqual(7);
+                expect(errors.length).toEqual(6);
             });
 
             it("should hold Errors in an items array", function() {
-                expect(errors.items.length).toEqual(7);
-            });
-
-            it("should have the correct non-presence message", function() {
-                var error = errors.getByField('last')[0];
-                expect(error.message).toEqual(Val.presence.config.message);
+                expect(errors.items.length).toEqual(6);
             });
 
             it("should have the correct bad length message", function() {
@@ -6909,22 +8021,22 @@ describe("Ext.data.Model", function() {
 
             it("should have the correct bad format message", function() {
                 var error = errors.getByField('formatField')[0];
-                expect(error.message).toEqual(Val.format.config.message);
+                expect(error.message).toEqual(getMessage(V.Format));
             });
 
             it("should have the correct non-inclusion message", function() {
                 var error = errors.getByField('color')[0];
-                expect(error.message).toEqual(Val.inclusion.config.message);
+                expect(error.message).toEqual(getMessage(V.Inclusion));
             });
 
             it("should have the correct non-exclusion message", function() {
                 var error = errors.getByField('first')[0];
-                expect(error.message).toEqual(Val.exclusion.config.message);
+                expect(error.message).toEqual(getMessage(V.Exclusion));
             });
 
             it("should have the correct bad email format message", function() {
                 var error = errors.getByField('email')[0];
-                expect(error.message).toEqual(Val.email.config.message);
+                expect(error.message).toEqual(getMessage(V.Email));
             });
 
             it("should allow user-defined error messages", function() {
@@ -6973,7 +8085,6 @@ describe("Ext.data.Model", function() {
                 ],
 
                 validations: [
-                    { type: 'presence',  field: 'last' },
                     { type: 'length',    field: 'description', min: 10, max: 200 },
                     { type: 'inclusion', field: 'color', list: ['red', 'white', 'blue'] },
                     { type: 'exclusion', field: 'first', list: ['Ed']} ,
@@ -6981,7 +8092,7 @@ describe("Ext.data.Model", function() {
                     { type: 'format',    field: 'formatField', matcher: /123/ },
                     { type: 'email',     field: 'email' },
 
-                    { type: 'presence',  field: 'phone', message: 'Phone number required' }
+                    { type: 'format',  matcher: /\d{3}\-\d{4}/, field: 'phone', message: 'Phone number required' }
                 ],
 
                 doValidate: function () {
@@ -7002,8 +8113,12 @@ describe("Ext.data.Model", function() {
         });
 
         describe("the Errors object", function() {
-            var Val = Ext.data.validator.Validator.all,
+            var V = Ext.data.validator,
                 errors;
+
+            function getMessage(T) {
+                return T.prototype.config.message;
+            }
 
             // NOTE: Ext.data.validator.Validator is new to v5 but we need to consult it
             // to see if the proper results are being returned from the legacy API.
@@ -7027,7 +8142,7 @@ describe("Ext.data.Model", function() {
                     last: 'Griffin',
                     formatField: '123',
                     email: 'don@sencha.com',
-                    phone: '555-1212'
+                    phone: '123-4567'
                 });
 
                 errors = instance.validate();
@@ -7043,16 +8158,11 @@ describe("Ext.data.Model", function() {
             });
 
             it("should have the correct number of error messages", function() {
-                expect(errors.length).toEqual(7);
+                expect(errors.length).toEqual(6);
             });
 
             it("should hold Errors in an items array", function() {
-                expect(errors.items.length).toEqual(7);
-            });
-
-            it("should have the correct non-presence message", function() {
-                var error = errors.getByField('last')[0];
-                expect(error.message).toEqual(Val.presence.config.message);
+                expect(errors.items.length).toEqual(6);
             });
 
             it("should have the correct bad length message", function() {
@@ -7062,22 +8172,22 @@ describe("Ext.data.Model", function() {
 
             it("should have the correct bad format message", function() {
                 var error = errors.getByField('formatField')[0];
-                expect(error.message).toEqual(Val.format.config.message);
+                expect(error.message).toEqual(getMessage(V.Format));
             });
 
             it("should have the correct non-inclusion message", function() {
                 var error = errors.getByField('color')[0];
-                expect(error.message).toEqual(Val.inclusion.config.message);
+                expect(error.message).toEqual(getMessage(V.Inclusion));
             });
 
             it("should have the correct non-exclusion message", function() {
                 var error = errors.getByField('first')[0];
-                expect(error.message).toEqual(Val.exclusion.config.message);
+                expect(error.message).toEqual(getMessage(V.Exclusion));
             });
 
             it("should have the correct bad email format message", function() {
                 var error = errors.getByField('email')[0];
-                expect(error.message).toEqual(Val.email.config.message);
+                expect(error.message).toEqual(getMessage(V.Email));
             });
 
             it("should allow user-defined error messages", function() {
@@ -7284,7 +8394,7 @@ describe("Ext.data.Model", function() {
             A = Ext.define('spec.A', {
                 extend: 'Ext.data.Model',
                 fields: ['id', 'name']
-            })
+            });
         });
 
         afterEach(function() {
@@ -7316,7 +8426,7 @@ describe("Ext.data.Model", function() {
             rec.drop();
             expect(rec.dropped).toBe(true);
             expect(rec.erased).toBe(true);
-        })
+        });
 
         it("should call afterDrop", function() {
             var rec = new A({
@@ -7414,7 +8524,7 @@ describe("Ext.data.Model", function() {
                 extend: 'Ext.data.Model',
                 fields: ['name'],
                 versionProperty: 'version'
-            })
+            });
         });
 
         afterEach(function() {
@@ -7451,6 +8561,140 @@ describe("Ext.data.Model", function() {
             user.set('name', 'Bar');
             user.reject();
             expect(user.get('version')).toBe(1);
+        });
+    });
+
+    describe("calculateSummary", function() {
+        var sampleData, A, T;
+
+        beforeEach(function() {
+            sampleData = [{
+                rate: 5,
+                score: 9,
+                strField: 'foo',
+                numField: 1.3
+            }, {
+                rate: 13,
+                score: 32,
+                strField: 'bar',
+                numField: 1.77
+            }, {
+                rate: 11,
+                score: 19,
+                strField: 'baz',
+                numField: 1.4
+            }, {
+                rate: 9,
+                score: 25,
+                strField: 'qux',
+                numField: 0.67
+            }];
+        });
+
+        afterEach(function() {
+            sampleData = null;
+        });
+
+        describe("with no summary model", function() {
+            beforeEach(function() {
+                A = Ext.define(null, {
+                    extend: 'Ext.data.Model',
+                    fields: [{
+                        name: 'rate',
+                        summary: 'average'
+                    }, {
+                        name: 'score',
+                        summary: 'max'
+                    }, {
+                        name: 'strField',
+                        type: 'string'
+                    }, {
+                        name: 'numField',
+                        type: 'int'
+                    }]
+                });
+                T = A.getSummaryModel();
+
+                sampleData = Ext.Array.map(sampleData, function(data) {
+                    return new A(data);
+                });
+            });
+
+            it("should have model defaults", function() {
+                var rec = new T();
+                expect(rec.get('rate')).toBeUndefined();
+                expect(rec.get('score')).toBeUndefined();
+                expect(rec.get('strField')).toBe('');
+                expect(rec.get('numField')).toBe(0);
+            });
+
+            it("should generate the summary data based on the fields", function() {
+                var rec = new T();
+                rec.calculateSummary(sampleData);
+                expect(rec.dirty).toBe(false);
+                expect(rec.get('rate')).toBe(9.5);
+                expect(rec.get('score')).toBe(32);
+                expect(rec.get('strField')).toBe('');
+                expect(rec.get('numField')).toBe(0);
+            });
+        });
+
+        describe("with a summary model", function() {
+            beforeEach(function() {
+                A = Ext.define(null, {
+                    extend: 'Ext.data.Model',
+                    fields: [{
+                        name: 'rate',
+                        summary: 'average'
+                    }, {
+                        name: 'score',
+                        summary: 'max'
+                    }, {
+                        name: 'strField',
+                        type: 'string'
+                    }, {
+                        name: 'numField',
+                        type: 'int'
+                    }],
+                    summary: {
+                        maxRate: {
+                            field: 'rate',
+                            summary: 'max'
+                        },
+                        minScore: {
+                            field: 'score',
+                            summary: 'min'
+                        }
+                    }
+                });
+                T = A.getSummaryModel();
+
+                sampleData = Ext.Array.map(sampleData, function(data) {
+                    return new A(data);
+                });
+            });
+
+            it("should have model defaults", function() {
+                var rec = new T();
+                expect(rec.get('rate')).toBeUndefined();
+                expect(rec.get('score')).toBeUndefined();
+                expect(rec.get('strField')).toBe('');
+                expect(rec.get('numField')).toBe(0);
+                expect(rec.get('maxRate')).toBeUndefined();
+                expect(rec.get('minScore')).toBeUndefined();
+            });
+
+            it("should generate the summary data based on the fields", function() {
+                var rec = new T();
+                rec.calculateSummary(sampleData);
+                expect(rec.dirty).toBe(false);
+                expect(rec.get('rate')).toBe(9.5);
+                expect(rec.get('score')).toBe(32);
+                expect(rec.get('strField')).toBe('');
+                expect(rec.get('numField')).toBe(0);
+                expect(rec.get('maxRate')).toBe(13);
+                expect(rec.get('minScore')).toBe(9);
+            });
         });
     });
 });

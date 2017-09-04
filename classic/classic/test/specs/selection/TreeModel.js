@@ -1,4 +1,4 @@
-describe("Ext.selection.TreeModel", function() {
+topSuite("Ext.selection.TreeModel", ['Ext.tree.Panel', 'Ext.grid.Panel'], function() {
     var tree, data, selModel, col;
 
     function makeTree(cfg, root) {
@@ -90,7 +90,7 @@ describe("Ext.selection.TreeModel", function() {
                 }
             });
             selModel = tree.getSelectionModel();
-            jasmine.fireMouseEvent(tree.view.lockedView.getCellByPosition({row:1,column:0}), 'click');
+            jasmine.fireMouseEvent(tree.view.lockedView.getCellByPosition({row:1,column:0}, true), 'click');
             expect(selModel.isSelected(1)).toBe(true);
         });
     });
@@ -236,12 +236,12 @@ describe("Ext.selection.TreeModel", function() {
             });
 
             it("should not select when clicking on the expander", function() {
-                click(Ext.fly(row).down(view.expanderSelector));
+                click(row.querySelector(view.expanderSelector));
                 expect(selModel.isSelected(node)).toBe(false);
             });
 
             it("should select when clicking on another part of the row", function() {
-                click(Ext.fly(row).down('.' + col.iconCls));
+                click(row.querySelector('.' + col.iconCls));
                 expect(selModel.isSelected(node)).toBe(true);
             });
         });
@@ -262,12 +262,12 @@ describe("Ext.selection.TreeModel", function() {
             });
 
             it("should select when clicking on the expander", function() {
-                click(Ext.fly(row).down(view.expanderSelector));
+                click(row.querySelector(view.expanderSelector));
                 expect(selModel.isSelected(node)).toBe(true);
             });
 
             it("should select when clicking on another part of the row", function() {
-                click(Ext.fly(row).down('.' + col.iconCls));
+                click(row.querySelector('.' + col.iconCls));
                 expect(selModel.isSelected(node)).toBe(true);
             });
         });

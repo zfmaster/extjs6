@@ -1,9 +1,20 @@
-describe('Ext.chart.series.Pie.classic', function () {
+topSuite("Ext.chart.series.Pie.classic",
+    [false, 'Ext.chart.*', 'Ext.data.ArrayStore'],
+function() {
+    beforeEach(function() {
+        // Silence warnings regarding Sencha download server
+        spyOn(Ext.log, 'warn');
+    });
 
     describe('label.display', function () {
+        var chart;
+
+        afterEach(function() {
+            Ext.destroy(chart);
+        });
+
         it('should hide the labels if set to `none`', function () {
-            var chart,
-                redrawCount = 0;
+            var layoutDone;
 
             runs(function () {
                 chart = new Ext.chart.PolarChart({
@@ -32,14 +43,14 @@ describe('Ext.chart.series.Pie.classic', function () {
                         }]
                     },
                     listeners: {
-                        redraw: function () {
-                            redrawCount++;
+                        layout: function () {
+                            layoutDone = true;
                         }
                     }
                 });
             });
             waitsFor(function () {
-                return redrawCount >= 2;
+                return layoutDone;
             });
             runs(function () {
                 var series = chart.getSeries()[0];
@@ -56,8 +67,6 @@ describe('Ext.chart.series.Pie.classic', function () {
                 expect(labels.instances[0].hidden).toBe(false);
                 expect(labels.instances[1].hidden).toBe(false);
                 expect(labels.attr.hidden).toBe(false);
-
-                Ext.destroy(chart);
             });
         });
     });

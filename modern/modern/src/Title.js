@@ -8,16 +8,12 @@ Ext.define('Ext.Title', {
 
     config: {
         /**
-         * @cfg
-         * @inheritdoc
-         */
-        baseCls: Ext.baseCSSPrefix + 'title',
-
-        /**
          * @cfg {String} title The title text
          */
         title: ''
     },
+
+    baseCls: Ext.baseCSSPrefix + 'title',
 
     /**
      * @private

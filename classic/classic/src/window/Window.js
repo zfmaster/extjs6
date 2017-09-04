@@ -312,14 +312,14 @@ Ext.define('Ext.window.Window', {
 
     /**
      * @cfg {Boolean} [floating=true]
-     * @inheritdoc Ext.Component
+     * @inheritdoc Ext.Component#cfg!floating
      */
     floating: true,
 
     alignOnScroll: false,
 
     /**
-     * @cfg stateEvents
+     * @cfg {String[]} stateEvents
      * @inheritdoc Ext.state.Stateful#cfg-stateEvents
      * @localdoc By default the following stateEvents are added:
      *
@@ -355,10 +355,12 @@ Ext.define('Ext.window.Window', {
     ariaRole: 'dialog',
     focusable: true,
     tabGuard: true,
-    
-    //<locale>
+
+    /**
+     * @cfg {String} closeToolText
+     * @inheritdoc
+     */
     closeToolText: 'Close dialog',
-    //</locale>
 
     keyMap: {
         scope: 'this',
@@ -567,8 +569,11 @@ Ext.define('Ext.window.Window', {
      * @private
      */
     onEsc: function(e) {
-        e.stopEvent();
-        this.close();
+        if (this.closable) {
+            e.stopEvent();
+            this.close();
+            return false;
+        }
     },
 
     doDestroy: function() {
@@ -728,8 +733,9 @@ Ext.define('Ext.window.Window', {
 
         // Perform superclass's afterHide tasks.
         me.callParent(arguments);
-        
-        if (me.rendered && me.tabGuard) {
+
+        // Hide may have destroyed a Window.
+        if (!me.destroyed && me.rendered && me.tabGuard) {
             me.initTabGuards();
         }
     },
@@ -811,9 +817,10 @@ Ext.define('Ext.window.Window', {
      * Fits the window within its current container and automatically replaces the {@link #maximizable 'maximize' tool
      * button} with the 'restore' tool button. Also see {@link #toggleMaximize}.
      * @param {Boolean} [animate=false] Pass `true` to animate this Window to full size.
+     * @param {Boolean} initial (private)
      * @return {Ext.window.Window} this
      */
-    maximize: function(animate, /* private */ initial) {
+    maximize: function(animate, initial) {
         var me = this,
             header = me.header,
             tools = me.tools,
@@ -1137,7 +1144,12 @@ Ext.define('Ext.window.Window', {
             nextFocus = nextFocus || (forward ? nodes[0] : nodes[nodes.length - 1]);
             
             if (nextFocus) {
-                nextFocus.focus();
+                // If there is only one focusable node in the window, focusing it
+                // while we're in focusenter handler for the tab guard might cause
+                // race condition where the focusable node will be refocused first
+                // and then its original blur handler will kick in, removing focus
+                // styling erroneously.
+                Ext.fly(nextFocus).focus(nodes.length === 1 ? 1 : 0);
             }
         }
     }

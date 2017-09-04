@@ -29,7 +29,7 @@ Ext.define('Ext.chart.axis.sprite.Axis3D', {
     },
 
     config: {
-        fx: {
+        animation: {
             customDurations: {
                 depth: 0
             }

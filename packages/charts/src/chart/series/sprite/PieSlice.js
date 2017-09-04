@@ -104,7 +104,6 @@ Ext.define('Ext.chart.series.sprite.PieSlice', {
         if (attr.renderer) {
             itemCfg = {
                 type: 'sector',
-                text: attr.text,
                 centerX: attr.centerX,
                 centerY: attr.centerY,
                 margin: attr.margin,
@@ -147,6 +146,7 @@ Ext.define('Ext.chart.series.sprite.PieSlice', {
             labelCfg = me.labelCfg || (me.labelCfg = {}),
             label = me.getMarker('labels'),
             labelTpl = label.getTemplate(),
+            hideLessThan = labelTpl.getHideLessThan(),
             calloutLine = labelTpl.getCalloutLine(),
             labelBox, x, y, changes, params, calloutLineLength;
 
@@ -214,6 +214,10 @@ Ext.define('Ext.chart.series.sprite.PieSlice', {
         }
 
         if (labelTpl.attr.renderer) {
+            // Note: the labels are 'put' by the Ext.chart.series.Pie.updateLabelData, so we can
+            // be sure the label sprite instances will exist and can be accessed from the label
+            // renderer on first render. For example, with 'bar' series this isn't the case,
+            // so we make a check and create a label instance if necessary.
             params = [me.attr.label, label, labelCfg, me.getRendererData(), me.getRendererIndex()];
             changes = Ext.callback(labelTpl.attr.renderer, null, params, 0, me.getSeries());
             if (typeof changes === 'string') {
@@ -226,7 +230,7 @@ Ext.define('Ext.chart.series.sprite.PieSlice', {
 
         labelBox = me.getMarkerBBox('labels', attributeId, true);
         if (labelBox) {
-            if (attr.doCallout) {
+            if (attr.doCallout && ((endAngle - startAngle) * endRho > hideLessThan || attr.highlighted)) {
                 if (labelTpl.attr.display === 'outside') {
                     me.putMarker('labels', {
                         callout: 1

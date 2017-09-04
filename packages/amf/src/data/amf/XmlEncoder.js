@@ -34,7 +34,7 @@
  *   function. A writeByteArray method is provided for writing out ByteArray objects.
  *
  * For more information on working with AMF data please refer to the
- * [AMF Guide](#/guide/amf).
+ * [AMF Guide](../guides/backend_connectors/amf.html).
  */
 
 Ext.define('Ext.data.amf.XmlEncoder', {
@@ -518,8 +518,8 @@ Ext.define('Ext.data.amf.XmlEncoder', {
      * Writes an AMFX remoting message with the AMFX envelope to the string.
      * @param {Ext.data.amf.RemotingMessage} message the message to pass on to serialize.
      */
-    writeAmfxRemotingPacket: function(params) {
-        this.write(this.encodeAmfxRemotingPacket(params));
+    writeAmfxRemotingPacket: function(message) {
+        this.write(this.encodeAmfxRemotingPacket(message));
     },
 
     /**

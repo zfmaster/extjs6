@@ -149,9 +149,9 @@ Ext.define('Ext.form.field.Picker', {
 
         // Non-editable allows opening the picker by clicking the field
         if (!editable) {
-            me.inputEl.on('click', me.onTriggerClick, me);
+            me.inputEl.on('click', me.onInputElClick, me);
         } else {
-            me.inputEl.un('click', me.onTriggerClick, me);
+            me.inputEl.un('click', me.onInputElClick, me);
         }
         me.callParent([editable, oldEditable]);
     },
@@ -187,7 +187,7 @@ Ext.define('Ext.form.field.Picker', {
 
             // Don't call expand() directly as there may be additional processing involved before
             // expanding, e.g. in the case of a ComboBox query.
-            me.onTriggerClick(e);
+            me.onTriggerClick(me, me.getPickerTrigger(), e);
             
             me.lastDownArrow = e.time;
         }
@@ -390,18 +390,30 @@ Ext.define('Ext.form.field.Picker', {
         return result;
     },
 
+    getPickerTrigger: function() {
+        return this.triggers && this.triggers.picker;
+    },
+
     /**
      * @method
      * Creates and returns the component to be used as this field's picker. Must be implemented by subclasses of Picker.
      */
     createPicker: Ext.emptyFn,
 
+    onInputElClick: function(e) {
+        this.onTriggerClick(this, this.getPickerTrigger(), e);
+    },
+
     /**
      * Handles the trigger click; by default toggles between expanding and collapsing the picker component.
      * @protected
+     * @param {Ext.form.field.Picker} field This field instance.
+     * @param {Ext.form.trigger.Trigger} trigger This field's picker trigger.
+     * @param {Ext.event.Event} e The event that generated this call.
      */
-    onTriggerClick: function(e) {
+    onTriggerClick: function(field, trigger, e) {
         var me = this;
+
         if (!me.readOnly && !me.disabled) {
             if (me.isExpanded) {
                 me.collapse();

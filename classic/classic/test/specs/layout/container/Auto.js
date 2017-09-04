@@ -1,4 +1,4 @@
-describe("Ext.layout.container.Auto", function() {
+topSuite("Ext.layout.container.Auto", ['Ext.Panel'], function() {
     function createSuite(shrinkWrap) {
         var suiteName = 'Ext.layout.container.Auto';
 

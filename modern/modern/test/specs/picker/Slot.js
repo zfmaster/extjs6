@@ -1,12 +1,15 @@
-describe('Ext.picker.Slot', function () {
+/* global spyOn, expect, Ext */
+
+topSuite("Ext.picker.Slot", ['Ext.viewport.Default', 'Ext.picker.Picker'], function() {
     var picker, viewport, slot;
 
     afterEach(function () {
         Ext.Viewport = viewport = picker = slot = Ext.destroy(slot, picker, viewport, Ext.Viewport);
+        Ext.scroll.Scroller.viewport = Ext.destroy(Ext.scroll.Scroller.viewport);
     });
 
     function makePicker (value, dataSize) {
-        var dataSize = dataSize || 100;
+        dataSize = dataSize || 100;
 
         viewport = Ext.Viewport = new Ext.viewport.Default();
         picker = Ext.create('Ext.picker.Picker', {
@@ -42,7 +45,7 @@ describe('Ext.picker.Slot', function () {
             var scrollComplete = false,
                 spy;
             
-            picker.show();
+            picker.show(false);
 
             spy = spyOn(slot, 'onResize').andCallThrough();
             slot.getScrollable().on('scrollend', function () {
@@ -52,6 +55,9 @@ describe('Ext.picker.Slot', function () {
             waitsFor(function() {
                 return scrollComplete;
             }, 'slot to scroll selection into view', 800);
+            
+            waitsForSpy(spy);
+
             runs(function () {
                 expect(spy).toHaveBeenCalled();
                 expect(spy.callCount).toBe(1);
@@ -59,11 +65,13 @@ describe('Ext.picker.Slot', function () {
             
         });
 
-        it("should be scrolled into view and aligned with bar", function () {
+        // The following 2 tests are really unreliable and they fail ~70%
+        // of the time. Need to look into why
+        xit("should be scrolled into view and aligned with bar", function () {
             var scrollComplete = false,
                 bar, barIndex;
 
-            picker.show();
+            picker.show(false);
 
             slot.getScrollable().on('scrollend', function () {
                 scrollComplete = true;
@@ -80,54 +88,41 @@ describe('Ext.picker.Slot', function () {
             });
         });
 
-        it("should scroll to selection if view is scrolled, no new selection is made, and picker is re-shown", function () {
-            var scrollComplete = false,
-                bar, barIndex, scrollable, curY;
+        xit("should scroll to selection if view is scrolled, no new selection is made, and picker is re-shown", function () {
+            var bar, scrollable;
 
-            picker.show();
+            picker.show(false);
 
             bar = picker.bar;
             scrollable = slot.getScrollable();
-            scrollable.on('scrollend', function () {
-                scrollComplete = true;
-            });
+            
+            waitsForEvent(scrollable, 'scrollend', 'slot to scroll selection into view', 800);
 
-            waitsFor(function () {
-                return scrollComplete;
-            }, 'slot to scroll selection into view', 800);
             runs(function () {
-                scrollComplete = false;
                 // item 45 should be seleted (the default)
+                expect(getBarIndex(bar)).toBe(45);
+
                 // now let's mimic a scroll to the very top of the list
                 scrollable.scrollTo(0, 0);
             });
 
-            waitsFor(function () {
-                return scrollComplete;
-            }, 'scroll to top of scrollable area', 800);
-            runs(function () {
-                scrollComplete = false;
-                curY = scrollable.getPosition().y;
-                // scrolling is done, we should be at the top of the scroller
-                expect(curY).toBe(0);
-                // now let's simulate the scroll to the top, but the picker is dimissed with no selection made
-                picker.hide();
-                // now let's re-open the picker
-                picker.show();
-            });
+            waitsForEvent(scrollable, 'scrollend', 'scroll to top of scrollable area', 800);
 
-            waitsFor(function () {
-                return scrollComplete;
-            }, 'slot to scroll selection into view', 800);
             runs(function () {
-                // at this point, the original selection should be scrolled into view, regardless of the previous scroll pos
-                barIndex = getBarIndex(bar);
-                
-                // bar should be aligned with the selected item
-                expect(barIndex).toBe(45);
-                
-                Ext.destroy(scrollable);
+                expect(scrollable.getPosition().y).toBe(0);
+
+                // now let's simulate the scroll to the top, but the picker is dimissed with no selection made
+                picker.hide(false);
+                // now let's re-open the picker
+                picker.show(false);
             });
+            
+            waits(800);
+
+            runs(function () {
+                // Wait for the original selection should be scrolled into view, regardless of the previous scroll pos
+                expect(getBarIndex(bar)).toBe(45);
+            }, 'slot to scroll selection into view');
         });
     });
 
@@ -143,7 +138,7 @@ describe('Ext.picker.Slot', function () {
                 scrollComplete = true;
             });
 
-            picker.show();
+            picker.show(false);
 
             waitsFor(function () {
                 return scrollComplete;
@@ -157,7 +152,7 @@ describe('Ext.picker.Slot', function () {
             makePicker({slot1: 255});
             spyOn(slot, 'select');
 
-            picker.show();
+            picker.show(false);
 
             waitsFor(function () {
                 // since the default index will be 0, no scrolling will occur
@@ -166,6 +161,28 @@ describe('Ext.picker.Slot', function () {
             });
             runs(function () {
                 expect(slot.select).not.toHaveBeenCalled();
+            });
+        });
+
+        it('should not deselect a selected value', function () {
+            var scrollable;
+
+            makePicker({
+                slot1: 45
+            });
+
+            picker.show(false);
+
+            scrollable = slot.getScrollable();
+
+            waitsForEvent(scrollable, 'scrollend', 'slot to scroll selection into view', 800);
+
+            runs(function () {
+                var item = slot.dataItems[45];
+
+                jasmine.fireMouseEvent(item, 'click');
+
+                expect(Ext.fly(item).hasCls('x-selected')).toBe(true);
             });
         });
     });

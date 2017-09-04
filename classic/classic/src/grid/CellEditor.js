@@ -4,7 +4,7 @@
  */
 Ext.define('Ext.grid.CellEditor', {
     extend: 'Ext.Editor',
-
+    alias: 'widget.celleditor',
     /**
      * @property {Boolean} isCellEditor
      * @readonly
@@ -48,13 +48,14 @@ Ext.define('Ext.grid.CellEditor', {
      */
     onShow: function() {
         var me = this,
-            innerCell = me.boundEl.down(me.context.view.innerSelector);
+            innerCell = me.boundEl.dom.querySelector(me.context.view.innerSelector);
 
         if (innerCell) {
             if (me.isForTree) {
-                innerCell = innerCell.child(me.treeNodeSelector);
+                innerCell = innerCell.querySelector(me.treeNodeSelector);
             }
-            innerCell.hide();
+            
+            Ext.fly(innerCell).hide();
         }
 
         me.callParent(arguments);
@@ -64,10 +65,11 @@ Ext.define('Ext.grid.CellEditor', {
         var me = this,
             context = me.context,
             view = context.view;
-        
+
         // Focus restoration after a refresh may require realignment and correction
         // of the context because it could have been due to a or filter operation and
         // the context may have changed position.
+        me.reattachToBody();
         context.node = view.getNode(context.record);
         context.row = view.getRow(context.record);
         context.cell = context.getCell(true);
@@ -96,11 +98,14 @@ Ext.define('Ext.grid.CellEditor', {
         delete me.focusLeaveAction;
 
         // If the related target is not a cell, turn actionable mode off
-        if (!view.destroyed && view.el.contains(related) && (!related.isAncestor(e.target) || related === view.el) && !related.up(view.getCellSelector(), view.el)) {
+        if (!view.destroyed && view.el.contains(related) &&
+            (!related.isAncestor(e.target) || related === view.el) &&
+            !related.up(view.getCellSelector(), view.el, true)) {
             me.context.grid.setActionableMode(false, view.actionPosition);
         }
 
         me.cacheElement();
+        
         // Bypass Editor's onFocusLeave
         Ext.container.Container.prototype.onFocusLeave.apply(me, arguments);
     },
@@ -119,12 +124,15 @@ Ext.define('Ext.grid.CellEditor', {
                 return !!context.cancel;
             }
         }
+
         me.callParent([remainVisible]);
     },
 
     onEditComplete: function(remainVisible, canceling) {
         var me = this,
             activeElement = Ext.Element.getActiveElement(),
+            ctx = me.context, 
+            store = ctx && ctx.store,
             boundEl;
 
         me.editing = false;
@@ -152,24 +160,33 @@ Ext.define('Ext.grid.CellEditor', {
         // Inform it directly.
         if (canceling) {
             me.editingPlugin.cancelEdit(me);
+            // When expanding/collapsing a node, the editor will lose focus
+            // and cancel the editing, but at the same time the expand/collapse
+            // will call actionable#suspend that will cause this editor to remain visible
+            // and will prevent the element from being cached. So if remainVisible is true
+            // and we are expanding/collapsing we should always cache the element.
+            if (remainVisible && store && store.isExpandingOrCollapsing) {
+                me.cacheElement();
+            }
         } else {
             me.editingPlugin.onEditComplete(me, me.getValue(), me.startValue);
         }
     },
 
-    cacheElement: function() {
-        if (!this.editing && !this.destroyed) {
-            Ext.getDetachedBody().dom.appendChild(this.el.dom);
+    cacheElement: function(force) {
+        if ((!this.editing || force) && !this.destroyed) {
+            this.detachFromBody();
         }
     },
 
     /**
      * @private
-     * We should do nothing.
      * Hiding blurs, and blur will terminate the edit.
-     * Must not allow superclass Editor to terminate the edit.
+     * We must not allow superclass Editor to terminate the edit and make
+     * sure the element has been cached.
      */
     onHide: function() {
+        this.cacheElement(true);
         Ext.Editor.superclass.onHide.apply(this, arguments);
     },
 
@@ -201,13 +218,14 @@ Ext.define('Ext.grid.CellEditor', {
 
     restoreCell: function() {
         var me = this,
-            innerCell = me.boundEl.down(me.context.view.innerSelector);
+            innerCell = me.boundEl.dom.querySelector(me.context.view.innerSelector);
 
         if (innerCell) {
             if (me.isForTree) {
-                innerCell = innerCell.child(me.treeNodeSelector);
+                innerCell = innerCell.querySelector(me.treeNodeSelector);
             }
-            innerCell.show();
+            
+            Ext.fly(innerCell).show();
         }        
     },
 
@@ -255,8 +273,8 @@ Ext.define('Ext.grid.CellEditor', {
     realign: function(autoSize) {
         var me = this,
             boundEl = me.boundEl,
-            innerCell = boundEl.down(me.context.view.innerSelector),
-            innerCellTextNode = innerCell.dom.firstChild,
+            innerCell = boundEl.dom.querySelector(me.context.view.innerSelector),
+            innerCellTextNode = innerCell.firstChild,
             width = boundEl.getWidth(),
             offsets = Ext.Array.clone(me.offsets),
             grid = me.grid,
@@ -287,18 +305,18 @@ Ext.define('Ext.grid.CellEditor', {
 
         // https://sencha.jira.com/browse/EXTJSIV-10871 Ensure the data bearing element has a height from text.
         if (isEmpty) {
-            innerCell.dom.innerHTML = 'X';
+            innerCell.innerHTML = 'X';
         }
 
         me.alignTo(boundEl, me.alignment, offsets);
 
         if (isEmpty) {
-            innerCell.dom.firstChild.data = v;
+            innerCell.firstChild.data = v;
         }
     },
 
     getTreeNodeOffset: function(innerCell) {
-        return innerCell.child(this.treeNodeSelector).getOffsetsTo(innerCell)[0];
+        return Ext.fly(innerCell.querySelector(this.treeNodeSelector)).getOffsetsTo(innerCell)[0];
     }
 });
 

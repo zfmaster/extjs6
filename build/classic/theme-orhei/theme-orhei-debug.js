@@ -1985,9 +1985,9 @@ Ext.define('Ext.theme.triton.grid.column.Column', {override:'Ext.grid.column.Col
     triggerEl.syncRepaint();
   }
 }});
-Ext.define('Ext.theme.triton.grid.column.Check', {override:'Ext.grid.column.Check', compatibility:Ext.isIE8, setRecordCheck:function(record, checked, cell) {
-  this.callParent([record, checked, cell]);
-  cell.syncRepaint();
+Ext.define('Ext.theme.triton.grid.column.Check', {override:'Ext.grid.column.Check', compatibility:Ext.isIE8, setRecordCheck:function(record, index, checked, cell) {
+  this.callParent(arguments);
+  Ext.fly(cell).syncRepaint();
 }});
 Ext.define('Ext.theme.neptune.grid.column.RowNumberer', {override:'Ext.grid.column.RowNumberer', width:25});
 Ext.define('Ext.theme.triton.grid.column.RowNumberer', {override:'Ext.grid.column.RowNumberer', width:32});

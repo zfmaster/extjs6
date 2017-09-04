@@ -1,4 +1,4 @@
-describe("Ext.util.CSV", function() {
+topSuite("Ext.util.CSV", function() {
     var CSV = Ext.util.CSV;
 
     // The "hostile" string is a single cell that has all of the special characters in
@@ -108,6 +108,14 @@ describe("Ext.util.CSV", function() {
             expect(CSV.decode(undefined)).toEqual([]);
             expect(CSV.decode(null)).toEqual([]);
             expect(CSV.decode('')).toEqual([]);
+        });
+
+        it("should work when the first value is empty", function() {
+            var test = ',F,,O,,O,';
+
+            expect(CSV.decode(test)).toEqual([
+                ['', 'F', '', 'O', '', 'O', '']
+            ]);
         });
 
         it("should not create an empty row when a line feed is the last character in the input", function() {

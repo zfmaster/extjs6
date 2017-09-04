@@ -1,4 +1,4 @@
-describe("Ext.Error", function() { 
+topSuite("Ext.Error", function() { 
     var global;
 
     beforeEach(function() {

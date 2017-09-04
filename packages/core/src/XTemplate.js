@@ -337,7 +337,12 @@ Ext.define('Ext.XTemplate', {
     strict: false,
 
     apply: function(values, parent, xindex, xcount) {
-        return this.applyOut(values, [], parent, xindex, xcount).join('');
+        var buffer = this.applyOut(values, [], parent, xindex, xcount);
+        
+        // If only one token, return it as its uncoerced data type.
+        // This will allow things like ObjectTemplate to use
+        // formatters on non-string values.
+        return buffer.length === 1 ? buffer[0] : buffer.join('');
     },
 
     applyOut: function(values, out, parent, xindex, xcount) {
@@ -383,6 +388,21 @@ Ext.define('Ext.XTemplate', {
     },
 
     statics: {
+        get: function (config, source, defaultTpl) {
+            var ret = config;
+
+            if (config == null) {
+                if (source && defaultTpl) {
+                    ret = this.getTpl(source, defaultTpl);
+                }
+            }
+            else if ((config || config === '') && !config.isTemplate) {
+                ret = new this(config);
+            }
+
+            return ret;
+        },
+
         /**
          * Gets an `XTemplate` from an object (an instance of an {@link Ext#define}'d class).
          * Many times, templates are configured high in the class hierarchy and are to be
@@ -424,19 +444,24 @@ Ext.define('Ext.XTemplate', {
             var tpl = instance[name], // go for it! 99% of the time we will get it!
                 owner;
 
-            if (tpl && !tpl.isTemplate) { // tpl is just a configuration (not an instance)
-                // create the template instance from the configuration:
-                tpl = Ext.ClassManager.dynInstantiate('Ext.XTemplate', tpl);
-
-                // and replace the reference with the new instance:
-                if (instance.hasOwnProperty(name)) { // the tpl is on the instance
-                    owner = instance;
-                } else { // must be somewhere in the prototype chain
-                    for (owner = instance.self.prototype; owner && !owner.hasOwnProperty(name); owner = owner.superclass) {
-                    }
+            if (tpl) { 
+                // tpl is just a configuration (not an instance)
+                if (!tpl.isTemplate) {
+                    // create the template instance from the configuration:
+                    tpl = Ext.XTemplate.get(tpl);
                 }
-                owner[name] = tpl;
-                tpl.owner = owner;
+
+                if (!tpl.owner) {
+                    // and replace the reference with the new instance:
+                    if (instance.hasOwnProperty(name)) { // the tpl is on the instance
+                        owner = instance;
+                    } else { // must be somewhere in the prototype chain
+                        for (owner = instance.self.prototype; owner && !owner.hasOwnProperty(name); owner = owner.superclass) {
+                        }
+                    }
+                    owner[name] = tpl;
+                    tpl.owner = owner;
+                }
             }
             // else !tpl (no such tpl) or the tpl is an instance already... either way, tpl
             // is ready to return

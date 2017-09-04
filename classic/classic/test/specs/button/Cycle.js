@@ -1,6 +1,6 @@
 /* global expect, Ext, jasmine */
 
-describe("Ext.button.Cycle", function() {
+topSuite("Ext.button.Cycle", ['Ext.app.ViewController'], function() {
     var button;
 
     function clickIt (event) {

@@ -1,7 +1,7 @@
 /* global expect, jasmine, Ext */
 
-describe("Ext.grid.column.Check", function() {
-    var grid, container, store, col;
+topSuite("Ext.grid.column.Check", ['Ext.grid.Grid', 'Ext.data.ArrayStore', 'Ext.layout.Fit'], function() {
+    var grid, store, col;
 
     function getColCfg() {
         return {
@@ -38,14 +38,17 @@ describe("Ext.grid.column.Check", function() {
             store: store,
             columns: columns
         }, gridCfg));
-        container = grid.container;
-        grid.onContainerResize(container, { height: container.element.getHeight() });
         col = grid.getColumns()[0];
     }
     
     function clickCheckbox(rowIdx, cellIdx, button, x, y) {
-        var target = getCellCheckbox(rowIdx, cellIdx);
+        var cell = new Ext.grid.Location(grid, {
+                row: rowIdx,
+                column: cellIdx || 0
+            }),
+            target = getCellCheckbox(rowIdx, cellIdx);
 
+        grid.getNavigationModel().setLocation(cell);
         if (Ext.supports.TouchEvents) {
             Ext.testHelper.tap(target);
         } else {
@@ -54,16 +57,19 @@ describe("Ext.grid.column.Check", function() {
     }
 
     function getCell(rowIdx, cellIdx) {
-        return grid.query('gridrow')[rowIdx].query('gridcell')[cellIdx || 0].el;
+        return getCellComponent(rowIdx, cellIdx, 'el');
     }
 
-    function getCellComponent(rowIdx, cellIdx) {
-        return grid.query('gridrow')[rowIdx].query('gridcell')[cellIdx || 0];
+    function getCellComponent (rowIdx, cellIdx, member) {
+        var rows = grid.query('gridrow');
+        var row = rows[rowIdx];
+        var cell = row.cells[cellIdx || 0];
+
+        return member ? cell[member] : cell;
     }
 
     function getCellCheckbox(rowIdx, cellIdx) {
-        var cell = grid.query('gridrow')[rowIdx].query('gridcell')[cellIdx || 0];
-        return cell.checkboxElement;
+        return getCellComponent(rowIdx, cellIdx, 'checkboxElement');
     }
 
     function clickHeader() {
@@ -154,7 +160,11 @@ describe("Ext.grid.column.Check", function() {
                         tpl: '{val}'
                     }]);
                     clickCheckbox(0);
-                    expect(grid.isSelected(store.getAt(0))).toBe(true);
+
+                    // Touch taps are delayed by 1ms to allow focus processing to perform navigation
+                    waitsFor(function() {
+                        return grid.isSelected(store.getAt(0)) === true;
+                    });
                 });
 
                 it("should select when a full row update is not required", function() {
@@ -165,7 +175,11 @@ describe("Ext.grid.column.Check", function() {
                         dataIndex: 'val'
                     }]);
                     clickCheckbox(0);
-                    expect(grid.isSelected(store.getAt(0))).toBe(true);
+
+                    // Touch taps are delayed by 1ms to allow focus processing to perform navigation
+                    waitsFor(function() {
+                        return grid.isSelected(store.getAt(0)) === true;
+                    });
                 });
             });
 

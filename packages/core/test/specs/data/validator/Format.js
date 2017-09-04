@@ -1,5 +1,4 @@
-describe("Ext.data.validator.Format", function() {
-    
+topSuite("Ext.data.validator.Format", function() {
     var v;
     
     function validate(value, matcher) {

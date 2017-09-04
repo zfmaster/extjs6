@@ -364,7 +364,7 @@ Ext.define('Ext.util.Color', {
      *
      * If the string is not recognized, setFromString returns rgba(0,0,0,0).
      *
-     * @param {String} Color Color as string.
+     * @param {String} str Color as string.
      * @return this
      */
     setFromString: function (str) {
@@ -654,11 +654,12 @@ Ext.define('Ext.util.Color', {
          *     // Returns black when no arguments given.
          *     Ext.util.Color.create();
          *
-         * @param {Ext.util.Color/String/Number[]/Number} [red] Red component (0..255),
+         * @param {Array} arg
+         * @param {Ext.util.Color/String/Number[]/Number} [arg.red] Red component (0..255),
          * CSS color string or array of all components.
-         * @param {Number} [green] Green component (0..255)
-         * @param {Number} [blue] Blue component (0..255)
-         * @param {Number} [alpha=1] Alpha component (0..1)
+         * @param {Number} [arg.green] Green component (0..255)
+         * @param {Number} [arg.blue] Blue component (0..255)
+         * @param {Number} [arg.alpha=1] Alpha component (0..1)
          * @return {Ext.util.Color}
          * @static
          */

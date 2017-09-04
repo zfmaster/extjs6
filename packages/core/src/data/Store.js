@@ -225,7 +225,7 @@ Ext.define('Ext.data.Store', {
          * Array of Model instances or data objects to load locally. See "Inline data"
          * above for details.
          */
-        data: 0, // pass 0 to ensure applyData is called
+        data: undefined, // undefined so the applier is always called
         
         /**
         * @cfg {Boolean} [clearRemovedOnLoad=true]
@@ -318,7 +318,8 @@ Ext.define('Ext.data.Store', {
                 }
                 //</debug>
 
-                return new Ext.data.BufferedStore(config);
+                // Hide this from Cmd
+                return new Ext.data['BufferedStore'](config);
             }
 
             //<debug>
@@ -486,6 +487,13 @@ Ext.define('Ext.data.Store', {
             replaced = info && info.replaced,
             i, sync, record, replacedItems;
 
+        // Collection add changes the items reference of the collection, and that array
+        // object if directly referenced by Ranges. The ranges have to refresh themselves
+        // upon add.
+        if (me.activeRanges) {
+            me.syncActiveRanges();
+        }
+
         for (i = 0; i < len; ++i) {
             record = records[i];
 
@@ -526,6 +534,7 @@ Ext.define('Ext.data.Store', {
             // Here is where we inform interested parties of all the changes.
             if (info.replaced) {
                 if (lastChunk) {
+                    me.fireEvent('datachanged', me);
                     me.fireEvent('refresh', me);
                 }
             } else {
@@ -573,6 +582,7 @@ Ext.define('Ext.data.Store', {
             // is an descendant of a collapsed node, and so *will not be contained by this store
             me.onUpdate(record, type, modifiedFieldNames, info);
             me.fireEvent('update', me, record, type, modifiedFieldNames, info);
+            me.fireEvent('datachanged', me);
         }
     },
 
@@ -709,7 +719,7 @@ Ext.define('Ext.data.Store', {
             me.setMoving(replacement.items, true);
         }
         
-        for (i = 0; i < len; ++i) {
+        for (i = len - 1; i >=  0; i--) {
             record = records[i];
 
             // If the data contains the record, that means the record is filtered out, so
@@ -766,7 +776,14 @@ Ext.define('Ext.data.Store', {
         if (me.destroying || me.destroyed) {
             return;
         }
-        
+
+        // Filtering changes the items reference of the collection, and that array
+        // object if directly referenced by Ranges. The ranges have to refresh themselves
+        // upon add.
+        if (me.activeRanges) {
+            me.syncActiveRanges();
+        }
+
         me.callParent(arguments);
         me.callObservers('Filter');
     },
@@ -794,20 +811,15 @@ Ext.define('Ext.data.Store', {
     },
 
     /**
-     * Removes all items from the store.
-     *
+     * Removes all unfiltered items from the store.  Filtered records will not be removed.
      * Individual record `{@link #event-remove}` events are not fired by this method.
      *
      * @param {Boolean} [silent=false] Pass `true` to prevent the `{@link #event-clear}` event from being fired.
-     *
-     * This method is affected by filtering.
-     * 
      * @return {Ext.data.Model[]} The removed records.
      */
     removeAll: function(silent) {
         var me = this,
             data = me.getData(),
-            hasClear = me.hasListeners.clear,
             records = data.getRange();
 
         // We want to remove and mute any events here
@@ -883,6 +895,7 @@ Ext.define('Ext.data.Store', {
             me.loadRecords(records, operation.getAddRecords() ? {
                 addRecords: true
             } : undefined);
+            me.attachSummaryRecord(resultSet);
         } else {
             me.loading = false;
         }
@@ -891,6 +904,13 @@ Ext.define('Ext.data.Store', {
             me.fireEvent('load', me, records, successful, operation);
         }
         me.callObservers('AfterLoad', [records, successful, operation]);
+    },
+
+    onProxyWrite: function(operation) {
+        if (operation.wasSuccessful()) {
+            this.attachSummaryRecord(operation.getResultSet());
+        }
+        this.callParent([operation]);
     },
 
     // private
@@ -1023,8 +1043,10 @@ Ext.define('Ext.data.Store', {
             records[i].join(me);
         }
 
-        ++me.loadCount;
-        me.complete = true;
+        if (!me.isEmptyStore) {
+            ++me.loadCount;
+            me.complete = true;
+        }
         
         if (me.hasListeners.datachanged) {
             me.fireEvent('datachanged', me);
@@ -1141,6 +1163,17 @@ Ext.define('Ext.data.Store', {
 
         me.endUpdate();
         Ext.resumeLayouts(true);
+
+        /**
+         * @private
+         * @event commit
+         * Fired when all changes were committed and the Store is clean.
+         *
+         * **Note** Used internally.
+         *
+         * @param {Ext.data.Store} store The Store object
+         */
+        me.fireEvent('commit', me);
     },
 
     filterNewOnly: function(item) {
@@ -1216,6 +1249,17 @@ Ext.define('Ext.data.Store', {
         }
         me.endUpdate();
         Ext.resumeLayouts(true);
+
+        /**
+         * @private
+         * @event reject
+         * Fired when all changes were rejected and the Store is clean.
+         *
+         * **Note** Used internally.
+         *
+         * @param {Ext.data.Store} store The Store object
+         */
+        me.fireEvent('reject', me);
     },
 
     doDestroy: function() {
@@ -1242,6 +1286,52 @@ Ext.define('Ext.data.Store', {
     },
 
     privates: {
+        commitOptions: {
+            commit: true
+        },
+
+        attachSummaryRecord: function(resultSet) {
+            if (!resultSet) {
+                return;
+            }
+            
+            var me = this,
+                summary = resultSet.getSummaryData(),
+                grouper = me.getGrouper(),
+                current = me.summaryRecord,
+                commitOptions = me.commitOptions,
+                groups, len, i, rec, group;
+
+            if (summary) {
+                if (current) {
+                    current.set(summary.data, commitOptions);
+                } else {
+                    me.summaryRecord = summary;
+                    summary.isRemote = true;
+                }
+            }
+
+            if (grouper) {
+                summary = resultSet.getGroupData();
+                if (summary) {
+                    groups = me.getGroups();
+                    for (i = 0, len = summary.length; i < len; ++i) {
+                        rec = summary[i];
+                        group = groups.getItemGroup(rec);
+                        if (group) {
+                            current = group.summaryRecord;
+                            if (current) {
+                                current.set(rec.data, commitOptions);
+                            } else {
+                                group.summaryRecord = rec;
+                                rec.isRemote = true;
+                            }
+                        }
+                    }
+                }
+            }
+        },
+
         /**
          * Similar to a load, however no records are added to the store. This is useful
          * in allowing the developer to decide what to do with the new records.
@@ -1286,6 +1376,7 @@ Ext.define('Ext.data.Store', {
          * {@link #event-add} and {@link #event-remove} events to determine whether the records are being removed/added
          * or just having the position changed.
          * @param {Ext.data.Model[]/Ext.data.Model} [records] The record(s).
+         * @param {Object} [getMap] (private)
          * @return {Number} The number of records being moved. `0` if no records are moving. If records are passed
          * the number will refer to how many of the passed records are moving.
          *

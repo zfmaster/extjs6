@@ -1,8 +1,12 @@
 /**
  * @class Ext.draw.sprite.Composite
- * @extends Ext.draw.sprite.Sprite
  * 
  * Represents a group of sprites.
+ * Composite's sprites are rendered in the order they've been added to the Composite.
+ * The rendering order of composite sprites themselves is determined by the value of
+ * their zIndex attribute, just like with any other sprite.
+ * Every sprite that is added to the Composite is removed from whatever Surface/Composite
+ * it belongs to.
  */
 Ext.define('Ext.draw.sprite.Composite', {
     extend: 'Ext.draw.sprite.Sprite',
@@ -21,21 +25,33 @@ Ext.define('Ext.draw.sprite.Composite', {
     },
 
     /**
-     * Adds a sprite to the composite.
-     * @param {Ext.draw.sprite.Sprite|Object} sprite
+     * Adds sprite(s) to the composite.
+     * @param {Ext.draw.sprite.Sprite/Ext.draw.sprite.Sprite[]/Object/Object[]} sprite
+     * @return {Ext.draw.sprite.Sprite/Ext.draw.sprite.Sprite[]}
      */
-    add: function (sprite) {
-        if (!sprite) {
-            return null;
+    addSprite: function (sprite) {
+        var i = 0,
+            results;
+
+        if (Ext.isArray(sprite)) {
+            results = [];
+            while (i < sprite.length) {
+                results.push(this.addSprite(sprite[i++]));
+            }
+            return results;
         }
-        if (!sprite.isSprite) {
+
+        if (sprite && sprite.type && !sprite.isSprite) {
             sprite = Ext.create('sprite.' + sprite.type, sprite);
         }
-        sprite.setParent(this);
-        sprite.setSurface(this.getSurface());
+        if (!sprite || !sprite.isSprite || sprite.isComposite) {
+            return null;
+        }
 
-        var me = this,
-            attr = me.attr,
+        sprite.setSurface(null);
+        sprite.setParent(this);
+
+        var attr = this.attr,
             oldTransformations = sprite.applyTransformations;
 
         sprite.applyTransformations = function (force) {
@@ -47,12 +63,19 @@ Ext.define('Ext.draw.sprite.Composite', {
             oldTransformations.call(sprite, force);
         };
 
-        me.sprites.push(sprite);
-        me.map[sprite.id] = sprite.getId();
+        this.sprites.push(sprite);
+        this.map[sprite.id] = sprite.getId();
         attr.bbox.plain.dirty = true;
         attr.bbox.transform.dirty = true;
 
         return sprite;
+    },
+
+    /**
+     * @deprecated 6.2.1 Use {@link #addSprite} instead.
+     */
+    add: function (sprite) {
+        return this.addSprite(sprite);
     },
 
     removeSprite: function (sprite, isDestroy) {
@@ -66,7 +89,7 @@ Ext.define('Ext.draw.sprite.Composite', {
             if (!sprite || !sprite.isSprite) {
                 return null;
             }
-            if (sprite.isDestroyed || sprite.isDestroying) {
+            if (sprite.destroyed || sprite.destroying) {
                 return sprite;
             }
             id = sprite.getId();
@@ -80,7 +103,7 @@ Ext.define('Ext.draw.sprite.Composite', {
                 return sprite;
             }
             sprite.setParent(null);
-            sprite.setSurface(null);
+            // sprite.setSurface(null);
             Ext.Array.remove(me.sprites, sprite);
 
             me.dirtyZIndex = true;
@@ -90,13 +113,8 @@ Ext.define('Ext.draw.sprite.Composite', {
         return sprite || null;
     },
 
-    updateSurface: function (surface) {
-        for (var i = 0, ln = this.sprites.length; i < ln; i++) {
-            this.sprites[i].setSurface(surface);
-        }
-    },
-
     /**
+     * @deprecated 6.2.1 Use {@link #addSprite} instead.
      * Adds a list of sprites to the composite.
      * @param {Ext.draw.sprite.Sprite[]|Object[]|Ext.draw.sprite.Sprite|Object} sprites
      */
@@ -176,7 +194,9 @@ Ext.define('Ext.draw.sprite.Composite', {
         var debug = attr.debug || me.statics().debug || Ext.draw.sprite.Sprite.debug;
         if (debug) {
             attr.inverseMatrix.toContext(ctx);
-            debug.bbox && me.renderBBox(surface, ctx);
+            if (debug.bbox) {
+                me.renderBBox(surface, ctx);
+            }
         }
         //</debug>
     },

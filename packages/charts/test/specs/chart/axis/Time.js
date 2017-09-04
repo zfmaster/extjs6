@@ -1,10 +1,25 @@
-describe('Ext.chart.axis.Time', function () {
+topSuite("Ext.chart.axis.Time", ['Ext.chart.*', 'Ext.data.ArrayStore'], function() {
+    beforeEach(function() {
+        // Silence Sencha download server warnings
+        spyOn(Ext.log, 'warn');
+    });
     
     describe('renderer', function () {
+        var chart;
+        
+        afterEach(function() {
+            Ext.destroy(chart);
+        });
+
+        // Safari 7 times out here in Modern for unknown reason in TeamCity only.
+        // Works fine locally (tested in Safari 7.0 (9537.71).
+        TODO(Ext.isSafari7).
         it('should work with custom renderers even when "dateFormat" is set', function () {
             var axisRendererCallCount = 0,
                 lastAxisRendererResult,
-                chart = new Ext.chart.CartesianChart({
+                axes, timeAxis, layoutEndSpy;
+
+            chart = new Ext.chart.CartesianChart({
                 renderTo: Ext.getBody(),
                 width: 400,
                 height: 400,
@@ -37,30 +52,30 @@ describe('Ext.chart.axis.Time', function () {
                     }
                 ]
             });
-            chart.performLayout();
-            expect(axisRendererCallCount).toBeGreaterThan(3);
+            layoutEndSpy = spyOn(chart, 'onLayoutEnd').andCallThrough();
 
-            var axes = chart.getAxes();
-            var timeAxis = axes[1];
+            waitsForSpy(layoutEndSpy, "chart layout to finish");
 
-            var performLayoutSpy = spyOn(chart, 'performLayout');
-            axisRendererCallCount = 0;
             runs(function () {
+                expect(axisRendererCallCount).toBeGreaterThan(3);
+
+                axes = chart.getAxes();
+                timeAxis = axes[1];
+                axisRendererCallCount = 0;
                 timeAxis.getSegmenter().setStep({
                     unit: Ext.Date.HOUR,
                     step: 1
                 });
+                layoutEndSpy.reset();
+                chart.performLayout();
             });
 
-            waitsFor(function () {
-                return performLayoutSpy.wasCalled;
-            });
+            waitsForSpy(layoutEndSpy, "chart layout to finish");
 
             runs(function () {
                 expect(axisRendererCallCount).toBe(3);
                 expect(lastAxisRendererResult).toBe('hello');
 
-                performLayoutSpy.reset();
                 axisRendererCallCount = 0;
                 lastAxisRendererResult = undefined;
                 timeAxis.setRenderer(function () {
@@ -68,32 +83,20 @@ describe('Ext.chart.axis.Time', function () {
                     return lastAxisRendererResult = 'hi';
                 });
                 // New custom renderer should trigger axis and chart layouts.
+                layoutEndSpy.reset();
             });
 
-            waitsFor(function () {
-                return performLayoutSpy.wasCalled;
-            });
+            waitsForSpy(layoutEndSpy, "chart layout to finish");
 
             runs(function () {
                 expect(axisRendererCallCount).toBe(3);
                 expect(lastAxisRendererResult).toBe('hi');
 
-                performLayoutSpy.reset();
                 timeAxis.setRenderer(null);
                 // No user renderer, but dateFormat is set, should create a default renderer
                 // based on dateFormat.
                 var defaultRenderer = timeAxis.getRenderer();
                 expect(defaultRenderer.isDefault).toBe(true);
-            });
-
-            waitsFor(function () {
-                return performLayoutSpy.wasCalled;
-            });
-
-            runs(function () {
-                // We'll never get here, unless chart.performLayout was called as a result of
-                // 'timeAxis.setRenderer(null);' call, which is what we expecting.
-                Ext.destroy(chart);
             });
         });
     });

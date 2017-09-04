@@ -1,4 +1,4 @@
-describe("Ext.data.proxy.LocalStorage", function() {
+topSuite("Ext.data.proxy.LocalStorage", ['Ext.data.ArrayStore'], function() {
     var proxy;
 
     if (Ext.supports.LocalStorage) {

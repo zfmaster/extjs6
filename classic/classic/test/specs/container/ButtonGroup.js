@@ -1,4 +1,4 @@
-describe("Ext.container.ButtonGroup", function() {
+topSuite("Ext.container.ButtonGroup", ['Ext.button.Button', 'Ext.button.Split'], function() {
     var group;
 
     afterEach(function() {
@@ -184,7 +184,7 @@ describe("Ext.container.ButtonGroup", function() {
             });
             
             it("should be a FocusableContainer", function() {
-                expect(group.enableFocusableContainer).toBe(true);
+                expect(group.focusableContainer).toBe(true);
             });
             
             it("should have presentation role on main el", function() {

@@ -1,4 +1,4 @@
-xdescribe("Ext.layout.component.field.Trigger", function(){
+xtopSuite("Ext.layout.component.field.Trigger", function(){
     var text, trigger, width, height;
    
     afterEach(function(){

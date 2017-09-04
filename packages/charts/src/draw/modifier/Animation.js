@@ -41,12 +41,13 @@
  * {@link Ext.draw.sprite.Sprite#method-getAnimation getAnimation} method.
  */
 Ext.define('Ext.draw.modifier.Animation', {
+    extend: 'Ext.draw.modifier.Modifier',
+    alias: 'modifier.animation',
+
     requires: [
         'Ext.draw.TimingFunctions',
         'Ext.draw.Animator'
     ],
-    extend: 'Ext.draw.modifier.Modifier',
-    alias: 'modifier.animation',
 
     config: {
         /**
@@ -103,21 +104,21 @@ Ext.define('Ext.draw.modifier.Animation', {
         if (!attr.hasOwnProperty('timers')) {
             attr.animating = false;
             attr.timers = {};
-            // The animationOriginal object is used to hold the target values for the
+            // The 'targets' object is used to hold the target values for the
             // attributes while they are being animated from source to target values.
-            // The animationOriginal is pushed down to the lower level modifiers,
+            // The 'targets' is pushed down to the lower level modifiers,
             // instead of the actual attr object, to hide the fact that the
             // attributes are being animated.
-            attr.animationOriginal = Ext.Object.chain(attr);
-            attr.animationOriginal.prototype = attr;
+            attr.targets = Ext.Object.chain(attr);
+            attr.targets.prototype = attr;
         }
         if (this._lower) {
-            this._lower.prepareAttributes(attr.animationOriginal);
+            this._lower.prepareAttributes(attr.targets);
         }
     },
 
     updateSprite: function (sprite) {
-        this.setConfig(sprite.config.fx);
+        this.setConfig(sprite.config.animation);
     },
 
     updateDuration: function (duration) {
@@ -155,7 +156,7 @@ Ext.define('Ext.draw.modifier.Animation', {
     /**
      * Set special easings on the given attributes. E.g.:
      *
-     *     circleSprite.fx.setEasingOn('r', 'elasticIn');
+     *     circleSprite.getAnimation().setEasingOn('r', 'elasticIn');
      *
      * @param {String/Array} attrs The source attribute(s).
      * @param {String} easing The special easings.
@@ -205,13 +206,14 @@ Ext.define('Ext.draw.modifier.Animation', {
     /**
      * Set special duration on the given attributes. E.g.:
      *
-     *     rectSprite.fx.setDurationOn('height', 2000);
+     *     rectSprite.getAnimation().setDurationOn('height', 2000);
      *
      * @param {String/Array} attrs The source attributes.
      * @param {Number} duration The special duration.
      */
     setDurationOn: function (attrs, duration) {
         attrs = Ext.Array.from(attrs).slice();
+
         var customDurations = {},
             i = 0,
             ln = attrs.length;
@@ -219,6 +221,7 @@ Ext.define('Ext.draw.modifier.Animation', {
         for (; i < ln; i++) {
             customDurations[attrs[i]] = duration;
         }
+
         this.setCustomDurations(customDurations);
     },
 
@@ -228,9 +231,8 @@ Ext.define('Ext.draw.modifier.Animation', {
      */
     clearDurationOn: function (attrs) {
         attrs = Ext.Array.from(attrs, true);
-        var i = 0, ln = attrs.length;
 
-        for (; i < ln; i++) {
+        for (var i = 0, ln = attrs.length; i < ln; i++) {
             delete this._customDurations[attrs[i]];
         }
     },
@@ -281,7 +283,7 @@ Ext.define('Ext.draw.modifier.Animation', {
             customEasings = me._customEasings,
             anySpecial = me.anySpecialAnimations,
             any = me.anyAnimation || anySpecial,
-            animationOriginal = attr.animationOriginal,
+            targets = attr.targets,
             ignite = false,
             timer, name, newValue, startValue, parser, easing, duration;
 
@@ -294,7 +296,7 @@ Ext.define('Ext.draw.modifier.Animation', {
                 } else {
                     attr[name] = changes[name];
                 }
-                delete animationOriginal[name];
+                delete targets[name];
                 delete timers[name];
             }
             return changes;
@@ -349,15 +351,15 @@ Ext.define('Ext.draw.modifier.Animation', {
                             timer.target = newValue;
                         }
                         // The animation started. Change to originalVal.
-                        animationOriginal[name] = newValue;
+                        targets[name] = newValue;
                         delete changes[name];
                         ignite = true;
                         continue;
                     } else {
-                        delete animationOriginal[name];
+                        delete targets[name];
                     }
                 } else {
-                    delete animationOriginal[name];
+                    delete targets[name];
                 }
 
                 // If the property is not animating.
@@ -388,7 +390,7 @@ Ext.define('Ext.draw.modifier.Animation', {
         var changes = {},
             any = false,
             timers = attr.timers,
-            animationOriginal = attr.animationOriginal,
+            targets = attr.targets,
             now = Ext.draw.Animator.animationTime(),
             name, timer, delta;
 
@@ -406,8 +408,8 @@ Ext.define('Ext.draw.modifier.Animation', {
                 delta = (now - timer.start) / timer.duration;
             }
             if (delta >= 1) {
-                changes[name] = animationOriginal[name];
-                delete animationOriginal[name];
+                changes[name] = targets[name];
+                delete targets[name];
                 if (timers[name].remove) {
                     changes.removeFromInstance = changes.removeFromInstance || {};
                     changes.removeFromInstance[name] = true;
@@ -424,7 +426,7 @@ Ext.define('Ext.draw.modifier.Animation', {
     },
 
     pushDown: function (attr, changes) {
-        changes = this.callParent([attr.animationOriginal, changes]);
+        changes = this.callParent([attr.targets, changes]);
         return this.setAttrs(attr, changes);
     },
 
@@ -478,7 +480,7 @@ Ext.define('Ext.draw.modifier.Animation', {
     },
 
     destroy: function () {
-        this.stop();
+        Ext.draw.Animator.remove(this);
         this.callParent();
     }
 });

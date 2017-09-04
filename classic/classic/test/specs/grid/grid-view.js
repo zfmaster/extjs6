@@ -1,6 +1,8 @@
-/* global Ext, jasmine, expect */
+/* global Ext, jasmine, expect, spyOn */
 
-describe("grid-view", function() {
+topSuite("grid-view",
+    [false, 'Ext.grid.Panel', 'Ext.grid.feature.Grouping', 'Ext.grid.plugin.DragDrop'],
+function() {
     function createSuite(buffered) {
         describe(buffered ? "with buffered rendering" : "without buffered rendering", function() {
             var grid, view, navModel, locked, createGrid = function() {
@@ -70,7 +72,6 @@ describe("grid-view", function() {
                     locked = true;
                     createGrid();
                     innerSelector = grid.normalGrid.getView().innerSelector;
-                    
                 });
                 
                 describe("getCellInclusive", function(){
@@ -78,23 +79,23 @@ describe("grid-view", function() {
                         var cell = grid.getView().getCellInclusive({
                             row: 0,
                             column: 0
-                        });
-                        expect(cell.down(innerSelector, true).innerHTML).toBe('1'); 
+                        }, true);
+                        expect(cell.querySelector(innerSelector).innerHTML).toBe('1'); 
                     });
                     
                     it("should be able to get a cell in the unlocked area", function(){
                         var cell = grid.getView().getCellInclusive({
                             row: 3,
                             column: 3
-                        });
-                        expect(cell.down(innerSelector, true).innerHTML).toBe('16'); 
+                        }, true);
+                        expect(cell.querySelector(innerSelector).innerHTML).toBe('16'); 
                     });
                     
                     it("should return false if the cell doesn't exist", function(){
                         var cell = grid.getView().getCellInclusive({
                             row: 20,
                             column: 20
-                        });
+                        }, true);
                         expect(cell).toBe(false); 
                     });
                     
@@ -104,7 +105,19 @@ describe("grid-view", function() {
                             column: 1
                         }, true);
                         expect(cell.tagName).not.toBeUndefined();
-                        expect(Ext.fly(cell).down(innerSelector, true).innerHTML).toBe('6'); 
+                        expect(cell.querySelector(innerSelector).innerHTML).toBe('6'); 
+                    });
+                    
+                    it("should return an Element instance if returnDom param is not used", function() {
+                        var cell = grid.getView().getCellInclusive({
+                            row: 1,
+                            column: 1
+                        });
+                        
+                        expect(cell instanceof Ext.dom.Element).toBe(true);
+                        expect(cell.down(innerSelector, true).innerHTML).toBe('6'); 
+                        
+                        cell.destroy();
                     });
                 });
 
@@ -188,145 +201,4 @@ describe("grid-view", function() {
     }
     createSuite(false);
     createSuite(true);
-    
-    describe("drag and drop between grids", function() {
-        var grid1,
-            grid2;
-
-        var Model = Ext.define(null, {
-            extend: 'Ext.data.Model',
-            fields: ['group', 'text']
-        });
-
-        function findCell(grid, rowIdx, cellIdx) {
-            return grid.getView().getCellInclusive({
-                row: rowIdx,
-                column: cellIdx
-            }, true);
-        }
-
-        function triggerCellMouseEvent(grid, type, rowIdx, cellIdx, button, x, y) {
-            var target = findCell(grid1, rowIdx, cellIdx);
-
-            jasmine.fireMouseEvent(target, type, x, y, button);
-        }
-
-        function selectRow(grid, rowIdx) {
-            var target = findCell(grid, rowIdx, 0);
-            jasmine.fireMouseEvent(target, 'click', 0, 0, false, false, true, false);
-            return target;
-        }
-
-        function dragAndDrop(fromEl, fromX, fromY, toEl, toX, toY) {
-            var dragThresh = Ext.dd.DragDropManager.clickPixelThresh + 1;
-
-            jasmine.fireMouseEvent(fromEl, 'mouseover', fromX, fromY);
-            jasmine.fireMouseEvent(fromEl, 'mousedown', fromX, fromY);
-            jasmine.fireMouseEvent(fromEl, 'mousemove', fromX + dragThresh, fromY);
-
-            jasmine.fireMouseEvent(fromEl, 'mouseout', toX, toY);
-            jasmine.fireMouseEvent(fromEl, 'mouseleave', toX, toY);
-            jasmine.fireMouseEvent(toEl, 'mouseenter', toX, toY);
-
-            jasmine.fireMouseEvent(toEl, 'mouseover', toX, toY);
-            jasmine.fireMouseEvent(toEl, 'mousemove', toX - dragThresh, toY);
-            jasmine.fireMouseEvent(toEl, 'mousemove', toX, toY);
-            jasmine.fireMouseEvent(toEl, 'mouseup', toX, toY);
-            jasmine.fireMouseEvent(toEl, 'mouseout', fromX, fromY);
-
-            // Mousemove outside triggers removal of overCls
-            jasmine.fireMouseEvent(fromEl, 'mousemove', fromX, fromY);
-        }
-
-        afterEach(function() {
-            grid1 = grid2 = Ext.destroy(grid1, grid2);
-        });
-
-        function makeGrid(ddConfig, data) {
-            return new Ext.grid.Panel({
-                renderTo: Ext.getBody(),
-                height: 200,
-                width: 200,
-                multiSelect: true,
-                features: [{
-                    ftype: 'grouping'
-                }],
-                viewConfig: {
-                    plugins: Ext.apply({
-                        ptype: 'gridviewdragdrop'
-                    }, ddConfig)
-                },
-                store: {
-                    model: Model,
-                    groupField: 'group',
-                    data: data
-                },
-                columns: [{
-                    flex: 1,
-                    dataIndex: 'text'
-                }]
-            });
-        }
-
-        describe("drag and drop non-contiguous records", function() {
-            it("should not cause a Maximum call stack size exceeded error", function() {
-                var spy = jasmine.createSpy(),
-                    dragEl, dropEl, box,
-                    startX, startY, endX, endY, old;
-
-                grid1 = makeGrid({
-                    dragGroup: 'group1',
-                    dropGroup: 'group2'
-                }, [{
-                    group: 'Group1',
-                    text: 'Item 1'
-                }, {
-                    group: 'Group2',
-                    text: 'Item 2'
-                }, {
-                    group: 'Group2',
-                    text: 'Item 3'
-                }]);
-                grid2 = makeGrid({
-                    dragGroup: 'group2',
-                    dropGroup: 'group1',
-                    dropZone: {
-                        overClass: 'dropzone-over-class'
-                    }
-                });
-                dragEl = selectRow(grid1, 0);
-                box = Ext.get(dragEl).getBox();
-                startX = box.left + 1;
-                startY = box.top + 1;
-                dropEl = grid2.getView().el;
-                box = Ext.get(dropEl).getBox();
-                endX = box.left + 20;
-                endY = box.top + 20;
-
-                // The class must be added, so call through
-                spyOn(dropEl, 'addCls').andCallThrough();
-
-                old = window.onerror;
-                window.onerror = spy.andCallFake(function() {
-                    if (old) {
-                        old();
-                    }
-                });
-
-                dragAndDrop(dragEl, startX, startY, dropEl, endX, endY);
-                expect(spy).not.toHaveBeenCalled();
-
-                window.onerror = old;
-
-                // overClass should have been added
-                expect(grid2.getView().el.addCls.calls[0].args[0]).toBe('dropzone-over-class');
-
-                // But removed
-                expect(grid2.getView().el.hasCls('dropzone-over-class')).toBe(false);
-
-                // A drag/drop must have happened
-                expect(grid2.store.getCount()).toBe(1);
-            });
-        });
-    });
 }); 

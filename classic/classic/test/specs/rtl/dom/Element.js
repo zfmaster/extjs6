@@ -1,4 +1,4 @@
-describe("Ext.rtl.dom.Element", function() {
+topSuite("Ext.rtl.dom.Element", function() {
     var wrap, el;
 
     beforeEach(function() {
@@ -25,7 +25,7 @@ describe("Ext.rtl.dom.Element", function() {
             }]
         });
         
-        el = wrap.first().first();
+        el = Ext.fly(wrap.first(null, true)).first();
     });
 
     afterEach(function() {

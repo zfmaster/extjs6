@@ -3,6 +3,7 @@
 /**
  * @class Ext.GlobalEvents
  */
+
 Ext.define('Ext.overrides.GlobalEvents', {
     override: 'Ext.GlobalEvents',
 
@@ -11,6 +12,32 @@ Ext.define('Ext.overrides.GlobalEvents', {
      * Fires after global layout processing has been resumed in {@link
      * Ext.Component#resumeLayouts}.
      */
+    
+    attachListeners: function() {
+        var me = this,
+            docElement, bufferedFn;
+        
+        // In IE9- when using legacy onresize event via attachEvent or onresize property,
+        // the event may fire for *content size changes* as well as actual document view
+        // size changes. See this: https://msdn.microsoft.com/en-us/library/ms536959(v=vs.85).aspx
+        // and this: http://stackoverflow.com/questions/1852751/window-resize-event-firing-in-internet-explorer
+        // The amount of these events firing all at once can be entirely staggering, and they
+        // often happen during layouts so we have to be über careful to execute as few JavaScript
+        // statements as possible to improve overall framework performance.
+        if (Ext.isIE8) {
+            docElement = Ext.getDoc().dom.documentElement;
+            bufferedFn = Ext.Function.createBuffered(me.fireResize, me.resizeBuffer, me);
+            
+            Ext.getWin().dom.attachEvent('onresize', function() {
+                if (docElement.clientWidth  !== Ext.GlobalEvents.curWidth ||
+                    docElement.clientHeight !== Ext.GlobalEvents.curHeight) {
+                    bufferedFn();
+                }
+            });
+        }
+        
+        me.callParent();
+    },
 
     deprecated: {
         5: {

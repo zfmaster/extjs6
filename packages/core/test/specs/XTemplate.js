@@ -1,4 +1,6 @@
-describe("Ext.XTemplate", function() {
+/* global Ext, expect, jasmine */
+
+topSuite("Ext.XTemplate", ['Ext.dom.Element'], function() {
     var tpl,
         data,
         arrayData,
@@ -1055,7 +1057,7 @@ describe("Ext.XTemplate", function() {
                         return "Js " + title;
                     },
                     isGirl: function(name) {
-                        return name == 'Nina';
+                        return name === 'Nina';
                     },
                     isBaby: function(age) {
                         return age < 1;
@@ -1253,6 +1255,12 @@ describe("Ext.XTemplate", function() {
             expect(function () {
                 tpl.apply({});
             }).toThrow();
+        });
+    });
+    
+    describe('single token', function() {
+        it('should not coerce a single token to be a string', function() {
+            expect(new Ext.XTemplate('{foo}').apply({foo:1})).toBe(1);
         });
     });
 });

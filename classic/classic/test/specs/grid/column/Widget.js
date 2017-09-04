@@ -1,6 +1,9 @@
 /* global expect, Ext, jasmine */
 
-describe("Ext.grid.column.Widget", function() {
+topSuite("Ext.grid.column.Widget",
+    ['Ext.grid.Panel', 'Ext.Button', 'Ext.app.ViewController', 'Ext.form.RadioGroup',
+     'Ext.form.field.ComboBox', 'Ext.tab.Panel', 'Ext.ProgressBarWidget'],
+function() {
     var webkitIt = Ext.isWebKit ? it : xit,
         synchronousLoad = true,
         proxyStoreLoad = Ext.data.ProxyStore.prototype.load,
@@ -53,7 +56,9 @@ describe("Ext.grid.column.Widget", function() {
             xtype: 'button'
         })];
 
-        data = data || generateData(4);
+        if (typeof data == 'number' || data == null) {
+            data = generateData(data || 4);
+        }
 
         store = new Ext.data.Store({
             model: Model,
@@ -121,6 +126,7 @@ describe("Ext.grid.column.Widget", function() {
             }]);
 
             var widget0 = getWidget(0),
+                widget1 = getWidget(1),
                 rec0 = store.getAt(0),
                 rec1 = store.getAt(1),
                 toDelete = widget0.getWidgetRecord(),
@@ -130,24 +136,30 @@ describe("Ext.grid.column.Widget", function() {
             expect(toDelete).toBe(rec0);
             expect(newTop).toBe(rec1);
 
-            // Focus the button, and enter actionable mode, then click the button.
-            jasmine.fireMouseEvent(widget0.focusEl, 'mousedown');
-            widget0.focusEl.focus();
-            jasmine.fireKeyEvent(widget0.focusEl, 'keydown', Ext.event.Event.SPACE);
+            // Focus the button, and enter actionable mode
+            grid.setActionableMode(true, new Ext.grid.CellContext(view).setPosition(0, 0));
 
-            // That should have deleted a record
-            expect(store.getCount()).toBe(storeCount - 1);
+            // Wait for the widget to be focused
+            waitsForFocus(widget0);
+            
+            runs(function() {
+                jasmine.fireKeyEvent(widget0.focusEl, 'keydown', Ext.event.Event.SPACE);
 
-            // The widget's record must have gone
-            expect(store.contains(toDelete)).toBe(false);
+                // That should have deleted a record
+                expect(store.getCount()).toBe(storeCount - 1);
 
-            // Widget 0 must receive focus when any async focus events have run their course
-            waitsFor(function() {
-                widget0 = getWidget(0);
-                return widget0.hasFocus;
+                // The widget's record must have gone
+                expect(store.contains(toDelete)).toBe(false);
             });
 
+            // The new widget 0 must receive focus when any async focus events have run their course
+            waitsForFocus(widget1);
+
             runs(function() {
+                widget0 = getWidget(0);
+
+                expect(widget0.el.contains(document.activeElement)).toBe(true);
+
                 // Widget 0 record must be what we got from widget 1 initially
                 expect(widget0.getWidgetRecord()).toBe(newTop);
             });
@@ -232,7 +244,10 @@ describe("Ext.grid.column.Widget", function() {
 
             // And focus should have jumped from the mousedowned button (which has gone)
             // to the button above it.
-            expect(colRef[0].getWidget(store.last()).hasFocus).toBe(true);
+            // NavigationModel does not enter actionable mode for touches.
+            if (!jasmine.supportsTouch) {
+                expect(colRef[0].getWidget(store.last()).hasFocus).toBe(true);
+            }
         });
     });
 
@@ -248,11 +263,9 @@ describe("Ext.grid.column.Widget", function() {
 
         it("should select the row on click of the widget with stopSelection: false", function() {
             colRef[0].stopSelection = false;
-            navModel.setPosition(new Ext.grid.CellContext(grid.view).setPosition(0, 0));
+            navModel.setPosition(new Ext.grid.CellContext(view).setPosition(0, 0));
             
-            waitsFor(function() {
-                return view.containsFocus;
-            });
+            waitsForFocus(view);
 
             // Wait for focus to be in the view.
             // Because IE has async focusing.
@@ -323,11 +336,11 @@ describe("Ext.grid.column.Widget", function() {
 
                 if (col && view.viewReady) {
                     selector = col.getCellInnerSelector();
-                    cells = view.getEl().select(selector, true);
-                    len = cells.getCount();
+                    cells = view.getEl().dom.querySelectorAll(selector);
+                    len = cells.lengtj;
 
                     for (i = start; i < len; ++i) {
-                        expect(getWidget(i, col).getEl().dom.parentNode).toBe(cells.item(i).dom);
+                        expect(getWidget(i, col).getEl().dom.parentNode).toBe(cells[i]);
                     }
                 }
             }
@@ -440,10 +453,10 @@ describe("Ext.grid.column.Widget", function() {
                             return 'foo';
                         }
                     })]);
-                    expect(view.getCellByPosition({row: 0, column: 0})).toHaveCls('foo');
-                    expect(view.getCellByPosition({row: 1, column: 0})).toHaveCls('foo');
-                    expect(view.getCellByPosition({row: 2, column: 0})).toHaveCls('foo');
-                    expect(view.getCellByPosition({row: 3, column: 0})).toHaveCls('foo');
+                    expect(view.getCellByPosition({row: 0, column: 0}, true)).toHaveCls('foo');
+                    expect(view.getCellByPosition({row: 1, column: 0}, true)).toHaveCls('foo');
+                    expect(view.getCellByPosition({row: 2, column: 0}, true)).toHaveCls('foo');
+                    expect(view.getCellByPosition({row: 3, column: 0}, true)).toHaveCls('foo');
                 });
 
                 it("should combine a tdCls on the column with the tdCls on the widget", function() {
@@ -455,14 +468,14 @@ describe("Ext.grid.column.Widget", function() {
                     });
                     cfg.tdCls = 'bar';
                     makeGrid([cfg]);
-                    expect(view.getCellByPosition({row: 0, column: 0})).toHaveCls('foo');
-                    expect(view.getCellByPosition({row: 0, column: 0})).toHaveCls('bar');
-                    expect(view.getCellByPosition({row: 1, column: 0})).toHaveCls('foo');
-                    expect(view.getCellByPosition({row: 1, column: 0})).toHaveCls('bar');
-                    expect(view.getCellByPosition({row: 2, column: 0})).toHaveCls('foo');
-                    expect(view.getCellByPosition({row: 2, column: 0})).toHaveCls('bar');
-                    expect(view.getCellByPosition({row: 3, column: 0})).toHaveCls('foo');
-                    expect(view.getCellByPosition({row: 3, column: 0})).toHaveCls('bar');
+                    expect(view.getCellByPosition({row: 0, column: 0}, true)).toHaveCls('foo');
+                    expect(view.getCellByPosition({row: 0, column: 0}, true)).toHaveCls('bar');
+                    expect(view.getCellByPosition({row: 1, column: 0}, true)).toHaveCls('foo');
+                    expect(view.getCellByPosition({row: 1, column: 0}, true)).toHaveCls('bar');
+                    expect(view.getCellByPosition({row: 2, column: 0}, true)).toHaveCls('foo');
+                    expect(view.getCellByPosition({row: 2, column: 0}, true)).toHaveCls('bar');
+                    expect(view.getCellByPosition({row: 3, column: 0}, true)).toHaveCls('foo');
+                    expect(view.getCellByPosition({row: 3, column: 0}, true)).toHaveCls('bar');
                 });
             });
 
@@ -919,7 +932,7 @@ describe("Ext.grid.column.Widget", function() {
                         expect(view.getCellByPosition({
                             row: 0,
                             column: 0
-                        }).hasCls(view.dirtyCls)).toBe(true);
+                        }, true)).toHaveCls(view.dirtyCls);
 
                         store.first().set('a', oldValue);
 
@@ -927,7 +940,7 @@ describe("Ext.grid.column.Widget", function() {
                         expect(view.getCellByPosition({
                             row: 0,
                             column: 0
-                        }).hasCls(view.dirtyCls)).toBe(false);
+                        }, true)).not.toHaveCls(view.dirtyCls);
                     });
 
                     it("should render with a cell dirty class set if the record is already modified", function() {
@@ -944,7 +957,7 @@ describe("Ext.grid.column.Widget", function() {
                         expect(view.getCellByPosition({
                             row: 0,
                             column: 0
-                        }).hasCls(view.dirtyCls)).toBe(true);
+                        }, true)).toHaveCls(view.dirtyCls);
                     });
 
                     it("should remove all widgets when calling removeAll", function() {
@@ -1101,6 +1114,16 @@ describe("Ext.grid.column.Widget", function() {
                         grid.store.loadData(data);
                         expect(childNodes.length).toBe(1);
                     });
+                });
+
+                it("should be rendered after calling view refreshNode", function() {
+                    makeGrid(null, 1, {
+                        height: 200
+                    });
+
+                    grid.getView().refreshNode(0);
+
+                    expect(Ext.fly(grid.getView().getRow(0)).down('.x-btn')).not.toBeNull();
                 });
             });
 
@@ -1304,7 +1327,11 @@ describe("Ext.grid.column.Widget", function() {
 
                     jasmine.fireMouseEvent(getWidget(0).focusEl, 'click');
                     expect(getWidget(0).menu.isVisible()).toBe(true);
-                    expect(grid.actionableMode).toBe(true);
+
+                    // NavigationModel does not enter actionable mode for touches.
+                    if (!jasmine.supportsTouch) {
+                        expect(grid.actionableMode).toBe(true);
+                    }
 
                     jasmine.fireMouseEvent(getWidget(0).focusEl, 'click');
                     expect(getWidget(0).menu.isVisible()).toBe(false);
@@ -1312,12 +1339,49 @@ describe("Ext.grid.column.Widget", function() {
                     jasmine.fireMouseEvent(view.getCellByPosition({
                         row: 0,
                         column: 0
-                    }), 'click');
+                    }, true), 'click');
 
                     // Should focus the cell and exit actionable mode.
                     // Some browsers fire async focus events, so wait for it.
-                    waitsFor(function() {
-                        return grid.actionableMode === false;
+                    // NavigationModel does not enter actionable mode for touches.
+                    if (!jasmine.supportsTouch) {
+                        waitsFor(function() {
+                            return grid.actionableMode === false;
+                        });
+                    }
+                });
+
+                describe("in a locked grid", function() {
+                    var normalGrid, lockedGrid, firstNormalRow, firstLockedRow;
+
+                    afterEach(function() {
+                        normalGrid = lockedGrid = firstNormalRow, firstLockedRow = null;
+                    });
+
+                    it("should keep line heights synced after sorting", function() {
+                        
+
+                        createGrid(null, null, {
+                            columns: [Ext.apply(getColCfg({
+                                xtype: 'button',
+                                height: 40
+                            }), {
+                                locked: true
+                            }), {
+                                dataIndex: 'a'
+                            }]
+                        });
+
+                        normalGrid = grid.normalGrid;
+                        lockedGrid = grid.lockedGrid;
+
+                        normalGrid.getColumnManager().getColumns()[0].sort();
+
+                        firstNormalRow = normalGrid.getView().getRow(0);
+                        firstLockedRow = lockedGrid.getView().getRow(0);
+
+                        expect(Ext.fly(firstNormalRow).getHeight()).toBe(Ext.fly(firstLockedRow).getHeight());
+
                     });
                 });
             });

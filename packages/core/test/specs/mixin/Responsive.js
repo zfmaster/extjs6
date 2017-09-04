@@ -1,4 +1,9 @@
-describe('Ext.mixin.Responsive', function () {
+/* global expect, Ext */
+
+topSuite("Ext.mixin.Responsive",
+    Ext.isModern ? ['Ext.viewport.Default', 'Ext.layout.*']
+                 :['Ext.container.Viewport', 'Ext.layout.container.*'],
+function () {
     function stashProps (object, backup, props) {
         for (var i = props.length; i-- > 0; ) {
             var name = props[i];
@@ -391,6 +396,152 @@ describe('Ext.mixin.Responsive', function () {
 
             bar = instance.getBar();
             expect(bar).toBe('M');
+        });
+    });
+    
+    describe('use by responsive plugin', function() {
+        var viewport,
+            envWidth;
+        
+        beforeEach(function() {
+            env = environments.ipad.landscape;
+            envWidth = env.width;
+        });
+        afterEach(function() {
+            env.width = envWidth;
+            Ext.destroy(viewport);
+        });
+        
+        /**
+         * This test tests reconfiguring container layouts in response to environment
+         * changes.
+         *
+         * There is a main layout (border in classic and dock in modern) which
+         * has a button container and a main container.
+         *
+         * In narrow viewport, the button contains is docked:'top' or region:'north',
+         * depending on the toolkit and uses layout: 'hbox'.
+         *
+         * When the viewport is made narrow, it moves to docked:'left'/region:'west', and switches
+         * to layout: 'vbox'.
+         */
+        it('should update layout configs', function() {
+            var viewportConfig = {
+                    xtype: 'viewport',
+
+                    responsiveConfig: {
+                        modern: {
+                            layout: 'auto'
+                        },
+                        classic: {
+                            layout: 'border'
+                        }
+                    },
+
+                    defaults: {
+                        xtype: 'panel',
+                        frame: true,
+                        margin: 5,
+                        bodyPadding: 5
+                    },
+                    items: [{
+                        itemId: 'button-container',
+                        region: 'west',
+                        title: Ext.isModern ? 'Top Dock' : 'North Region',
+                        width: 200,
+                        plugins: 'responsive',
+                        layout: {
+                            type: 'box',
+                            align: 'stretch'
+                        },
+                        responsiveConfig: {
+                            'width < 600 && modern': {
+                                docked: 'top',
+                                width: null,
+                                title: 'Top Dock, HBox layout',
+                                layout: {
+                                    vertical: false
+                                }
+                            },
+                            'width < 600 && classic': {
+                                region: 'north',
+                                width: null,
+                                title: 'North Region, HBox layout',
+                                layout: {
+                                    vertical: false
+                                }
+                            },
+                            'width >= 600 && modern': {
+                                docked: 'left',
+                                title: 'Left Dock, VBox layout',
+                                width: 200,
+                                layout: {
+                                    vertical: true
+                                }
+                            },
+                            'width >= 600 && classic': {
+                                region: 'west',
+                                title: 'West Region, VBox layout',
+                                width: 200,
+                                layout: {
+                                    vertical: true
+                                }
+                            }
+                        },
+                        items: [{
+                            xtype: 'button',
+                            text: 'first item'
+                        }, {
+                            xtype: 'button',
+                            text: 'second item'
+                        }]
+                    }, {
+                        itemId: 'center',
+                        region: 'center',
+                        title: 'Center Region',
+                        html: 'Center Body Content',
+                        plugins: 'responsive',
+                            responsiveConfig: {
+                                'width < 600': {
+                                html: 'Should have a north region using hbox layout'
+                            },
+                                'width >= 600': {
+                                html: 'Should have a west region using vbox layout'
+                            }
+                        }
+                    }]
+                },
+                buttonContainer, center;
+
+            viewport = Ext.create(viewportConfig);
+            buttonContainer = viewport.down('#button-container');
+            center = viewport.down('#center');
+
+            // While we're wide, buttons are in a vbox layout docked left
+            expect(buttonContainer.getLayout().getVertical()).toBe(true);
+            
+            if (Ext.isClassic) {
+                expect(buttonContainer.region).toBe('west');
+                expect((center.body.dom.innerText || center.body.dom.innerText).trim()).toBe('Should have a west region using vbox layout');
+            } else {
+                expect(buttonContainer.getDocked()).toBe('left');
+                expect(center.getHtml()).toBe('Should have a west region using vbox layout');
+            }
+
+            // Switch to narrow width, should change the whole arrangement.
+            env.width = 400;
+            Responsive.notify();
+            
+            // Now we're narrow, buttons are in a hbox layout docked top
+            expect(buttonContainer.getLayout().getVertical()).toBe(false);
+            
+            if (Ext.isClassic) {
+                expect(buttonContainer.region).toBe('north');
+                expect((center.body.dom.innerText || center.body.dom.innerText).trim()).toBe('Should have a north region using hbox layout');
+            } else {
+                expect(buttonContainer.getDocked()).toBe('top');
+                expect(center.getHtml()).toBe('Should have a north region using hbox layout');
+            }
         });
     });
 });

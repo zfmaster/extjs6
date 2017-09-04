@@ -29,7 +29,7 @@ Ext.define('Ext.fx.animation.Slide', {
         offset: 0,
 
         /**
-         * @cfg
+         * @cfg {String}
          * @inheritdoc
          */
         easing: 'auto',
@@ -45,7 +45,9 @@ Ext.define('Ext.fx.animation.Slide', {
 
     reverseDirectionMap: {
         up: 'down',
+        top: 'down',
         down: 'up',
+        bottom: 'up',
         left: 'right',
         right: 'left'
     },
@@ -95,7 +97,12 @@ Ext.define('Ext.fx.animation.Slide', {
             reverse = this.getReverse(),
             translateX = 0,
             translateY = 0,
-            fromX, fromY, toX, toY;
+            offsetPct, fromX, fromY, toX, toY;
+
+        if (typeof offset === 'string') {
+            offsetPct = true;
+            offset = parseFloat(offset);
+        }
 
         if (reverse) {
             direction = this.reverseDirectionMap[direction];
@@ -103,6 +110,10 @@ Ext.define('Ext.fx.animation.Slide', {
 
         switch (direction) {
             case this.DIRECTION_UP:
+            case this.DIRECTION_TOP:
+                if (offsetPct) {
+                    offset = box.height * offset / 100;
+                }
                 if (out) {
                     translateY = containerBox.top - box.top - box.height - offset;
                 }
@@ -113,6 +124,10 @@ Ext.define('Ext.fx.animation.Slide', {
                 break;
 
             case this.DIRECTION_DOWN:
+            case this.DIRECTION_BOTTOM:
+                if (offsetPct) {
+                    offset = box.height * offset / 100;
+                }
                 if (out) {
                     translateY = containerBox.bottom - box.bottom + box.height + offset;
                 }
@@ -123,6 +138,9 @@ Ext.define('Ext.fx.animation.Slide', {
                 break;
 
             case this.DIRECTION_RIGHT:
+                if (offsetPct) {
+                    offset = box.width * offset / 100;
+                }
                 if (out) {
                     translateX = containerBox.right - box.right + box.width + offset;
                 }
@@ -133,6 +151,9 @@ Ext.define('Ext.fx.animation.Slide', {
                 break;
 
             case this.DIRECTION_LEFT:
+                if (offsetPct) {
+                    offset = box.width * offset / 100;
+                }
                 if (out) {
                     translateX = containerBox.left - box.left - box.width - offset;
                 }

@@ -72,12 +72,10 @@ Ext.define('Admin.view.pages.FAQ', {
                     ]
                 }
             ],
-            plugins: [
-                {
-                    ptype: 'responsive'
-                }
-            ]
-        },
+            plugins: {
+                responsive: true
+            }
+    },
         {
             xtype: 'panel',
             ui: 'light',

@@ -1,13 +1,8 @@
-describe("Ext.viewport.Default", function() {
+topSuite("Ext.viewport.Default", function() {
     var addWindowListenerSpy,
         Viewport = Ext.viewport.Default;
 
     Viewport.override({
-        addWindowListener: function() {
-            if (!addWindowListenerSpy) return this.callOverridden(arguments);
-            addWindowListenerSpy.apply(this, arguments);
-        },
-
         getWindowOrientation: function() {
             return 0;
         },
@@ -17,17 +12,36 @@ describe("Ext.viewport.Default", function() {
         }
     });
 
+    beforeAll(function() {
+        Viewport.override({
+            addWindowListener: function() {
+                if (!addWindowListenerSpy) return this.callOverridden(arguments);
+                addWindowListenerSpy.apply(this, arguments);
+            },
+    
+            getWindowOrientation: function() {
+                return 0;
+            },
+    
+            waitUntil: function(condition, onSatisfied) {
+                onSatisfied.call(this);
+            }
+        });
+    });
+
     beforeEach(function() {
         addWindowListenerSpy = jasmine.createSpy();
     });
+    
+    afterEach(function() {
+        Ext.scroll.Scroller.viewport = Ext.destroy(Ext.scroll.Scroller.viewport);
+    });
 
-    describe("constructor()", function(){
-        it("should attach initial listeners", function(){
-            var viewport = new Viewport();
-
-            expect(addWindowListenerSpy).toHaveBeenCalled();
-
-            viewport.destroy();
+    describe("constructor()", function() {
+        var viewport;
+        
+        afterEach(function() {
+            viewport = Ext.destroy(viewport);
         });
     });
 
@@ -71,12 +85,16 @@ describe("Ext.viewport.Default", function() {
             });
         });
 
-        describe("onResize()", function(){
+        describe("onWindowResize()", function() {
+            afterEach(function() {
+                top.Test.SandBox.getIframe().style.width = '';
+            });
+
             it("should invoke getWindowWidth() and getWindowHeight()", function(){
                 spyOn(viewport, 'getWindowWidth');
                 spyOn(viewport, 'getWindowHeight');
 
-                viewport.onResize();
+                viewport.onWindowResize();
 
                 expect(viewport.getWindowWidth).toHaveBeenCalled();
                 expect(viewport.getWindowHeight).toHaveBeenCalled();
@@ -85,9 +103,27 @@ describe("Ext.viewport.Default", function() {
             it("should NOT fire a 'resize' event if the size doesn't change", function(){
                 spyOn(viewport, 'fireEvent');
 
-                viewport.onResize();
+                viewport.onWindowResize();
 
                 expect(viewport.fireEvent).not.toHaveBeenCalled();
+            });
+
+            it('should fire a resize event when the window size changes', function() {
+                var resizeSpy = spyOnEvent(viewport, 'resize'),
+                    oldWidth = viewport.lastSize.width,
+                    oldHeight = viewport.lastSize.height;
+
+                top.Test.SandBox.getIframe().style.width = '900px';
+
+                // Wait for async resize event to fire.
+                waitsFor(function() {
+                    return resizeSpy.callCount > 0;
+                });
+
+                // The viewport resize listener should fire with expected arguments.
+                runs(function() {
+                    expect(resizeSpy.mostRecentCall.args).toEqual([viewport, 900, oldHeight, oldWidth, oldHeight]);
+                });
             });
         });
 
@@ -179,10 +215,12 @@ describe("Ext.viewport.Default", function() {
                 spyOn(viewport, 'fireEvent');
 
                 viewport.updateSize = function() {
-                    this.windowWidth = 100;
-                    this.windowHeight = 200;
+                    var lastSize = this.lastSize;
 
-                    return this;
+                    lastSize.width = 100;
+                    lastSize.height = 200;
+
+                    return lastSize;
                 };
                 viewport.onOrientationChange();
 

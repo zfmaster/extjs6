@@ -1,4 +1,4 @@
-describe('Ext.chart.series.sprite.PieSlice', function () {
+topSuite("Ext.chart.series.sprite.PieSlice", ['Ext.draw.Surface'], function() {
 
     describe('destroy', function () {
         it("should remove itself from the surface", function () {

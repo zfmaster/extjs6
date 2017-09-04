@@ -103,6 +103,12 @@ Ext.define('Ext.chart.series.sprite.Bar', {
         labelCfg.text = text;
 
         if (labelTpl.attr.renderer) {
+            // The label instance won't exist on first render before the renderer is called,
+            // it's only created later by `me.putMarker` after the renderer call. To make
+            // sure the renderer always can access the label instance, we make this check here.
+            if (!label.get(labelId)) {
+                label.putMarkerFor('labels', {}, labelId);
+            }
             params = [text, label, labelCfg, {store: me.getStore()}, labelId];
             changes = Ext.callback(labelTpl.attr.renderer, null, params, 0, me.getSeries());
             if (typeof changes === 'string') {
@@ -197,10 +203,7 @@ Ext.define('Ext.chart.series.sprite.Bar', {
         me.putMarker('items', itemCfg, index, !renderer);
     },
 
-    /**
-     * @inheritdoc
-     */
-    renderClipped: function (surface, ctx, rect) {
+    renderClipped: function (surface, ctx, dataClipRect) {
         if (this.cleanRedraw) {
             return;
         }
@@ -219,18 +222,23 @@ Ext.define('Ext.chart.series.sprite.Bar', {
             yy = matrix.elements[3],
             dx = matrix.elements[4],
             dy = surface.roundPixel(matrix.elements[5]) - 1,
-            maxBarWidth = (xx < 0 ? -1 : 1) * xx - attr.minGapWidth,
+            maxBarWidth = Math.abs(xx) - attr.minGapWidth,
             minBarWidth = ( Math.min(maxBarWidth, attr.maxBarWidth) - inGroupGapWidth * (groupCount - 1) ) / groupCount,
             barWidth = surface.roundPixel( Math.max(attr.minBarWidth, minBarWidth) ),
             surfaceMatrix = me.surfaceMatrix,
             left, right, bottom, top, i, center,
             halfLineWidth = 0.5 * attr.lineWidth,
-            min = Math.min(rect[0], rect[2]),
-            max = Math.max(rect[0], rect[2]),
+            // Finding min/max so that bars render properly in both LTR and RTL modes.
+            min = Math.min(dataClipRect[0], dataClipRect[2]),
+            max = Math.max(dataClipRect[0], dataClipRect[2]),
             start = Math.max(0, Math.floor(min)),
             end = Math.min(dataX.length - 1, Math.ceil(max)),
             isDrawLabels = dataText && me.getMarker('labels'),
             yLow, yHi;
+
+        // The scaling (xx) and translation (dx) here will already be such that the midpoints
+        // of the first and last bars are not at the surface edges (which would mean that
+        // bars are half-clipped), but padded, so that those bars are fully visible (assuming no pan/zoom).
 
         for (i = start; i <= end; i++) {
             yLow = dataStartY ? dataStartY[i] : 0;
@@ -241,7 +249,7 @@ Ext.define('Ext.chart.series.sprite.Bar', {
             right = surface.roundPixel(center + barWidth / 2) - halfLineWidth;
             bottom = surface.roundPixel(yLow * yy + dy + lineWidth);
 
-            me.drawBar(ctx, surface, rect, left, top - halfLineWidth, right, bottom - halfLineWidth, i);
+            me.drawBar(ctx, surface, dataClipRect, left, top - halfLineWidth, right, bottom - halfLineWidth, i);
 
             // We want 0 values to be passed to the renderer
             if (isDrawLabels && dataText[i] != null) {
@@ -254,9 +262,6 @@ Ext.define('Ext.chart.series.sprite.Bar', {
         }
     },
 
-    /**
-     * @inheritdoc
-     */
     getIndexNearPoint: function (x, y) {
         var sprite = this,
             attr = sprite.attr,

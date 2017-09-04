@@ -25,7 +25,7 @@ Ext.define('Ext.panel.Title', {
 
     beforeRenderConfig: {
         /**
-         * @cfg [textAlign='left']
+         * @cfg {'left'/'center'/'right'} [textAlign='left']
          * @inheritdoc Ext.panel.Header#cfg-titleAlign
          * @accessor
          */
@@ -39,14 +39,14 @@ Ext.define('Ext.panel.Title', {
         text: null,
 
         /**
-         * @cfg glyph
+         * @cfg {Number/String} glyph
          * @inheritdoc Ext.panel.Header#cfg-glyph
          * @accessor
          */
         glyph: null,
 
         /**
-         * @cfg icon
+         * @cfg {String} icon
          * @inheritdoc Ext.panel.Header#cfg-icon
          * @accessor
          */
@@ -60,14 +60,14 @@ Ext.define('Ext.panel.Title', {
         iconAlign: null,
 
         /**
-         * @cfg iconCls
+         * @cfg {String} iconCls
          * @inheritdoc Ext.panel.Header#cfg-iconCls
          * @accessor
          */
         iconCls: null,
         
         /**
-         * @cfg rotation
+         * @cfg {'default'/0/1/2} [rotation='default']
          * @inheritdoc Ext.panel.Header#cfg-titleRotation
          * @accessor
          */

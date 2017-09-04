@@ -1,6 +1,6 @@
 /* global expect, spyOn, Ext, jasmine */
 
-describe("Ext.form.field.Spinner", function() {
+topSuite("Ext.form.field.Spinner", function() {
     var component, makeComponent;
 
     beforeEach(function() {
@@ -300,7 +300,7 @@ describe("Ext.form.field.Spinner", function() {
                         return true;
                     }
                     jasmine.fireKeyEvent(component.inputEl, 'keydown', Ext.event.Event.UP);
-                });
+                }, 'Spinner to fire all events', 5000);
 
                 // The firing of spinend is buffered because of the repeating, so it will fire soon.
                 runs(function() {

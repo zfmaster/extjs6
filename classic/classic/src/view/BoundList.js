@@ -206,10 +206,6 @@ Ext.define('Ext.view.BoundList', {
         });
     },
 
-    getNodeContainer: function() {
-        return this.listEl;
-    },
-
     refresh: function() {
         var me = this,
             tpl = me.tpl;
@@ -287,7 +283,7 @@ Ext.define('Ext.view.BoundList', {
      *            return '{[values.name.replace(this.field.getRawValue(), "<b>" + this.field.getRawValue() + "</b>")]}';
      *        }
      *    }
-     * @param {String} displayField The {@link #displayField} for the BoundList.
+     * @param {String} displayField The {@link #cfg!displayField} for the BoundList.
      * @return {String} The inner template
      */
     getInnerTpl: function(displayField) {
@@ -403,6 +399,14 @@ Ext.define('Ext.view.BoundList', {
     },
 
     privates: {
+        /*
+         * @private
+         * @inheritdoc
+         */
+        getNodeContainer: function() {
+            return this.listEl;
+        },
+
         getTargetEl: function() {
             return this.listEl;
         },

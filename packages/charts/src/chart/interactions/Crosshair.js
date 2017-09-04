@@ -195,10 +195,13 @@ Ext.define('Ext.chart.interactions.Crosshair', {
 
     getGestures: function () {
         var me = this,
-            gestures = {};
-        gestures[me.getGesture()] = 'onGesture';
-        gestures[me.getGesture() + 'start'] = 'onGestureStart';
-        gestures[me.getGesture() + 'end'] = 'onGestureEnd';
+            gestures = {},
+            gesture = me.getGesture();
+
+        gestures[gesture] = 'onGesture';
+        gestures[gesture + 'start'] = 'onGestureStart';
+        gestures[gesture + 'end'] = 'onGestureEnd';
+        gestures[gesture + 'cancel'] = 'onGestureCancel';
         return gestures;
     },
 
@@ -219,7 +222,7 @@ Ext.define('Ext.chart.interactions.Crosshair', {
             axis, axisSurface, axisRect, axisWidth, axisHeight, axisPosition, axisAlignment,
             axisLabel, axisLabelConfig, crosshairLabelConfig, tickPadding,
             axisSprite, attr, axisThickness, lineWidth, halfLineWidth,
-            title, titleBBox, titlePadding,
+            title, titleBBox,
             horizontalLineCfg, verticalLineCfg,
             i;
 
@@ -259,7 +262,7 @@ Ext.define('Ext.chart.interactions.Crosshair', {
 
                 axisLabel = me.axesLabels[axisPosition] = axisSurface.add({type: 'composite'});
 
-                axisLabel.labelRect = axisLabel.add(Ext.apply({
+                axisLabel.labelRect = axisLabel.addSprite(Ext.apply({
                     type: 'rect',
                     fillStyle: 'white',
                     x: axisPosition === 'right' ? lineWidth : 0,
@@ -280,32 +283,10 @@ Ext.define('Ext.chart.interactions.Crosshair', {
                 axisTheme = Ext.merge({}, axesTheme.defaults, axesTheme[axisPosition]);
                 axisLabelConfig = Ext.apply({}, axis.config.label, axisTheme.label);
                 crosshairLabelConfig = axesConfig.label || axesConfig[axisPosition].label;
-                axisLabel.labelText = axisLabel.add(Ext.apply(axisLabelConfig, crosshairLabelConfig, {
+                axisLabel.labelText = axisLabel.addSprite(Ext.apply(axisLabelConfig, crosshairLabelConfig, {
                     type: 'text',
-                    x: (function () {
-                        switch (axisPosition) {
-                            case 'left':
-                                titlePadding = titleBBox ? titleBBox.x + titleBBox.width : 0;
-                                return titlePadding + (axisWidth - titlePadding - tickPadding) / 2 - halfLineWidth;
-                            case 'right':
-                                titlePadding = titleBBox ? axisWidth - titleBBox.x : 0;
-                                return tickPadding + (axisWidth - tickPadding - titlePadding) / 2 + halfLineWidth;
-                            default:
-                                return 0;
-                        }
-                    })(),
-                    y: (function () {
-                        switch (axisPosition) {
-                            case 'top':
-                                titlePadding = titleBBox ? titleBBox.y + titleBBox.height: 0;
-                                return titlePadding + (axisHeight - titlePadding - tickPadding) / 2 - halfLineWidth;
-                            case 'bottom':
-                                titlePadding = titleBBox ? axisHeight - titleBBox.y : 0;
-                                return tickPadding + (axisHeight - tickPadding - titlePadding) / 2 + halfLineWidth;
-                            default:
-                                return 0;
-                        }
-                    })()
+                    x: me.calculateLabelTextPoint(false, axisPosition, tickPadding, titleBBox, axisWidth, halfLineWidth),
+                    y: me.calculateLabelTextPoint(true, axisPosition, tickPadding, titleBBox, axisHeight, halfLineWidth)
                 }));
             }
             me.horizontalLine = surface.add(horizontalLineCfg);
@@ -442,6 +423,46 @@ Ext.define('Ext.chart.interactions.Crosshair', {
 
         surface.renderFrame();
         me.unlockEvents(me.getGesture());
-    }
+    },
 
+    onGestureCancel: function(e) {
+        this.onGestureEnd(e);
+    },
+
+    privates: {
+        vertMap: {
+            top: 'start',
+            bottom: 'end'
+        },
+
+        horzMap: {
+            left: 'start',
+            right: 'end'
+        },
+
+        calculateLabelTextPoint: function(vertical, position, tickPadding, titleBBox, axisSize, halfLineWidth) {
+            var titlePadding, sizeProp, pointProp;
+
+            if (vertical) {
+                pointProp = 'y';
+                sizeProp = 'height';
+                position = this.vertMap[position];
+            } else {
+                pointProp = 'x';
+                sizeProp = 'width';
+                position = this.horzMap[position];
+            }
+
+            switch (position) {
+                case 'start':
+                    titlePadding = titleBBox ? titleBBox[pointProp] + titleBBox[sizeProp] : 0;
+                    return titlePadding + (axisSize - titlePadding - tickPadding) / 2 - halfLineWidth;
+                case 'end':
+                    titlePadding = titleBBox ? axisSize - titleBBox[pointProp] : 0;
+                    return tickPadding + (axisSize - tickPadding - titlePadding) / 2 + halfLineWidth;
+                default:
+                    return 0;
+            }
+        }
+    }
 });

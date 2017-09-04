@@ -1,4 +1,5 @@
-describe("Ext.Element.insertion", function() {
+// false in dependencies to avoid loading "Ext.dom.Element.insertion"
+topSuite("Ext.dom.Element.insertion", [false, 'Ext.dom.Element'], function() {
     var el, span, child1, child2, child3;
     
     beforeEach(function() {
@@ -391,4 +392,4 @@ describe("Ext.Element.insertion", function() {
             node.destroy();
         });
     });
-}, "/src/dom/Element.insertion.js");
+});

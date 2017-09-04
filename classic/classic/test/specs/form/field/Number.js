@@ -1,4 +1,4 @@
-describe("Ext.form.field.Number", function() {
+topSuite("Ext.form.field.Number", ['Ext.app.ViewModel'], function() {
     var component, makeComponent;
     
     beforeEach(function() {

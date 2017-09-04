@@ -136,18 +136,18 @@ Ext.define('Ext.form.FieldSet', {
      */
     layout: 'anchor',
     
-    //<locale>
     /**
      * @cfg {String} descriptionText Fieldset description to be announced by screen readers.
+     * @locale
      */
     descriptionText: '{0} field set',
     
     /**
      * @cfg {String} expandText Text to be announced by screen readers when toggle tool
      * or checkbox is focused.
+     * @locale
      */
     expandText: 'Expand field set',
-    //</locale>
 
     componentLayout: 'fieldset',
     
@@ -179,7 +179,7 @@ Ext.define('Ext.form.FieldSet', {
     ],
 
     /**
-     * @cfg stateEvents
+     * @cfg {String[]} stateEvents
      * @inheritdoc Ext.state.Stateful#cfg-stateEvents
      * @localdoc By default the following stateEvents are added:
      * 

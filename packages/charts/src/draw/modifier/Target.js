@@ -122,7 +122,7 @@ Ext.define('Ext.draw.modifier.Target', {
 
     pushDown: function (attr, changes) {
         // Modifier chain looks like this:
-        // Target (sprite.topModifier) <---> postFx <---> Animation (sprite.fx) <---> preFx
+        // sprite.modifiers.target <---> postFx <---> sprite.modifiers.animation <---> preFx
 
         // There can be any number of postFx and preFx modifiers, the difference between them is that:
         // `preFx` modifier changes are animated.

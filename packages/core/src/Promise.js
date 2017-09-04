@@ -94,11 +94,17 @@ return {
             return Polyfiller.all.apply(Polyfiller, arguments);
         },
 
+        /**
+         * Returns a promise that resolves or rejects as soon as one of the promises in the array resolves
+         * or rejects, with the value or reason from that promise.
+         * @param {Ext.promise.Promise[]} promises The promises.
+         * @return {Ext.promise.Promise} The promise to be resolved when the race completes.
+         *
+         * @static
+         * @since 6.5.0
+         */
         race: function () {
-            //TODO
-            //<debug>
-            Ext.raise("Not implemented");
-            //</debug>
+            return Polyfiller.race.apply(Polyfiller, arguments);
         },
 
         /**
@@ -124,7 +130,7 @@ return {
          *  * Resolves or rejects when the specified promise (or third-party Promise or
          *    then()-able) is resolved or rejected.
          *
-         * @param {Mixed} promiseOrValue A Promise (or third-party Promise or then()-able)
+         * @param {Mixed} value A Promise (or third-party Promise or then()-able)
          * or value.
          * @return {Ext.Promise} A Promise of the specified Promise or value.
          * @static
@@ -145,13 +151,14 @@ return {
 
         return deferred.promise;
     }
-}},
+};},
 function (ExtPromise) {
     var P = Ext.global.Promise;
 
-    if (P && P.resolve) {
+    if (P && P.resolve && !Ext.useExtPromises) {
         Ext.Promise = P;
-    } else {
+    }
+    else {
         ExtPromise._ready();
     }
 });

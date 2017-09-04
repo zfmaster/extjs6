@@ -107,11 +107,14 @@ Ext.define('Ext.form.field.Text', {
     extend:'Ext.form.field.Base',
     alias: 'widget.textfield',
     requires: [
+        'Ext.layout.component.field.Text',
         'Ext.form.field.VTypes',
         'Ext.form.trigger.Trigger',
         'Ext.util.TextMetrics'
     ],
     alternateClassName: ['Ext.form.TextField', 'Ext.form.Text'],
+
+    componentLayout: 'textfield',
 
     config: {
         /**
@@ -119,6 +122,23 @@ Ext.define('Ext.form.field.Text', {
          * `true` to hide all triggers
          */
         hideTrigger: false,
+
+        /**
+         * @cfg {Boolean} [autoHideInputMask=true]
+         * Specify as `false` to always show the `inputMask`.
+         * @since 6.5.0
+         */
+        autoHideInputMask: null,
+
+        /**
+         * @cfg {String/Ext.field.InputMask} inputMask
+         *
+         * **Important:** To use this config you must require `Ext.field.InputMask` or
+         * use a complete framework build. The logic to implement an `inputMask` is not
+         * automatically included in a build.
+         * @since 6.5.0
+         */
+        inputMask: null,
 
         // @cmd-auto-dependency {aliasPrefix: "trigger.", isKeyedObject: true}
         /**
@@ -200,7 +220,7 @@ Ext.define('Ext.form.field.Text', {
      * An initial value for the 'size' attribute on the text input element. This is only
      * used if the field has no configured {@link #width} and is not given a width by its
      * container's layout. Defaults to 20.
-     * @deprecated use {@link #width} instead.
+     * @deprecated 6.5.0 Please use {@link #width} instead.
      */
 
     /**
@@ -220,16 +240,15 @@ Ext.define('Ext.form.field.Text', {
      */
     growMax : 800,
 
-    //<locale>
     /**
      * @cfg {String} growAppend
      * A string that will be appended to the field's current value for the purposes of calculating the target field
      * size. Only used when the {@link #grow} config is true. Defaults to a single capital "W" (the widest character in
      * common fonts) to leave enough space for the next typed character and avoid the field value shifting before the
      * width is adjusted.
+     * @locale
      */
     growAppend: 'W',
-    //</locale>
 
     /**
      * @cfg {String} vtype
@@ -244,7 +263,8 @@ Ext.define('Ext.form.field.Text', {
 
     /**
      * @cfg {Boolean} [disableKeyFilter=false]
-     * Specify true to disable input keystroke filtering
+     * Specify true to disable input keystroke filtering. This will ignore the
+     * maskRe field.
      */
 
     /**
@@ -292,21 +312,19 @@ Ext.define('Ext.form.field.Text', {
      * True to set the maxLength property on the underlying input field. Defaults to false
      */
 
-    //<locale>
     /**
      * @cfg {String} minLengthText
      * Error text to display if the **{@link #minLength minimum length}** validation fails.
+     * @locale
      */
     minLengthText : 'The minimum length for this field is {0}',
-    //</locale>
 
-    //<locale>
     /**
      * @cfg {String} maxLengthText
-     * Error text to display if the **{@link #maxLength maximum length}** validation fails
+     * Error text to display if the **{@link #maxLength maximum length}** validation fails.
+     * @locale
      */
     maxLengthText : 'The maximum length for this field is {0}',
-    //</locale>
 
     /**
      * @cfg {Boolean} [selectOnFocus=false]
@@ -314,13 +332,12 @@ Ext.define('Ext.form.field.Text', {
      * focus. Only applies when {@link #editable editable} = true
      */
 
-    //<locale>
     /**
      * @cfg {String} blankText
-     * The error text to display if the **{@link #allowBlank}** validation fails
+     * The error text to display if the **{@link #allowBlank}** validation fails.
+     * @locale
      */
     blankText : 'This field is required',
-    //</locale>
 
     /**
      * @cfg {Function} validator
@@ -410,7 +427,7 @@ Ext.define('Ext.form.field.Text', {
      * @cfg {Boolean} repeatTriggerClick
      * `true` to attach a {@link Ext.util.ClickRepeater click repeater} to the trigger(s).
      * Click repeating behavior can also be configured on the individual {@link #triggers
-     * trigger instances using the trigger's {@link {Ext.form.trigger.Trigger#repeatClick
+     * trigger instances} using the trigger's {@link Ext.form.trigger.Trigger#repeatClick
      * repeatClick} config.
      */
     repeatTriggerClick: false,
@@ -421,7 +438,7 @@ Ext.define('Ext.form.field.Text', {
      */
 
     /**
-     * @cfg stateEvents
+     * @cfg {String[]} stateEvents
      * @inheritdoc Ext.state.Stateful#cfg-stateEvents
      * @localdoc By default the following stateEvents are added:
      * 
@@ -449,6 +466,7 @@ Ext.define('Ext.form.field.Text', {
     inputWrapFocusCls: Ext.baseCSSPrefix + 'form-text-wrap-focus',
     inputWrapInvalidCls: Ext.baseCSSPrefix + 'form-text-wrap-invalid',
     growCls: Ext.baseCSSPrefix + 'form-text-grow',
+    heightedCls: Ext.baseCSSPrefix + 'form-text-heighted',
 
     /* 
      * @private
@@ -467,7 +485,6 @@ Ext.define('Ext.form.field.Text', {
                 this.inputEl.dom.select();
             }
         },
-        translate: false,
         single: true,
         preventDefault: true
     },
@@ -547,6 +564,10 @@ Ext.define('Ext.form.field.Text', {
 
         if (me.allowOnlyWhitespace === false) {
             me.allowBlank = false;
+        }
+
+        if (me.grow) {
+            me.liquidLayout = false;
         }
 
         //<debug>
@@ -637,7 +658,7 @@ Ext.define('Ext.form.field.Text', {
         }
 
         if (me.emptyText) {
-            placeholder = me.emptyText;
+            placeholder = Ext.String.htmlEncode(me.emptyText);
         }
 
         data = Ext.apply(me.callParent([fieldData]), {
@@ -661,6 +682,18 @@ Ext.define('Ext.form.field.Text', {
         return data;
     },
 
+    beforeRender: function() {
+        var me = this,
+            heighted = (me.height != null) ||
+                !!(me.ownerLayout && me.ownerLayout.getItemSizePolicy(me, me.fakeSizeModel).setsHeight);
+
+        if (heighted) {
+            me.protoEl.addCls(me.heightedCls);
+        }
+
+        me.callParent();
+    },
+
     onRender: function() {
         var me = this,
             triggers = me.getTriggers(),
@@ -676,8 +709,10 @@ Ext.define('Ext.form.field.Text', {
 
         me.callParent();
 
+        me.emptyClsElements = [me.inputEl];
+
         if (triggers) {
-            this.invokeTriggers('onFieldRender');
+            me.invokeTriggers('onFieldRender');
 
             /**
              * @property {Ext.CompositeElement} triggerEl
@@ -701,13 +736,29 @@ Ext.define('Ext.form.field.Text', {
         me.inputCell = me.inputWrap;
     },
 
-    afterRender: function() {
+    onResize: function(width, height, oldWidth, oldHeight) {
         var me = this;
 
-        me.autoSize();
-        me.callParent();
-        me.invokeTriggers('afterFieldRender');
-        me.emptyClsElements = [me.inputEl];
+        if (me.rendered && me.grow) {
+            me.autoSize();
+        }
+        
+        me.callParent([width, height, oldWidth, oldHeight]);
+    },
+
+    afterRender: function() {
+        this.callParent();
+        this.invokeTriggers('afterFieldRender');
+    },
+
+    onBoxReady: function (width, height) {
+        var me = this;
+
+        me.callParent([width, height]);
+
+        if (!me.liquidLayout) {
+            this.autoSize();
+        }
     },
 
     onMouseDown: function(){
@@ -719,6 +770,24 @@ Ext.define('Ext.form.field.Text', {
             this.squashMouseUp.scope = this;
             Ext.getDoc().on(this.squashMouseUp);
         }
+    },
+
+    applyInputMask: function (value, instance) {
+        var field = Ext.field,
+            InputMask = field && field['InputMask']; // prevent Cmd detection
+
+        //<debug>
+        if (value) {
+            if (!InputMask) {
+                Ext.raise('Missing Ext.field.InputMask (required to use inputMask)');
+            }
+            // if (this.getAutoComplete()) {
+            //     Ext.log.warn('Combining inputMask and autoComplete is not supported');
+            // }
+        }
+        //</debug>
+
+        return value ? InputMask.from(value, instance) : null;
     },
 
     applyTriggers: function(triggers) {
@@ -784,7 +853,7 @@ Ext.define('Ext.form.field.Text', {
             }
         }
 
-        Ext.Array.sort(orderedTriggers, Ext.form.trigger.Trigger.weightComparator);
+        Ext.Array.sort(orderedTriggers, Ext.weightSortFn);
 
         return triggers;
     },
@@ -792,6 +861,7 @@ Ext.define('Ext.form.field.Text', {
     /**
      * Invokes a method on all triggers.
      * @param {String} methodName
+     * @param args
      * @private
      */
     invokeTriggers: function(methodName, args) {
@@ -817,6 +887,16 @@ Ext.define('Ext.form.field.Text', {
      */
     getTrigger: function(id) {
         return this.getTriggers()[id];
+    },
+
+    updateInputMask: function (inputMask, previous) {
+        if (previous) {
+            previous.release();
+        }
+
+        if (inputMask) {
+            this.enableKeyEvents = true;
+        }
     },
 
     updateHideTrigger: function(hideTrigger) {
@@ -934,16 +1014,30 @@ Ext.define('Ext.form.field.Text', {
         }
     },
 
-    onKeyDown: function(e) {
-        this.fireEvent('keydown', this, e);
+    onKeyDown: function (event) {
+        var me = this,
+            inputMask = me.getInputMask();
+
+        if (inputMask) {
+            inputMask.onKeyDown(me, me.getValue(), event);
+        }
+
+        this.fireEvent('keydown', this, event);
     },
 
     onKeyUp: function(e) {
         this.fireEvent('keyup', this, e);
     },
 
-    onKeyPress: function(e) {
-        this.fireEvent('keypress', this, e);
+    onKeyPress: function (event) {
+        var me = this,
+            inputMask = me.getInputMask();
+
+        if (inputMask) {
+            inputMask.onKeyPress(me, me.getValue(), event);
+        }
+
+        me.fireEvent('keypress', me, event);
     },
 
     /**
@@ -953,7 +1047,7 @@ Ext.define('Ext.form.field.Text', {
     getEmptyText: function() {
         return this.emptyText;
     },
-    
+
     /**
      * Sets the default text to place into an empty field
      * @param {String} value The {@link #cfg-emptyText} value for this field
@@ -1041,44 +1135,57 @@ Ext.define('Ext.form.field.Text', {
 
     onFocus: function(e) {
         var me = this,
-            len;
+            inputEl = me.inputEl.dom,
+            inputMask = me.getInputMask(),
+            value, len;
 
         me.callParent([e]);
         
-        // This handler may be called when the focus has already shifted to another element;
-        // calling inputEl.select() will forcibly focus again it which in turn might set up
-        // a nasty circular race condition if focusEl !== inputEl.
-        Ext.asap(function() {
-            // This ensures the carret will be at the end of the input element
-            // while tabbing between editors.
-            if (!me.destroyed && document.activeElement === me.inputEl.dom) {
-                len = me.inputEl.dom.value.length;
-                me.selectText(me.selectOnFocus ? 0 : len, len);
-            }
-        });
-
         if (me.emptyText) {
             me.autoSize();
+        }
+
+        if (inputMask) {
+            inputMask.onFocus(me, inputEl.value);
         }
 
         me.addCls(me.fieldFocusCls);
         me.triggerWrap.addCls(me.triggerWrapFocusCls);
         me.inputWrap.addCls(me.inputWrapFocusCls);
         me.invokeTriggers('onFieldFocus', [e]);
+
+        // This handler may be called when the focus has already shifted to another element;
+        // calling inputEl.select() will forcibly focus again it which in turn might set up
+        // a nasty circular race condition if focusEl !== inputEl.
+        if (me.selectOnFocus && document.activeElement === inputEl) {
+            value = inputEl.value;
+            len = value.length;
+
+            me.selectText(0, len);
+        }
     },
 
     /**
      * @private
      */
     onBlur: function(e) {
-        var me = this;
+        var me = this,
+            inputEl = me.inputEl.dom,
+            inputMask = me.getInputMask(),
+            value;
 
         me.callParent([e]);
+
+        value = inputEl && inputEl.value;
 
         me.removeCls(me.fieldFocusCls);
         me.triggerWrap.removeCls(me.triggerWrapFocusCls);
         me.inputWrap.removeCls(me.inputWrapFocusCls);
         me.invokeTriggers('onFieldBlur', [e]);
+
+        if (inputMask && me.getAutoHideInputMask() !== false) {
+            inputMask.onBlur(me, value);
+        }
     },
 
     /**
@@ -1221,33 +1328,39 @@ Ext.define('Ext.form.field.Text', {
         return errors;
     },
 
+    getCaretPos: function () {
+        return this.inputEl.getCaretPos();
+    },
+
+    setCaretPos: function (pos) {
+        this.inputEl.setCaretPos(pos);
+    },
+
     /**
-     * Selects text in this field
-     * @param {Number} [start=0] The index where the selection should start
-     * @param {Number} [end] The index where the selection should end (defaults to the text length)
+     * Returns the selection range of an input element as an array of three values:
+     *
+     *      [ start, end, direction ]
+     *
+     * These have the same meaning as the parameters to `selectText`.
+     * @return {Array}
+     * @since 6.5.0
      */
-    selectText: function (start, end) {
-        var me = this,
-            el = me.inputEl.dom,
-            v = el.value,
-            len = v.length,
-            range;
+    getTextSelection: function () {
+        return this.inputEl.getTextSelection();
+    },
 
-        if (len > 0) {
-            start = start === undefined ? 0 : Math.min(start, len);
-            end = end === undefined ? len : Math.min(end, len);
-
-            if (el.setSelectionRange) {
-                el.setSelectionRange(start, end);
-            } else if (el.createTextRange) {
-                range = el.createTextRange();
-                range.moveStart('character', start);
-                range.moveEnd('character', end - len);
-                range.select();
-            }
-        }
-
-        // TODO: Reinvestigate FF and Opera.
+    /**
+     * Select the specified contents of the input field (all by default).
+     * @param {Number} [start=0]
+     * @param {Number} [end]
+     * @param {"f"/"b"/"forward"/"backward"} [direction="f"] Pass "f" for forward,
+     * "b" for backwards.
+     * @return {Ext.form.field.Text} this
+     * @chainable
+     */
+    selectText: function (start, end, direction) {
+        this.inputEl.selectText(start, end, direction);
+        return this;
     },
 
     // Template method, override in Combobox.
@@ -1298,6 +1411,7 @@ Ext.define('Ext.form.field.Text', {
 
         me.invokeTriggers('destroy');
         Ext.destroy(me.triggerRepeater);
+        me.setInputMask(null);
 
         me.callParent();
     },
@@ -1317,9 +1431,10 @@ Ext.define('Ext.form.field.Text', {
         5: {
             methods: {
                 /**
+                 * @method getTriggerWidth
                  * Get the total width of the trigger button area.
                  * @return {Number} The total trigger width
-                 * @deprecated 5.0
+                 * @deprecated 5.0 This method was removed.
                  */
                 getTriggerWidth: function() {
                     var triggers = this.getTriggers(),
@@ -1339,4 +1454,8 @@ Ext.define('Ext.form.field.Text', {
         }
     }
 
+}, function(TextField) {
+    var calculated = Ext.layout.SizeModel.calculated;
+        
+    TextField.prototype.fakeSizeModel = calculated.pairsByHeightOrdinal[calculated.ordinal];
 });

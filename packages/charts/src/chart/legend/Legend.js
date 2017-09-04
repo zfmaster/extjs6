@@ -11,8 +11,6 @@ Ext.define('Ext.chart.legend.Legend', {
     isDomLegend: true,
 
     config: {
-        baseCls: Ext.baseCSSPrefix + 'legend',
-
         /**
          * @cfg {Array}
          * The rect of the legend relative to its container.
@@ -26,6 +24,8 @@ Ext.define('Ext.chart.legend.Legend', {
          */
         toggleable: true
     },
+
+    baseCls: Ext.baseCSSPrefix + 'legend',
 
     horizontalCls: Ext.baseCSSPrefix + 'legend-horizontal',
     verticalCls: Ext.baseCSSPrefix + 'legend-vertical',
@@ -53,7 +53,7 @@ Ext.define('Ext.chart.legend.Legend', {
             if (record) {
                 disabled = record.get('disabled');
                 if (disabled || canToggle) {
-                    // This will trigger AbstractChart.onUpdateLegendStore.
+                    // This will trigger AbstractChart.onLegendStoreUpdate.
                     record.set('disabled', !disabled);
                 }
             }

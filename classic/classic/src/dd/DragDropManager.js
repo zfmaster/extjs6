@@ -85,13 +85,13 @@ Ext.define('Ext.dd.DragDropManager', {
      * `true` to invoke `stopPropagation()` on all events during a drag (may be
      * mouse, touch, or pointer events depending on the platform).
      *
-     * @deprecated 6.2.0
+     * @deprecated 6.2.0 This property is deprecated
      */
     stopPropagation: false,
 
     /**
      * Internal flag that is set to true when drag and drop has been
-     * intialized
+     * initialized
      * @property initialized
      * @private
      */
@@ -425,7 +425,8 @@ Ext.define('Ext.dd.DragDropManager', {
     /**
      * Utility function to determine if a given element has been
      * registered as a drag drop handle for the given Drag Drop object.
-     * @param {String} id the element id to check
+     * @param {String} sDDId the element id to check
+     * @param {String} sHandleId
      * @return {Boolean} true if this element is a DragDrop handle, false
      * otherwise
      */
@@ -437,6 +438,7 @@ Ext.define('Ext.dd.DragDropManager', {
     /**
      * Returns the DragDrop instance for a given id
      * @param {String} id the id of the DragDrop object
+     * @param {Boolean} force
      * @return {Ext.dd.DragDrop} the drag drop object, null if it is not found
      */
     getDDById: function(id, force) {
@@ -481,25 +483,30 @@ Ext.define('Ext.dd.DragDropManager', {
                 destroyable: true,
                 scope: me
             },
-            supports = Ext.supports;
+            DomEventType = e.browserEvent.type;
 
         // On devices that support multi-touch the second touch terminates drag
         listeners.touchstart = me.handleMouseUp;
 
         // Listen for the right kind of events depending on how
         // the drag was initiated.
-        if (supports.PointerEvents) {
+        // Pointer events standard
+        if (DomEventType === 'pointerdown') {
             listeners.pointerup = pointerup;
             listeners.pointermove = pointermove;
-        } else if (supports.MSPointerEvents) {
-            // https://sencha.jira.com/browse/EXTJS-21512
-            // Spurious pointer events from -ms-pointer-events devices
+        }
+        // IE10 pointer event
+        else if (DomEventType === 'MSPointerDown') {
+            listeners.MSPointerUp = pointerup;
+            listeners.MSPointerMove = pointermove;
+        }
+        // Real mouse event
+        else if (DomEventType === 'mousedown') {      
             listeners.mouseup = pointerup;
             listeners.mousemove = pointermove;
-        } else if (e.pointerType === 'mouse') {      
-            listeners.mouseup = pointerup;
-            listeners.mousemove = pointermove;
-        } else {
+        }
+        // Touch start
+        else {
             listeners.touchend = pointerup;
             listeners.touchmove = pointermove;
         }
@@ -507,10 +514,6 @@ Ext.define('Ext.dd.DragDropManager', {
         me.pointerMoveListeners = Ext.getDoc().on(listeners);
 
         me.isMouseDown = true;
-
-        if (Ext.quickTipsActive){
-            Ext.tip.QuickTipManager.ddDisable();
-        }
 
         me.currentPoint.setPosition(xy);
 
@@ -556,7 +559,12 @@ Ext.define('Ext.dd.DragDropManager', {
             current = me.dragCurrent,
             dragEl;
 
-        clearTimeout(me.clickTimeout);
+        Ext.undefer(me.clickTimeout);
+
+        if (Ext.quickTipsActive){
+            Ext.tip.QuickTipManager.ddDisable();
+        }
+
         if (current) {
             current.b4StartDrag(x, y);
             current.startDrag(x, y);
@@ -590,9 +598,6 @@ Ext.define('Ext.dd.DragDropManager', {
         me.pointerMoveListeners.destroy();
         me.isMouseDown = false;
 
-        if (Ext.quickTipsActive){
-            Ext.tip.QuickTipManager.ddEnable();
-        }
         if (!me.dragCurrent) {
             return;
         }
@@ -602,7 +607,7 @@ Ext.define('Ext.dd.DragDropManager', {
             document.releaseCapture();
         }
 
-        clearTimeout(me.clickTimeout);
+        Ext.undefer(me.clickTimeout);
 
         if (me.dragThreshMet) {
             me.fireEvents(e, true);
@@ -642,6 +647,10 @@ Ext.define('Ext.dd.DragDropManager', {
         var me = this,
             current = me.dragCurrent,
             dragEl;
+
+        if (Ext.quickTipsActive){
+            Ext.tip.QuickTipManager.ddEnable();
+        }
 
         // Fire the drag end event for the item that was dragged
         if (current) {
@@ -849,7 +858,7 @@ Ext.define('Ext.dd.DragDropManager', {
                     }
                     // Otherwise we use event source of the mousemove event
                     else {
-                        if (e.within(overTarget.getEl())) {
+                        if (e.within(overTargetEl)) {
                             allTargets.push(overTarget);
                             break;
                         }
@@ -1143,6 +1152,7 @@ Ext.define('Ext.dd.DragDropManager', {
      * Checks the cursor location to see if it over the target
      * @param {Ext.util.Point} pt The point to evaluate
      * @param {Ext.dd.DragDrop} oTarget the DragDrop object we are inspecting
+     * @param intersect
      * @return {Boolean} true if the mouse is over the target
      * @private
      */
@@ -1249,7 +1259,7 @@ Ext.define('Ext.dd.DragDropManager', {
      * @param {String} id the id of the element to get
      * @return {Ext.dd.DragDropManager.ElementWrapper} the wrapped element
      * @private
-     * @deprecated This wrapper isn't that useful
+     * @deprecated 6.5.0 This method is deprecated.
      */
     getElWrapper: function(id) {
         var oWrapper = this.elementCache[id];
@@ -1264,7 +1274,7 @@ Ext.define('Ext.dd.DragDropManager', {
      * Returns the actual DOM element
      * @param {String} id the id of the elment to get
      * @return {Object} The element
-     * @deprecated use Ext.lib.Ext.getDom instead
+     * @deprecated 6.5.0 Use Ext.lib.Ext.getDom() instead.
      */
     getElement: function(id) {
         return Ext.getDom(id);
@@ -1273,7 +1283,7 @@ Ext.define('Ext.dd.DragDropManager', {
     /**
      * Returns the style property for the DOM element (i.e.,
      * document.getElById(id).style)
-     * @param {String} id the id of the elment to get
+     * @param {String} id the id of the element to get
      * @return {Object} The style property of the element
      */
     getCss: function(id) {
@@ -1285,7 +1295,7 @@ Ext.define('Ext.dd.DragDropManager', {
      * @class Ext.dd.DragDropManager.ElementWrapper
      * Deprecated inner class for cached elements.
      * @private
-     * @deprecated This wrapper isn't that useful
+     * @deprecated 6.5.0 This class is deprecated
      */
     ElementWrapper: function(el) {
         /** The element */
@@ -1415,9 +1425,10 @@ Ext.define('Ext.dd.DragDropManager', {
 
     /**
      * Recursively searches the immediate parent and all child nodes for
-     * the handle element in order to determine wheter or not it was
+     * the handle element in order to determine whether or not it was
      * clicked.
      * @param {HTMLElement} node the html element to inspect
+     * @param {string} id
      */
     handleWasClicked: function(node, id) {
         if (this.isHandle(id, node.id)) {

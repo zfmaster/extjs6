@@ -7,7 +7,9 @@ Ext.define('Admin.view.forms.WizardOne', {
 
     cls: 'wizardone shadow',
 
-    plugins: 'responsive',
+    plugins: {
+        responsive: true
+    },
 
     responsiveConfig: {
         'width >= 1000': {
@@ -30,7 +32,9 @@ Ext.define('Admin.view.forms.WizardOne', {
     items: [
         {
             xtype: 'specialoffer',
-            plugins: 'responsive',
+            plugins: {
+                responsive: true
+            },
             height: 338,
 
             responsiveConfig: {

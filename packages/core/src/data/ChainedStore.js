@@ -42,11 +42,21 @@ Ext.define('Ext.data.ChainedStore', {
     
     remove: function() {
         var source = this.getSource();
+        //<debug>
+        if (!source) {
+            Ext.raise('Cannot remove records with no source.');
+        }
+        //</debug>
         return source.remove.apply(source, arguments);
     },
 
     removeAll: function() {
         var source = this.getSource();
+        //<debug>
+        if (!source) {
+            Ext.raise('Cannot remove records with no source.');
+        }
+        //</debug>
         return source.removeAll();
     },
     
@@ -65,7 +75,7 @@ Ext.define('Ext.data.ChainedStore', {
     },
 
     getSession: function() {
-        return this.getSource().getSession();
+        return this.getSourceValue('getSession', null);
     },
 
     applySource: function(source) {
@@ -110,7 +120,7 @@ Ext.define('Ext.data.ChainedStore', {
      * @return {Ext.data.Model} The model
      */
     getModel: function() {
-        return this.getSource().getModel();
+        return this.getSourceValue('getModel', null);
     },
 
     getProxy: function() {
@@ -121,11 +131,18 @@ Ext.define('Ext.data.ChainedStore', {
         var me = this,
             records = info.items,
             lastChunk = !info.next;
-        
+
         if (me.ignoreCollectionAdd) {
             return;
         }
-        
+
+        // Collection add changes the items reference of the collection, and that array
+        // object if directly referenced by Ranges. The ranges have to refresh themselves
+        // upon add.
+        if (me.activeRanges) {
+            me.syncActiveRanges();
+        }
+
         me.fireEvent('add', me, records, info.at);
         // If there is a next property, that means there is another range that needs
         // to be removed after this. Wait until everything is gone before firign datachanged
@@ -147,6 +164,7 @@ Ext.define('Ext.data.ChainedStore', {
         // is an descendant of a collapsed node, and so *will not be contained by this store
         me.onUpdate(record, type, modifiedFieldNames, info);
         me.fireEvent('update', me, record, type, modifiedFieldNames, info);
+        me.fireEvent('datachanged', me);
     },
     
     onCollectionUpdateKey: function(source, details) {
@@ -176,10 +194,12 @@ Ext.define('Ext.data.ChainedStore', {
 
     onSourceBeforeLoad: function(source, operation) {
         this.fireEvent('beforeload', this, operation);
+        this.callObservers('BeforeLoad', [operation]);
     },
 
     onSourceAfterLoad: function(source, records, successful, operation) {
         this.fireEvent('load', this, records, successful, operation);
+        this.callObservers('AfterLoad', [records, successful, operation]);
     },
 
     onFilterEndUpdate: function() {
@@ -232,15 +252,15 @@ Ext.define('Ext.data.ChainedStore', {
     },
     
     hasPendingLoad: function() {
-        return this.getSource().hasPendingLoad();
+        return this.getSourceValue('hasPendingLoad', false);
     },
     
     isLoaded: function() {
-        return this.getSource().isLoaded();
+        return this.getSourceValue('isLoaded', false);
     },
 
     isLoading: function() {
-        return this.getSource().isLoading();
+        return this.getSourceValue('isLoading', false);
     },
 
     doDestroy: function() {
@@ -255,6 +275,16 @@ Ext.define('Ext.data.ChainedStore', {
     },
 
     privates: {
+        getSourceValue: function(method, defaultValue) {
+            var source = this.getSource(),
+                val = defaultValue;
+
+            if (source) {
+                val = source[method]();
+            }
+            return val;
+        },
+
         isMoving: function () {
             var source = this.getSource();
             return source.isMoving ? source.isMoving.apply(source, arguments) : false;

@@ -1,9 +1,9 @@
-describe("Ext.layout.container.Table", function(){
+topSuite("Ext.layout.container.Table", 'Ext.Panel', function() {
 
-    describe("fixed/auto sizing", function(){
+    describe("fixed/auto sizing", function() {
         
         // See EXTJSIV-7667
-        it("should be able to auto-size tables correctly", function(){
+        it("should be able to auto-size tables correctly", function() {
             var ct = new Ext.container.Container({
                 width: 400,
                 height: 200,
@@ -30,5 +30,4 @@ describe("Ext.layout.container.Table", function(){
        });
         
     });
-    
 });

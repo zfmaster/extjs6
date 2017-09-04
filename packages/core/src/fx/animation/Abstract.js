@@ -2,8 +2,15 @@
  * @private
  */
 Ext.define('Ext.fx.animation.Abstract', {
-
     extend: 'Ext.Evented',
+
+    mixins: [
+        'Ext.mixin.Factoryable'
+    ],
+
+    factoryConfig: {
+        type: 'animation'
+    },
 
     isAnimation: true,
 
@@ -17,7 +24,7 @@ Ext.define('Ext.fx.animation.Abstract', {
         element: null,
 
         /**
-         * @cfg
+         * @cfg {Object} before
          * Before configuration.
          */
         before: null,
@@ -33,7 +40,7 @@ Ext.define('Ext.fx.animation.Abstract', {
         duration:  300,
 
         /**
-         * @cfg
+         * @cfg {String} easing
          * Easing type.
          */
         easing: 'linear',
@@ -67,7 +74,11 @@ Ext.define('Ext.fx.animation.Abstract', {
 
     DIRECTION_UP: 'up',
 
+    DIRECTION_TOP: 'top',
+
     DIRECTION_DOWN: 'down',
+
+    DIRECTION_BOTTOM: 'bottom',
 
     DIRECTION_LEFT: 'left',
 
@@ -149,8 +160,12 @@ Ext.define('Ext.fx.animation.Abstract', {
     },
 
     destroy: function() {
+        // Event handlers need to know this.
+        this.destroying = true;
         this.stop();
         this.callParent();
+        this.destroying = false;
+        this.destroyed = true;
     },
 
     setState: function(name, state) {

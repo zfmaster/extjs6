@@ -1,6 +1,6 @@
 /**
- * @private
  * @class Ext.draw.ContainerBase
+ * @private
  */
 Ext.define('Ext.draw.ContainerBase', {
     extend: 'Ext.panel.Panel',
@@ -22,33 +22,34 @@ Ext.define('Ext.draw.ContainerBase', {
     // Adds a listener to this draw container's element. If the element does not yet exist
     // addition of the listener will be deferred until onRender.  Useful when listeners
     // need to be attached during initConfig.
-    addElementListener: function() {
+    addElementListener: function () {
         var me = this,
             args = arguments;
 
         if (me.rendered) {
             me.el.on.apply(me.el, args);
         } else {
-            me.on('render', function() {
+            me.on('render', function () {
                 me.el.on.apply(me.el, args);
             });
         }
     },
 
-    removeElementListener: function() {
+    removeElementListener: function () {
         var me = this,
             args = arguments;
+
         if (me.rendered) {
             me.el.un.apply(me.el, args);
         }
     },
 
-    afterRender: function() {
+    afterRender: function () {
         this.callParent(arguments);
         this.initAnimator();
     },
 
-    getItems: function() {
+    getItems: function () {
         var me = this,
             items = me.items;
 
@@ -62,18 +63,18 @@ Ext.define('Ext.draw.ContainerBase', {
         return me.items;
     },
 
-    onRender: function() {
+    onRender: function () {
         this.callParent(arguments);
         this.element = this.el;
-        this.innerElement = this.body;
+        this.bodyElement = this.body;
     },
 
-    setItems: function(items) {
+    setItems: function (items) {
         this.items = items;
         return items;
     },
 
-    setSurfaceSize: function(width, height) {
+    setSurfaceSize: function (width, height) {
         this.resizeHandler({
             width: width,
             height: height
@@ -82,22 +83,20 @@ Ext.define('Ext.draw.ContainerBase', {
     },
 
     onResize: function (width, height, oldWidth, oldHeight) {
-        var me = this;
-
-        me.callParent([width, height, oldWidth, oldHeight]);
-        me.handleResize({
+        this.handleResize({
             width: width,
             height: height
-        });
+        }, !this.size); // First resize should be performed without any delay.
     },
 
-    preview: function () {
-        var image = this.getImage(),
-            items;
+    preview: function (image) {
+        var items;
 
         if (Ext.isIE8) {
             return false;
         }
+
+        image = image || this.getImage();
 
         if (image.type === 'svg-markup') {
             items = {
@@ -137,7 +136,7 @@ Ext.define('Ext.draw.ContainerBase', {
 
         new Ext.window.Window({
             title: this.previewTitleText,
-            closeable: true,
+            closable: true,
             renderTo: Ext.getBody(),
             autoShow: true,
             maximizeable: true,
@@ -156,11 +155,11 @@ Ext.define('Ext.draw.ContainerBase', {
     },
 
     privates: {
-        getTargetEl: function() {
-            return this.innerElement;
+        getTargetEl: function () {
+            return this.bodyElement;
         },
 
-        reattachToBody: function() {
+        reattachToBody: function () {
             // This is to ensure charts work properly as grid column widgets.
             var me = this;
             if (me.pendingDetachSize) {

@@ -1,5 +1,4 @@
-describe('Ext.draw.sprite.AttributeParser', function () {
-
+topSuite("Ext.draw.sprite.AttributeParser", function() {
     var parser = Ext.draw.sprite.AttributeParser;
 
     describe('angle', function () {

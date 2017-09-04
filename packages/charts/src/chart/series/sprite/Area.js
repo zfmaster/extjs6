@@ -22,7 +22,7 @@ Ext.define('Ext.chart.series.sprite.Area', {
         }
     },
 
-    renderClipped: function (surface, ctx, clip) {
+    renderClipped: function (surface, ctx, dataClipRect) {
         var me = this,
             store = me.getStore(),
             series = me.getSeries(),
@@ -38,15 +38,15 @@ Ext.define('Ext.chart.series.sprite.Area', {
             dy = matrix.elements[5],
             surfaceMatrix = me.surfaceMatrix,
             markerCfg = {},
-            min = Math.min(clip[0], clip[2]),
-            max = Math.max(clip[0], clip[2]),
+            min = Math.min(dataClipRect[0], dataClipRect[2]),
+            max = Math.max(dataClipRect[0], dataClipRect[2]),
             start = Math.max(0, this.binarySearch(min)),
             end = Math.min(dataX.length - 1, this.binarySearch(max) + 1),
             renderer = attr.renderer,
             rendererData = {
                 store: store
             },
-            rendererConfig, rendererChanges;
+            rendererChanges;
 
         ctx.beginPath();
         startX = dataX[start] * xx + dx;

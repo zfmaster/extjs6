@@ -1,4 +1,6 @@
-describe("Ext.event.publisher.Gesture", function() {
+/* global Ext, expect, xdescribe, xit */
+
+topSuite("Ext.event.publisher.Gesture", function() {
     var helper = Ext.testHelper,
         targetEl;
 
@@ -64,7 +66,7 @@ describe("Ext.event.publisher.Gesture", function() {
 
             runs(function() {
                 expectCollected(true);
-            })
+            });
         });
     });
 
@@ -96,6 +98,8 @@ describe("Ext.event.publisher.Gesture", function() {
             expect(result[5]).toEqual(['Ext.event.gesture.Swipe', 600]);
             expect(result[6]).toEqual(['Ext.event.gesture.Pinch', 700]);
             expect(result[7]).toEqual(['Ext.event.gesture.Rotate', 800]);
+            
+            Ext.testHelper.touchEnd(document.body);
 
             delete Drag.onStart;
             delete Tap.onStart;
@@ -119,14 +123,14 @@ describe("Ext.event.publisher.Gesture", function() {
             });
         });
         
-        it("should allow the exception to propagate", function() {
+        it("should not allow the exception to propagate", function() {
             expect(function() {
                 helper.touchStart(targetEl, { id: 1, x: 1, y: 1 });
                 helper.touchEnd(targetEl, { id: 1, x: 1, y: 1 });
             }).toThrow('This error is caught but will show in console IE');
         });
         
-        it("should finish gesture an exception is thrown in recognizer", function() {
+        it("should finish gesture when an exception is thrown in recognizer", function() {
             expect(function() {
                 helper.touchStart(targetEl, { id: 1, x: 1, y: 1 });
                 helper.touchEnd(targetEl, { id: 1, x: 1, y: 1 });
@@ -620,6 +624,252 @@ describe("Ext.event.publisher.Gesture", function() {
 
                 'target-touchend'
             ]);
+        });
+    });
+
+    describe("keeping e.touches up to date", function () {
+        it("should update touches on start", function () {
+            var e;
+
+            targetEl.on('touchstart', function(ev) {
+                e = ev;
+            });
+
+            helper.touchStart(targetEl, {id: 1, x: 10, y: 11});
+
+            expect(e.touches.length).toBe(1);
+            expect(e.touches[0].identifier).toBe(1);
+            expect(e.touches[0].pageX).toBe(10);
+            expect(e.touches[0].pageY).toBe(11);
+            expect(e.touches[0].target).toBe(targetEl.dom);
+
+            helper.touchEnd(targetEl, {id: 1, x: 10, y: 11});
+        });
+
+        it("should update touches on move", function () {
+            var e;
+
+            targetEl.on('touchmove', function (ev) {
+                e = ev;
+            });
+
+            helper.touchStart(targetEl, {id: 1, x: 10, y: 11});
+
+            helper.touchMove(targetEl, {id: 1, x: 12, y: 15});
+
+            expect(e.touches.length).toBe(1);
+            expect(e.touches[0].identifier).toBe(1);
+            expect(e.touches[0].pageX).toBe(12);
+            expect(e.touches[0].pageY).toBe(15);
+            expect(e.touches[0].target).toBe(targetEl.dom);
+
+            helper.touchEnd(targetEl, {id: 1, x: 12, y: 15});
+        });
+
+        it("should update touches on second start", function () {
+            var e;
+
+            targetEl.on('touchstart', function (ev) {
+                e = ev;
+            });
+
+            helper.touchStart(targetEl, {id: 1, x: 10, y: 11});
+
+            helper.touchStart(targetEl, {id: 2, x: 12, y: 15});
+
+            if (Ext.supports.TouchEvents || Ext.supports.MSPointerEvents || Ext.supports.PointerEvents) {
+                expect(e.touches.length).toBe(2);
+
+                expect(e.touches[0].identifier).toBe(1);
+                expect(e.touches[0].pageX).toBe(10);
+                expect(e.touches[0].pageY).toBe(11);
+                expect(e.touches[0].target).toBe(targetEl.dom);
+
+                expect(e.touches[1].identifier).toBe(2);
+                expect(e.touches[1].pageX).toBe(12);
+                expect(e.touches[1].pageY).toBe(15);
+                expect(e.touches[1].target).toBe(targetEl.dom);
+            } else {
+                expect(e.touches.length).toBe(1);
+
+                expect(e.touches[0].identifier).toBe(1);
+                expect(e.touches[0].pageX).toBe(12);
+                expect(e.touches[0].pageY).toBe(15);
+                expect(e.touches[0].target).toBe(targetEl.dom);
+            }
+
+            helper.touchEnd(targetEl, {id: 2, x: 12, y: 15});
+            
+            helper.touchEnd(targetEl, {id: 1, x: 10, y: 11});
+        });
+
+        it("should update touches on move when start propagation was stopped", function () {
+            var e;
+
+            targetEl.on({
+                touchstart: function (ev) {
+                    ev.stopPropagation();
+                },
+                delegated: false
+            });
+
+            targetEl.on('touchmove', function (ev) {
+                e = ev;
+            });
+
+            helper.touchStart(targetEl, {id: 1, x: 10, y: 11});
+
+            helper.touchMove(targetEl, {id: 1, x: 12, y: 15});
+
+            if (Ext.supports.TouchEvents || Ext.supports.MSPointerEvents || Ext.supports.PointerEvents) {
+                expect(e.touches.length).toBe(1);
+                expect(e.touches[0].identifier).toBe(1);
+                expect(e.touches[0].pageX).toBe(12);
+                expect(e.touches[0].pageY).toBe(15);
+                expect(e.touches[0].target).toBe(targetEl.dom);
+            } else {
+                expect(e.touches).toBeUndefined();
+            }
+
+            helper.touchEnd(targetEl, {id: 1, x: 12, y: 15});
+        });
+
+        it("should update touches on end when start and move propagation were stopped", function () {
+            var e;
+
+            targetEl.on({
+                touchstart: function (ev) {
+                    ev.stopPropagation();
+                },
+                touchmove: function (ev) {
+                    ev.stopPropagation();
+                },
+                delegated: false
+            });
+
+            targetEl.on('touchend', function (ev) {
+                e = ev;
+            });
+
+            helper.touchStart(targetEl, {id: 1, x: 10, y: 11});
+
+            helper.touchMove(targetEl, {id: 1, x: 12, y: 15});
+
+            helper.touchEnd(targetEl, {id: 1, x: 12, y: 15});
+
+            if (e.pointerType === 'mouse') {
+                expect(e.touches).toBeUndefined();
+            } else {
+                expect(e.touches.length).toBe(0);
+            }
+        });
+    });
+
+    describe("playing well with others", function() {
+        function stopPropagation(e) {
+            e.stopPropagation();
+        }
+
+        it("should cancel gesture recognition when stopPropagation is called on the start event", function () {
+            var touchstart = jasmine.createSpy(),
+                tap = jasmine.createSpy(),
+                tapcancel = jasmine.createSpy();
+
+            targetEl.on({
+                touchstart: touchstart,
+                tap: tap,
+                tapcancel: tapcancel
+            });
+
+            targetEl.setTouchAction('none');
+
+            targetEl.on({
+                touchstart: stopPropagation,
+                delegated: false
+            });
+
+            helper.touchStart(targetEl, {id: 1, x: 10, y: 10});
+
+            helper.touchMove(targetEl, {id: 1, x: 11, y: 11});
+
+            helper.touchEnd(targetEl, {id: 1, x: 11, y: 11});
+
+            expect(touchstart).not.toHaveBeenCalled();
+            expect(tapcancel).not.toHaveBeenCalled();
+            expect(tap).not.toHaveBeenCalled();
+        });
+
+        it("should cancel gesture recognition when stopPropagation is called on the move event", function () {
+            var dragstart = jasmine.createSpy(),
+                drag = jasmine.createSpy(),
+                dragend = jasmine.createSpy(),
+                dragcancel = jasmine.createSpy();
+
+            targetEl.on({
+                dragstart: dragstart,
+                drag: drag,
+                dragend: dragend,
+                dragcancel: dragcancel
+            });
+
+            targetEl.setTouchAction('none');
+
+            helper.touchStart(targetEl, {id: 1, x: 10, y: 10});
+
+            helper.touchMove(targetEl, {id: 1, x: 20, y: 20});
+
+            expect(dragstart.callCount).toBe(1);
+
+            expect(drag.callCount).toBe(1);
+
+            targetEl.on({
+                touchmove: stopPropagation,
+                delegated: false
+            });
+
+            helper.touchMove(targetEl, {id: 1, x: 30, y: 30});
+
+            expect(drag.callCount).toBe(1);
+            expect(dragcancel.callCount).toBe(1);
+
+            helper.touchEnd(targetEl, {id: 1, x: 30, y: 30});
+
+            expect(dragend.callCount).toBe(0);
+        });
+
+        it("should cancel gesture recognition when stopPropagation is called on the end event", function () {
+            var dragstart = jasmine.createSpy(),
+                drag = jasmine.createSpy(),
+                dragend = jasmine.createSpy(),
+                dragcancel = jasmine.createSpy();
+
+            targetEl.on({
+                dragstart: dragstart,
+                drag: drag,
+                dragend: dragend,
+                dragcancel: dragcancel
+            });
+
+            targetEl.setTouchAction('none');
+
+            helper.touchStart(targetEl, {id: 1, x: 10, y: 10});
+
+            helper.touchMove(targetEl, {id: 1, x: 30, y: 30});
+
+            expect(dragstart.callCount).toBe(1);
+
+            expect(drag.callCount).toBe(1);
+
+            targetEl.on({
+                touchend: stopPropagation,
+                delegated: false
+            });
+
+            helper.touchEnd(targetEl, {id: 1, x: 30, y: 30});
+
+            expect(drag.callCount).toBe(1);
+            expect(dragcancel.callCount).toBe(1);
+            expect(dragend.callCount).toBe(0);
         });
     });
 });

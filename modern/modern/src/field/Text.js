@@ -35,7 +35,7 @@
  *
  * ## Configuring
  *
- * Text field offers several configuration options, including {@link #placeHolder}, {@link #maxLength},
+ * Text field offers several configuration options, including {@link #placeholder}, {@link #maxLength},
  * {@link #autoComplete}, {@link #autoCapitalize} and {@link #autoCorrect}. For example, here is how we would configure
  * a text field to have a maximum length of 10 characters, with placeholder text that disappears when the field is
  * focused:
@@ -43,7 +43,7 @@
  *     Ext.create('Ext.field.Text', {
  *         label: 'Username',
  *         maxLength: 10,
- *         placeHolder: 'Enter your username'
+ *         placeholder: 'Enter your username'
  *     });
  *
  * The autoComplete, autoCapitalize and autoCorrect configs simply set those attributes on the text field and allow the
@@ -63,12 +63,13 @@
  * {@link Ext.field.Field} documentation to see how to leverage its capabilities.
  */
 Ext.define('Ext.field.Text', {
-    extend: 'Ext.field.Field',
+    extend: 'Ext.field.Input',
     xtype: 'textfield',
     alternateClassName: 'Ext.form.Text',
 
     requires: [
-        'Ext.field.trigger.Clear'
+        'Ext.field.trigger.Clear',
+        'Ext.Deferred'
     ],
 
     /**
@@ -117,14 +118,6 @@ Ext.define('Ext.field.Text', {
      */
 
     /**
-     * @event change
-     * Fires when the value has changed.
-     * @param {Ext.field.Text} this This field
-     * @param {String} newValue The new value
-     * @param {String} oldValue The original value
-     */
-
-    /**
      * @event action
      * @preventable
      * Fires whenever the return key or go is pressed. FormPanel listeners
@@ -136,10 +129,11 @@ Ext.define('Ext.field.Text', {
 
     config: {
         /**
-         * @cfg
-         * @inheritdoc
+         * @cfg {Boolean}
+         * `true` to show a clear trigger in this field when it has a non-empty value
+         * @accessor
          */
-        clearIcon: true,
+        clearable: true,
 
         /**
          * @cfg {'top'/'left'/'bottom'/'right'/'placeholder'} labelAlign
@@ -147,56 +141,75 @@ Ext.define('Ext.field.Text', {
          * text inside the empty input and will animated to "top" alignment when the input
          * is focused or contains text.
          * @inheritdoc
-         * @accessor
          */
 
         /**
-         * @cfg {String} placeHolder A string value displayed in the input (if supported) when the control is empty.
-         * @accessor
+         * @cfg {String}
+         * A string value displayed in the input when the control is empty.
          */
-        placeHolder: null,
+        placeholder: null,
 
         /**
-         * @cfg {Number} maxLength The maximum number of permitted input characters.
-         * @accessor
+         * @cfg {Number}
+         * The maximum number of permitted input characters.
          */
         maxLength: null,
 
         /**
-         * True to set the field's DOM element autocomplete attribute to "on", false to set to "off".
-         * @cfg {Boolean} autoComplete
-         * @accessor
+         * @cfg {Boolean} [autoComplete=true]
+         * `false to disable autocomplete on this text field.  Autocomplete is enabled by
+         * default on text fields, but disabled on picker fields.
          */
         autoComplete: null,
 
         /**
+         * @cfg {Boolean}
          * True to set the field's DOM element autocapitalize attribute to "on", false to set to "off".
-         * @cfg {Boolean} autoCapitalize
-         * @accessor
          */
         autoCapitalize: null,
 
         /**
+         * @cfg {Boolean}
          * True to set the field DOM element autocorrect attribute to "on", false to set to "off".
-         * @cfg {Boolean} autoCorrect
-         * @accessor
          */
         autoCorrect: null,
 
         /**
-         * True to set the field DOM element readonly attribute to true.
-         * @cfg {Boolean} readOnly
-         * @accessor
+         * @cfg {Boolean} [autoHideInputMask=true]
+         * Specify as `false` to always show the `inputMask`.
+         * @since 6.5.0
          */
-        readOnly: null,
+        autoHideInputMask: null,
 
         /**
-         * @cfg {Object} component The inner component for this field, which defaults to an input text.
-         * @accessor
+         * @cfg {String/Ext.field.InputMask} inputMask
+         *
+         * **Important:** To use this config you must require `Ext.field.InputMask` or
+         * use a complete framework build. The logic to implement an `inputMask` is not
+         * automatically included in a build.
+         * @since 6.5.0
          */
-        component: {
-            xtype: 'textinput'
-        },
+        inputMask: null,
+
+        /**
+         * @cfg {String}
+         * The value for the HTML5 `pattern` attribute. You can use this to change which
+         * keyboard layout will be used.
+         *
+         *     Ext.define('Ux.field.Pattern', {
+         *         extend : 'Ext.field.Text',
+         *         xtype  : 'patternfield',
+         *
+         *         config : {
+         *             component : {
+         *                 pattern : '[0-9]*'
+         *             }
+         *         }
+         *     });
+         *
+         * Even though it extends {@link Ext.field.Text}, it will display the number keyboard.
+         */
+        pattern: null,
 
         // @cmd-auto-dependency {aliasPrefix: "trigger.", isKeyedObject: true}
         /**
@@ -252,286 +265,618 @@ Ext.define('Ext.field.Text', {
             }
         },
 
+        /**
+         * @cfg {Boolean} [editable=true]
+         * Configure as `false` to prevent the user from typing text directly into the field;
+         * the field can only have its value set programmatically or via an action invoked by a trigger.
+         *
+         * Contrast with {@link #cfg!readOnly} which disables all mutation via the UI.
+         */
+        editable: true,
+
         bubbleEvents: ['action'],
 
         bodyAlign: 'stretch',
 
         /**
-          * @cfg {'left'/'center'/'right'} [textAlign='left'].
-          * The text alignment of this field.
-          */
+         * @private
+         */
+        labelInPlaceholder: {
+            lazy: true,
+            $value: true
+        },
+
+        /**
+         * @cfg {'left'/'center'/'right'} [textAlign='left']
+         * The text alignment of this field.
+         */
         textAlign: null
     },
+
+    cachedConfig: {
+        /**
+         * @cfg {Boolean}
+         * 'true' to animate the underline of a field when focused
+         */
+        animateUnderline: false,
+
+        /**
+         * @cfg {Ext.data.validator.Validator} parseValidator
+         * @private
+         * @since 6.5.1
+         */
+        parseValidator: null
+    },
+
+    /**
+     * @cfg {String} badFormatMessage
+     * The error message that will be displayed if the value cannot be parsed (for some
+     * derived types) or if the value does not match a configured {@link #inputMask}.
+     * @locale
+     * @since 6.5.0
+     */
+    badFormatMessage: 'Value does not match the required format',
+
+    /**
+     * @cfg bodyAlign
+     * @hide
+     */
 
     defaultBindProperty: 'value',
     twoWayBindable: {
         value: 1
     },
-    
+
+    /**
+     * @cfg
+     * @inheritdoc
+     */
     publishes: {
         value: 1
     },
 
+    inputType: 'text',
+
     classCls: Ext.baseCSSPrefix + 'textfield',
     focusedCls: Ext.baseCSSPrefix + 'focused',
     emptyCls: Ext.baseCSSPrefix + 'empty',
+    webkitBorderBoxBugCls: Ext.baseCSSPrefix + 'webkit-border-box-bug',
 
-    /**
-     * @private
-     */
-    initialize: function() {
+    requiredIndicator: '*',
+
+    getBodyTemplate: function () {
+        var template = [{
+            reference: 'beforeInputElement',
+            cls: Ext.baseCSSPrefix + 'before-input-el'
+        }];
+
+        template.push(this.getInputTemplate());
+
+        template.push({
+            reference: 'afterInputElement',
+            cls: Ext.baseCSSPrefix + 'after-input-el'
+        });
+
+        return [{
+            reference: 'inputWrapElement',
+            cls: Ext.baseCSSPrefix + 'input-wrap-el' +
+                (Ext.supports.WebKitInputTableBoxModelBug ? (' ' + this.webkitBorderBoxBugCls) : ''),
+            children: template
+        }, {
+            reference: 'underlineElement',
+            cls: Ext.baseCSSPrefix + 'underline-el'
+        }];
+    },
+
+    initialize: function () {
         var me = this;
 
         me.callParent();
 
-        me.getComponent().on({
+        me.inputElement.on({
             keyup: 'onKeyUp',
-            input: 'onInput',
-            focus: 'onFocus',
-            blur: 'onBlur',
+            keydown: 'onKeyDown',
+            keypress: 'onKeyPress',
             paste: 'onPaste',
             mousedown: 'onMouseDown',
-            scope: this
+            scope: me
         });
 
-        // set the originalValue of the textfield, if one exists
-        me.originalValue = me.getValue() || "";
-        me.getComponent().originalValue = me.originalValue;
-
-        me.syncEmptyCls();
-    },
-
-    applyValue: function(value) {
-        return Ext.isEmpty(value) ? '' : value;
+        me.syncEmptyState();
     },
 
     /**
-     * @private
+     * Clears the value of this field.
      */
-    updateValue: function(value, oldValue) {
+    clearValue: function () {
         var me = this,
-            component  = me.getComponent(),
-            // allows value to be zero but not undefined or null (other falsey values)
-            valueValid = value !== undefined && value !== null && value !== '';
+            inputMask = me.getInputMask();
 
-        if (component) {
-            component.setValue(value);
+        if (inputMask) {
+            // show empty mask and move caret to first editable position
+            inputMask.showEmptyMask(me, true);
+        } else {
+            me.forceInputChange = true;
+            me.setValue('');
+            me.forceInputChange = false;
         }
 
-        me.toggleClearTrigger(valueValid && me.isDirty());
+        me.syncEmptyState();
+    },
 
-        me.syncEmptyCls();
+    transformValue: function (value) {
+        if (value == null) {
+            value = '';
+        }
 
-        if (me.initialized) {
-            me.fireEvent('change', me, value, oldValue);
+        return value;
+    },
+
+    applyInputMask: function (value, instance) {
+        var InputMask = Ext.field['InputMask']; // prevent Cmd detection
+
+        //<debug>
+        if (value) {
+            if (!InputMask) {
+                Ext.raise('Missing Ext.field.InputMask (required to use inputMask)');
+            }
+        }
+        //</debug>
+
+        return value ? InputMask.from(value, instance) : null;
+    },
+
+    updateInputMask: function (inputMask, previous) {
+        this.hasMask = false;
+        if (previous) {
+            previous.release();
+        }
+
+        if (inputMask) {
+            this.hasMask = true;
+            //Synchronize pattern in case we have changed it and ensure that initial mask is being shown
+            inputMask.syncPattern(this);
         }
     },
 
-    updateLabel: function (newLabel, oldLabel) {
-        this.callParent(arguments);
+    doValidate: function (value, errors, skipLazy) {
+        this.callParent([ value, errors, skipLazy ]);
 
-        if (this.getLabelAlign() === 'placeholder') {
-            this.setPlaceHolder(newLabel);
+        if (!skipLazy) {
+            var inputMask = this.getInputMask();
+
+            // Field will be marked invalid if user has entered some chars.
+            if (inputMask && !inputMask.isFilled(value) && value !== inputMask._mask) {
+                errors.push(this.badFormatMessage);
+            }
         }
     },
 
-    updateLabelAlign: function(labelAlign, oldLabelAlign) {
+    /**
+     * Parses the given `value` and returns it in the desired representation. By default
+     * this will return the `value` given (no change). Derived classes (such as `datefield`
+     * and `numberfield`) will override this method and return a Date or a Number,
+     * respectively.
+     *
+     * If `value` cannot be parsed, this method will return `null`, otherwise it will
+     * return the parsed value. It is the parsed value that will become the field's
+     * {@link #cfg!value value}.
+     *
+     * This method is not called directly but is called internally by the
+     * {@link #method!validate validate method}. This call to parse a value is not made on
+     * empty or null values.
+     *
+     * *Note:* It is not expected that applications will need to override this method
+     * because an application can achieve value parsing by virtue of the `validators` it
+     * defines. These can come from this component or from a bound model field (using
+     * {@link #cfg!modelValidation}). In addition, `datefield` and `numberfield` both
+     * provide default parsing for their values.
+     *
+     * @param {String} value The value to parse (never `null`).
+     *
+     * @param {String[]} errors The set of validation errors. If the value cannot be
+     * parsed, the error message should be added to this array.
+     *
+     * @return {Mixed} The parsed value.
+     *
+     * @template
+     * @protected
+     * @since 6.5.1
+     */
+    parseValue: function (value, errors) {
+        var me = this,
+            parser = me.getParseValidator(),
+            field, i, k, len, v, validators;
 
-        this.callParent([labelAlign, oldLabelAlign]);
+        if (parser) {
+            // If the derived class has specified a default parseValidator, then this
+            // pass is needed. Consult the component's validators first for a more
+            // specific validator, followed by the bound model field (if we have one).
+            field = me._validationField;
+
+            for (k = 2; k-- > 0; ) {
+                validators = k ? me.getValidators() : (field && field.getValidators());
+                len = validators && validators.length;
+
+                for (i = 0; i < len; ++i) {
+                    v = validators[i];
+
+                    if (v.parse) {
+                        v = v.parse(value);
+
+                        // The first parse validator to achieve a parse wins. Returns
+                        // its result.
+                        if (v !== null) {
+                            return v;
+                        }
+                    }
+                }
+            }
+
+            // No user-defined parse validator found, so run the default one. It must
+            // succeed or the value is invalid.
+            value = parser.parse(value);
+
+            if (value === null && errors) {
+                errors.push(me.badFormatMessage);
+            }
+        }
+
+        return value;
     },
 
-    updateTextAlign: function(newAlign, oldAlign) {
+    applyValue: function (value, oldValue) {
+        // This converts the raw, textual value into whatever form the field uses
+        // So Number and Date subclasses convert to number or date here.
+        // If the validation fails, undefined return will abort the setter.
+        if (value && typeof value === 'string') {
+            value = this.parseValue(value);
+            if (value === null) {
+                return;
+            }
+        }
+
+        return this.transformValue(this.callParent([value, oldValue]));
+    },
+
+    updateInputValue: function (value, oldValue) {
+        var me = this,
+            inputMask = me.getInputMask();
+
+        me.callParent([value, oldValue]);
+
+        me.syncEmptyState();
+        me.syncLabelPlaceholder(false);
+
+        if (inputMask) {
+            inputMask.onChange(this, value, oldValue);
+        }
+    },
+
+    updateTextAlign: function (newAlign, oldAlign) {
         var element = this.element;
- 
+
         if (oldAlign) {
             element.removeCls(Ext.baseCSSPrefix + 'text-align-' + oldAlign);
         }
- 
+
         if (newAlign) {
             element.addCls(Ext.baseCSSPrefix + 'text-align-' + newAlign);
         }
     },
 
-    /**
-     * @private
-     */
-    updatePlaceHolder: function(newPlaceHolder) {
+    updatePlaceholder: function (value) {
+        this.setInputAttribute('placeholder', value);
+    },
+
+    //<debug>
+    applyMaxLength: function (maxLength) {
+        if (maxLength !== null && typeof maxLength != 'number') {
+            throw new Error("Ext.field.Text: [applyMaxLength] trying to pass a value which is not a number");
+        }
+        return maxLength;
+    },
+    //</debug>
+
+    updateMaxLength: function (newMaxLength) {
+        this.setInputAttribute('maxlength', newMaxLength);
+    },
+
+    applyAutoComplete: function (value) {
+        return value === true || value === 'on';
+    },
+
+    updateAutoComplete: function (value) {
+        this.setInputAttribute('autocomplete', value ? 'on' : 'off');
+    },
+
+    applyAutoCapitalize: function (value) {
+        return value === true || value === 'on';
+    },
+
+    updateAutoCapitalize: function (value) {
+        this.setInputAttribute('autocapitalize', value ? 'on' : 'off');
+    },
+
+    applyAutoCorrect: function (value) {
+        return value === true || value === 'on';
+    },
+
+    updateAutoCorrect: function (value) {
+        this.setInputAttribute('autocorrect', value ? 'on' : 'off');
+    },
+
+    updateReadOnly: function (newReadOnly) {
         var me = this,
-            label = me.getLabel();
+            triggers = me.getTriggers(),
+            isEditable = me.getEditable(),
+            triggerName, trigger;
 
-        //<debug>
-        if ((me.getLabelAlign() === 'placeholder') && newPlaceHolder !== label) {
-            Ext.log.warn('PlaceHolder should not be set when using "labelAlign: \'placeholder\'"');
+        me.callParent([newReadOnly || !isEditable]);
+
+        for (triggerName in triggers) {
+            trigger = triggers[triggerName];
+
+            if (trigger.disableOnReadOnly !== false) {
+                trigger.setDisabled(newReadOnly);
+            }
         }
-        //</debug>
 
-        me.getComponent().setPlaceHolder(newPlaceHolder);
+        me.syncEmptyState();
     },
 
-    /**
-     * @private
-     */
-    updateMaxLength: function(newMaxLength) {
-        this.getComponent().setMaxLength(newMaxLength);
-    },
+    updateEditable: function (newEditable) {
+        var triggers = this.getTriggers(),
+            isReadOnly = this.getReadOnly(),
+            triggerName, trigger;
 
-    /**
-     * @private
-     */
-    updateAutoComplete: function(newAutoComplete) {
-        this.getComponent().setAutoComplete(newAutoComplete);
-    },
+        this.updateReadOnly(!newEditable);
+        for (triggerName in triggers) {
+            trigger = triggers[triggerName];
 
-    /**
-     * @private
-     */
-    updateAutoCapitalize: function(newAutoCapitalize) {
-        this.getComponent().setAutoCapitalize(newAutoCapitalize);
-    },
-
-    /**
-     * @private
-     */
-    updateAutoCorrect: function(newAutoCorrect) {
-        this.getComponent().setAutoCorrect(newAutoCorrect);
-    },
-
-    /**
-     * @private
-     */
-    updateReadOnly: function(newReadOnly) {
-        this.toggleClearTrigger(!newReadOnly);
-        this.getComponent().setReadOnly(newReadOnly);
-    },
-
-    /**
-     * @private
-     */
-    updateInputType: function(newInputType) {
-        var component = this.getComponent();
-        if (component) {
-            component.setType(newInputType);
+            if (trigger.disableOnReadOnly !== false) {
+                triggers[triggerName].setDisabled(isReadOnly);
+            }
         }
     },
 
-    /**
-     * @private
-     */
-    updateName: function(newName) {
-        var component = this.getComponent();
-        if (component) {
-            component.setName(newName);
-        }
+    updatePattern: function (pattern) {
+        this.setInputAttribute('pattern', pattern);
     },
 
-    /**
-     * @private
-     */
-    updateTabIndex: function(newTabIndex) {
-        var component = this.getComponent();
-        if (component) {
-            component.setTabIndex(newTabIndex);
-        }
-    },
-
-    /**
-     * Updates the {@link #inputCls} configuration on this fields {@link #component}
-     * @private
-     */
-    updateInputCls: function(newInputCls, oldInputCls) {
-        var component = this.getComponent();
-        if (component) {
-            component.replaceCls(oldInputCls, newInputCls);
-        }
-    },
-
-    updateDisabled: function(disabled, oldDisabled) {
+    updateDisabled: function (disabled, oldDisabled) {
         this.callParent([disabled, oldDisabled]);
-        this.toggleClearTrigger(!disabled);
+        this.syncEmptyState();
     },
 
-    applyTriggers: function(triggers) {
+    updateClearable: function (clearable, oldClearable) {
         var me = this,
-            instances = {},
-            // String lookup is necessary to prevent cmd from requiring the Trigger class
-            Trigger = Ext.field.trigger['Trigger'],
-            clearable = me.getClearIcon(),
-            name, trigger;
+            triggers, clearTrigger;
+
+        if (!me.isConfiguring) {
+            triggers = me.getTriggers();
+            clearTrigger = triggers && triggers.clear;
+
+            if (clearable) {
+                if (!clearTrigger) {
+                    me.addTrigger('clear', 'clear');
+                }
+            } else if (clearTrigger) {
+                me.removeTrigger('clear');
+            }
+        }
+    },
+
+    applyTriggers: function (triggers, oldTriggers) {
+        var me = this,
+            instances = oldTriggers || {},
+            clearable = me.getClearable(),
+            name, trigger, oldTrigger;
 
         for (name in triggers) {
-            if (!clearable && (name === 'clear')) {
-                continue;
-            }
-
             trigger = triggers[name];
+            oldTrigger = instances[name];
 
-            if (trigger === true) {
-                trigger = {
-                    type: name
-                };
-            } else if (typeof trigger === 'string') {
-                trigger = {
-                    type: trigger
-                };
+            // Any key that exists on the incoming object should cause destruction of
+            // the existing trigger for that key, if one exists.  This is true for both
+            // truthy values (triggers and trigger configs) and falsy values. Falsy values
+            // cause destruction of the existing trigger without replacement.
+            if (oldTrigger) {
+                oldTrigger.destroy();
             }
 
-            trigger = Ext.apply({
-                field: me
-            }, trigger);
+            if (trigger) {
+                if (!clearable && (name === 'clear')) {
+                    continue;
+                }
 
-            trigger = trigger.xtype ? Ext.create(trigger) : Trigger.create(trigger);
-
-            instances[name] = trigger;
+                instances[name] = me.createTrigger(name, trigger);
+            }
         }
 
         return instances;
     },
 
-    updateTriggers: function(triggers, oldTriggers) {
-        var name;
-
-        for (name in oldTriggers) {
-            oldTriggers[name].destroy();
-        }
-
+    updateTriggers: function () {
         this.syncTriggers();
     },
 
     /**
-     * @private
+     * Adds a trigger to this text field.
+     * @param {String} name Unique name (within this field) for the trigger.  Cannot be the
+     * same as the name of an existing trigger for this field.
+     * @param {Ext.field.trigger.Trigger/Object} trigger The trigger instance or a config
+     * object for a trigger to add
+     * @return {Ext.field.trigger.Trigger} The trigger that was added
      */
-    showClearTrigger: function() {
+    addTrigger: function (name, trigger) {
         var me = this,
-            value = me.getValue(),
-            // allows value to be zero but not undefined or null (other falsey values)
-            valueValid = value !== undefined && value !== null && value !== "",
-            triggers, clearTrigger;
+            triggers = me.getTriggers(),
+            triggerConfig;
 
-        if (me.getClearIcon() && !me.getDisabled() && !me.getReadOnly() && valueValid) {
-            triggers = me.getTriggers();
-            clearTrigger = triggers && triggers.clear;
+        //<debug>
+        if (triggers && triggers[name]) {
+            Ext.raise('Trigger with name "' + name + '" already exists.');
+        }
+        if (typeof name !== 'string') {
+            Ext.raise('Cannot add trigger. Key must be a string.');
+        }
+        if (typeof trigger !== 'string' && !Ext.isObject(trigger)) {
+            Ext.raise('Cannot add trigger "' + name + '". A trigger config or instance is required.');
+        }
+        //</debug>
 
-            if (clearTrigger) {
-                clearTrigger.show();
+        trigger = me.createTrigger(name, trigger);
+
+        if (triggers) {
+            triggers[name] = trigger;
+            me.syncTriggers();
+        } else {
+            triggerConfig = {};
+            triggerConfig[name] = trigger;
+            me.setTriggers(triggerConfig);
+        }
+
+        return trigger;
+    },
+
+    /**
+     * Removes a trigger from this text field.
+     * @param {String/Ext.field.trigger.Trigger} trigger The name of the trigger to remove,
+     * or a trigger reference.
+     * @param {Boolean} [destroy=true] False to prevent the trigger from being destroyed
+     * on removal.  Only use this option if you want to reuse the trigger instance.
+     * @return {Ext.field.trigger.Trigger} The trigger that was removed
+     */
+    removeTrigger: function (trigger, destroy) {
+        var me = this,
+            triggers = me.getTriggers(),
+            name = trigger,
+            triggerEl;
+
+        if (name.isTrigger) {
+            name = trigger.getName();
+        } else {
+            trigger = triggers[name];
+        }
+
+        //<debug>
+        if (!name) {
+            Ext.raise('Trigger not found.');
+        } else if (!triggers[name]) {
+            Ext.raise('Cannot remove trigger. Trigger with name "' + name + '" not found.');
+        }
+        //</debug>
+
+        delete triggers[name];
+
+        if (destroy !== false) {
+            trigger.destroy();
+        } else {
+            triggerEl = trigger.el.dom;
+            triggerEl.parentNode.removeChild(triggerEl);
+        }
+
+        this.syncTriggers();
+
+        return trigger;
+    },
+
+    onKeyDown: function (event) {
+        var me = this,
+            inputMask = me.getInputMask();
+
+        if (inputMask) {
+            inputMask.onKeyDown(me, me.getValue(), event);
+        }
+
+        // tell the class to ignore the input event. this happens when we want to listen
+        // to the field change when the input autocompletes
+        me.ignoreInput = true;
+
+        if (Ext.supports.SpecialKeyDownRepeat) {
+            me.fireKey(event);
+        }
+    },
+
+    onInput: function (e) {
+        var me = this,
+            inputEl = me.inputElement.dom,
+            value = inputEl.value,
+            inputMask = me.getInputMask(),
+            parseErrors, oldValue;
+
+        if (inputMask) {
+            inputMask.processAutocomplete(this, value);
+            value = inputEl.value;
+        }
+
+        // Keep our config up to date:
+        me._inputValue = value;
+
+        // If the value is empty don't try and parse it, use the result
+        // of parseValue as the default. For text fields it will be empty string,
+        // for other typed fields (number/date) it will be null
+        if (value) {
+            parseErrors = [];
+            value = me.parseValue(value, parseErrors);
+        }
+        if (parseErrors && parseErrors.length) {
+            me.setError(parseErrors);
+        } else {
+            oldValue = me.getValue();
+            me.setValue(value);
+
+            // If the value did not change, revalidate.
+            // The user may have just erased into a valid state from an invalid state.
+            if (me.getValue() === oldValue) {
+                me.validate();
             }
         }
 
-        return me;
+        me.syncEmptyState();
+
+        // if we should ignore input, stop now.
+        if (me.ignoreInput) {
+            me.ignoreInput = false;
+            return;
+        }
+
+        // set a timeout for 10ms to check if we want to stop the input event.
+        // if not, then continue with the event (keyup)
+        Ext.defer(function () {
+            if (!me.ignoreInput && !me.destroyed) {
+                me.fireEvent('keyup', e);
+                me.ignoreInput = false;
+            }
+        }, 10);
     },
 
     /**
      * @private
      */
-    hideClearTrigger: function() {
-        var triggers = this.getTriggers(),
-            clearTrigger = triggers && triggers.clear;
-
-        if (clearTrigger) {
-            clearTrigger.hide();
+    fireKey: function (e) {
+        if (e.isSpecialKey()) {
+            this.fireEvent('specialkey', this, e);
         }
     },
 
-    onKeyUp: function(e) {
+    onKeyPress: function (event) {
+        var me = this,
+            inputMask = me.getInputMask();
+
+        if (inputMask) {
+            inputMask.onKeyPress(me, me.getValue(), event);
+        }
+
+        me.fireEvent('keypress', me, event);
+
+        if (!Ext.supports.SpecialKeyDownRepeat) {
+            me.fireKey(event);
+        }
+    },
+
+    onKeyUp: function (e) {
         this.fireAction('keyup', [this, e], 'doKeyUp');
     },
 
@@ -539,224 +884,367 @@ Ext.define('Ext.field.Text', {
      * Called when a key has been pressed in the `<input>`
      * @private
      */
-    doKeyUp: function(me, e) {
-        // getValue to ensure that we are in sync with the dom
-        var value      = me.getValue(),
-            // allows value to be zero but not undefined or null (other falsey values)
-            valueValid = value !== undefined && value !== null && value !== '';
-
-        me.toggleClearTrigger(valueValid);
+    doKeyUp: function (me, e) {
+        me.syncEmptyState();
 
         if (e.browserEvent.keyCode === 13) {
             me.fireAction('action', [me, e], 'doAction');
         }
     },
 
-    doAction: function() {
-        this.blur();
+    doAction: function () {
+        // Blur fields on enter on virtual keyboard platforms.
+        // The virtual keyboard pushes the document up outside the viewport bounds.
+        if (document.documentElement.getBoundingClientRect().top < 0) {
+            this.blur();
+        }
     },
 
-    onClearIconTap: function(input, e) {
+    onClearIconTap: function (input, e) {
         this.fireAction('clearicontap', [this, input, e], 'doClearIconTap');
-
-        //focus the field after cleartap happens, but only on android.
-        //this is to stop the keyboard from hiding. TOUCH-2064
-        if (Ext.os.is.Android) {
-            this.getComponent().focus();
-        }
     },
 
     /**
      * @private
      */
-    doClearIconTap: function(me, e) {
-        me.setValue('');
+    doClearIconTap: function () {
+        this.clearValue();
     },
 
-    onInput: function(component, value) {
-        this.setValue(value);
-    },
+    onFocusEnter: function (event) {
+        var me = this,
+            inputMask = me.getInputMask();
 
-    onFocus: function(e) {
-        var me = this;
+        me.callParent([event]);
 
         me.addCls(me.focusedCls);
-        me.isFocused = true;
+        me.syncLabelPlaceholder(true);
 
-        if (me.getLabelAlign() === 'placeholder' && !me.getValue()) {
-            me.animatePlaceholderToLabel();
+        if (inputMask) {
+            inputMask.onFocus(me, me.getValue());
         }
-
-        me.fireEvent('focus', me, e);
     },
 
-    onBlur: function(e) {
-        var me = this;
+    onFocusLeave: function (event) {
+        var me = this,
+            inputMask = me.getInputMask();
+
+        me.callParent([event]);
 
         me.removeCls(me.focusedCls);
-        me.isFocused = false;
+        me.syncLabelPlaceholder(true);
 
-        if (me.getLabelAlign() === 'placeholder' && !me.getValue()) {
-            me.animateLabelToPlaceholder();
+        if (inputMask) {
+            inputMask.onBlur(me, me.getValue());
+        }
+    },
+
+    onPaste: function (e) {
+        this.forceInputChange = true;
+        this.handlePaste(e);
+        this.forceInputChange = false;
+    },
+
+    getCaretPos: function () {
+        return this.inputElement.getCaretPos();
+    },
+
+    setCaretPos: function (pos) {
+        this.inputElement.setCaretPos(pos);
+    },
+
+    /**
+     * Returns the selection range of an input element as an array of three values:
+     *
+     *      [ start, end, direction ]
+     *
+     * These have the same meaning as the parameters to `select`.
+     * @return {Array}
+     * @since 6.5.0
+     */
+    getTextSelection: function () {
+        return this.inputElement.getTextSelection();
+    },
+
+    /**
+     * Select the specified contents of the input field (all by default).
+     * @param {Number} [start=0]
+     * @param {Number} [end]
+     * @param {"f"/"b"/"forward"/"backward"} [direction="f"] Pass "f" for forward,
+     * "b" for backwards.
+     * @return {Ext.field.Text} this
+     * @chainable
+     */
+    select: function (start, end, direction) {
+        this.inputElement.selectText(start, end, direction);
+
+        return this;
+    },
+
+    reset: function () {
+        this.callParent();
+
+        this.syncEmptyState();
+    },
+
+    onClick: function (e) {
+        this.fireEvent('click', e);
+    },
+
+    onMouseDown: function (e) {
+        this.fireEvent('mousedown', e);
+    },
+
+    trimValueToMaxLength: function () {
+        var maxLength = this.getMaxLength();
+        if (maxLength) {
+            var value = this.getValue();
+            if (value.length > this.getMaxLength()) {
+                this.setValue(value.slice(0, maxLength));
+            }
+        }
+    },
+
+    doDestroy: function () {
+        var me = this,
+            triggers = me.getTriggers(),
+            triggerGroups = me.triggerGroups,
+            name, animation;
+
+        animation = me.labelElement && me.labelElement.getActiveAnimation();
+
+        if (animation) {
+            animation.stop();
         }
 
-        me.fireEvent('blur', me, e);
+        if (triggerGroups) {
+            for (name in triggerGroups) {
+                triggerGroups[name].destroy();
+            }
+            me.triggerGroups = null;
+        }
 
-        Ext.defer(function() {
-            me.isFocused = false;
-        }, 50);
-    },
+        for (name in triggers) {
+            triggers[name].destroy();
+        }
 
-    onPaste: function(e) {
-        this.fireEvent('paste', this, e);
-    },
-
-    onMouseDown: function(e) {
-        this.fireEvent('mousedown', this, e);
-    },
-
-    /**
-     * Attempts to set the field as the active input focus.
-     * @return {Ext.field.Text} This field
-     */
-    focus: function() {
-        this.getComponent().focus();
-        return this;
-    },
-
-    /**
-     * Attempts to forcefully blur input focus for the field.
-     * @return {Ext.field.Text} This field
-     */
-    blur: function() {
-        this.getComponent().blur();
-        return this;
-    },
-
-    /**
-     * Attempts to forcefully select all the contents of the input field.
-     * @return {Ext.field.Text} this
-     */
-    select: function() {
-        this.getComponent().select();
-        return this;
-    },
-
-    resetOriginalValue: function() {
-        var me = this,
-            component;
+        me.setTriggers(null);
+        me.setInputMask(null);
 
         me.callParent();
-        component = me.getComponent();
-        if(component && component.hasOwnProperty("originalValue")) {
-            me.getComponent().originalValue = me.originalValue;
-        }
-        me.reset();
     },
 
-    reset: function() {
-        var me = this;
-        me.getComponent().reset();
-
-        //we need to call this to sync the input with this field
+    onRender: function () {
         this.callParent();
 
-        me.toggleClearTrigger(me.isDirty());
+        this.syncLabelPlaceholder();
     },
 
-    isDirty: function() {
-        var component = this.getComponent();
-        if (component) {
-            return component.isDirty();
+    getRefItems: function (deep) {
+        var me = this,
+            triggers = me.getTriggers(),
+            items = [],
+            triggerName, trigger;
+
+        for (triggerName in triggers) {
+            trigger = triggers[triggerName];
+            items.push(trigger);
+
+            // component triggers have ref items of their own
+            if (deep && trigger.getRefItems) {
+                items.push.apply(items, trigger.getRefItems(deep));
+            }
         }
-        return false;
-    },
 
-    doDestroy: function() {
-        this.setTriggers(null);
-        this.triggerGroups = null;
-        this.callParent();
+        return items;
     },
 
     privates: {
-        animateLabelToPlaceholder: function() {
-            var me = this,
-                animInfo = me.getPlaceholderAnimInfo();
+        forceInputChange: false,
+        hasMask: false,
 
-            me.labelElement.animate({
-                from: {
-                    left: 0,
-                    top: 0,
-                    opacity: 1
-                },
-                to: animInfo,
+        applyParseValidator: function (config) {
+            return this.decodeValidator(config);
+        },
+
+        updateLabelInPlaceholder: function (inside) {
+            var me = this,
+                placeHolder = me.getPlaceholder() || '',
+                anim = me._animPlaceholderLabel;
+
+            if (me.getLabelAlign() !== 'placeholder' || !me.getLabel()) {
+                me.clearWhenVisible('doPositionPlaceholder');
+                me.setInputAttribute('placeholder', placeHolder);
+                return;
+            }
+
+            me.whenVisible('doPositionPlaceholder', [inside, anim]);
+            me.el.toggleCls(Ext.baseCSSPrefix + 'label-inside', inside);
+        },
+
+        updateAnimateUnderline: function (value) {
+            this.toggleCls(Ext.baseCSSPrefix + 'animate-underline', value);
+        },
+
+        canSetInputValue: function() {
+            return this.hasMask || this.forceInputChange || this.callParent();
+        },
+
+        doPositionPlaceholder: function(inside, doAnimate) {
+            var me = this,
+                labelElement = me.labelElement,
+                anim, animation, info, insideInfo, outsideInfo;
+
+            animation = labelElement.getActiveAnimation();
+            if (animation) {
+                animation.stop();
+            }
+
+            info = me.lastPlaceholderAnimInfo;
+            if (!info) {
+                me.lastPlaceholderAnimInfo = info = me.getPlaceholderAnimInfo();
+            }
+            insideInfo = info.inside;
+            outsideInfo = info.outside;
+
+            anim = {
+                from: inside ? outsideInfo : insideInfo,
+                to: inside ? insideInfo : outsideInfo,
                 preserveEndState: true,
                 duration: 250,
-                easing: 'ease-out',
-                callback: function() {
-                    me.setPlaceHolder(me.getLabel());
-                }
-            });
+                easing: 'ease-out'
+            };
 
-            me.lastPlaceholderAnimInfo = animInfo;
+            if (doAnimate) {
+                labelElement.animate(anim);
+            } else {
+                labelElement.setStyle(anim.to);
+            }
         },
 
-        animatePlaceholderToLabel: function() {
-            var me = this;
+        getPlaceholderLabel: function () {
+            var label = this.getLabel();
 
-            me.labelElement.animate({
-                from: me.lastPlaceholderAnimInfo || me.getPlaceholderAnimInfo(),
-                to: {
-                    left: 0,
-                    top: 0,
-                    opacity: 1
-                },
-                easing: 'ease-out',
-                preserveEndState: true,
-                duration: 250
-            });
+            if (label && this.getRequired()) {
+                label += ' ' + this.requiredIndicator;
+            }
 
-            me.setPlaceHolder(null);
-
-            me.lastPlaceholderAnimInfo = null;
+            return label;
         },
 
-        getPlaceholderAnimInfo: function() {
+        getPlaceholderAnimInfo: function () {
             var me = this,
                 element = me.element,
                 labelElement = me.labelElement,
-                inputElement = me.getComponent().inputElement,
+                inputElement = me.inputElement,
                 labelOffsets = labelElement.getOffsetsTo(element),
                 inputOffsets = inputElement.getOffsetsTo(element),
-                labelPadding = labelElement.getPadding('l'),
-                inputPadding = inputElement.getPadding('l'),
-                translateX = inputOffsets[0] - labelOffsets[0] + (inputPadding - labelPadding),
-                translateY = inputOffsets[1] - labelOffsets[1];
+                labelLeftPadding = labelElement.getPadding('l'),
+                inputLeftPadding = inputElement.getPadding('l'),
+                labelTopPadding = labelElement.getPadding('t'),
+                inputTopPadding = inputElement.getPadding('t'),
+                translateX = inputOffsets[0] - labelOffsets[0] + (inputLeftPadding - labelLeftPadding),
+                translateY = inputOffsets[1] - labelOffsets[1] + (inputTopPadding - labelTopPadding);
 
             return {
-                left: translateX,
-                top: translateY,
-                opacity: 0
+                inside: {
+                    transform: {
+                        translateX: translateX + 'px',
+                        translateY: translateY + 'px'
+                    },
+                    'font-size': inputElement.getStyle('font-size')
+                },
+                outside: {
+                    transform: {
+                        translateX: '0px',
+                        translateY: '0px'
+                    },
+                    'font-size': labelElement.getStyle('font-size')
+                }
             };
         },
 
-        syncEmptyCls: function() {
-            this.toggleCls(this.emptyCls, !this.getValue());
+        handlePaste: function(e) {
+            var me = this,
+                inputMask = me.getInputMask();
+
+            if (inputMask) {
+                inputMask.onPaste(me, me.getValue(), e);
+            }
+
+            me.fireEvent('paste', me, e);
+        },
+
+        /**
+         * @private
+         */
+        createTrigger: function (name, trigger) {
+            if (!trigger.isTrigger) {
+                if (trigger === true) {
+                    trigger = {
+                        type: name
+                    };
+                } else if (typeof trigger === 'string') {
+                    trigger = {
+                        type: trigger
+                    };
+                }
+
+                trigger = Ext.apply({
+                    name: name,
+                    field: this
+                }, trigger);
+
+                trigger = trigger.xtype ? Ext.create(trigger) : Ext.Factory.trigger(trigger);
+            }
+
+            return trigger;
+        },
+
+        syncLabelPlaceholder: function (animate) {
+            var me = this,
+                inputEl = me.inputElement,
+                value = inputEl && inputEl.dom.value,
+                inside;
+
+            me._animPlaceholderLabel = animate;
+
+            if (me.rendered) {
+                if (value !== '') {
+                    // The cardinal rule: if there is a value do NOT put the label on
+                    // top of it!
+                    inside = false;
+                }
+                else {
+                    // Otherwise, if the input is not focused we would generally put
+                    // the label on top to act as the placeholder. Or flipped, when
+                    // the input is focused we want to move the label outside. That
+                    // is UNLESS the field is disabled or readonly since doing that
+                    // move-to-outside would make it seem like the field is editable
+                    // in some way (which it is not).
+                    inside = !me.hasFocus || me.getDisabled() || me.getReadOnly();
+                }
+
+                me.setLabelInPlaceholder(inside);
+            }
+
+            me._animPlaceholderLabel = false;
         },
 
         /**
          * Synchronizes the DOM to match the triggers' configured weight, side, and grouping
          * @private
          */
-        syncTriggers: function() {
+        syncTriggers: function () {
             var me = this,
                 triggers = me.getTriggers(),
-                input = me.getComponent(),
+                beforeInputElement = me.beforeInputElement,
+                afterInputElement = me.afterInputElement,
                 triggerGroups = me.triggerGroups || (me.triggerGroups = {}),
                 beforeTriggers = [],
                 afterTriggers = [],
                 triggersByGroup = {},
-                Trigger = Ext.field.trigger['Trigger'],
+                TriggerBase = Ext.field.trigger['Base'],
                 name, trigger, groupName, triggerGroup, i, ln;
 
             for (name in triggers) {
@@ -780,13 +1268,13 @@ Ext.define('Ext.field.Text', {
                     triggerGroup = triggers[groupName]; // just in case the user configured a group trigger
 
                     if (!triggerGroup) {
-                        triggerGroup = new Trigger();
+                        triggerGroup = new TriggerBase();
                     }
 
                     triggerGroups[groupName] = triggerGroup;
                 }
 
-                triggerGroup.setTriggers(Trigger.sort(triggersByGroup[groupName]));
+                triggerGroup.setTriggers(TriggerBase.sort(triggersByGroup[groupName]));
 
                 if (triggerGroup.getSide() === 'left') {
                     beforeTriggers.push(triggerGroup);
@@ -795,12 +1283,15 @@ Ext.define('Ext.field.Text', {
                 }
             }
 
+            TriggerBase.sort(beforeTriggers);
+            TriggerBase.sort(afterTriggers);
+
             for (i = 0, ln = beforeTriggers.length; i < ln; i++) {
-                input.beforeElement.appendChild(beforeTriggers[i].element);
+                beforeInputElement.appendChild(beforeTriggers[i].element);
             }
 
             for (i = 0, ln = afterTriggers.length; i < ln; i++) {
-                input.afterElement.appendChild(afterTriggers[i].element);
+                afterInputElement.appendChild(afterTriggers[i].element);
             }
 
             for (groupName in triggerGroups) {
@@ -814,13 +1305,54 @@ Ext.define('Ext.field.Text', {
             }
         },
 
-        toggleClearTrigger: function(state) {
-            if (state) {
-                this.showClearTrigger();
-            } else {
-                this.hideClearTrigger();
+        syncEmptyState: function () {
+            var me = this,
+                triggers = me.getTriggers(),
+                inputMask = me.getInputMask(),
+                clearTrigger = triggers && triggers.clear,
+                value = me.inputElement.dom.value,
+                visible;
+
+            me.toggleCls(me.emptyCls, !value);
+
+            if (clearTrigger) {
+                if (me.getClearable()) {
+                    if (value !== '' && !me.getDisabled() && !me.getReadOnly()) {
+                        visible = true;
+                    }
+
+                    if (inputMask) {
+                        // Don't show clear trigger if there is no real input in the field
+                        if (value === inputMask._mask) {
+                            visible = false;
+                        }
+                    }
+                }
+
+                if (visible) {
+                    clearTrigger.show();
+                } else {
+                    clearTrigger.hide();
+                }
+            }
+        }
+    },
+
+    deprecated: {
+        '6.5': {
+            configs: {
+                /**
+                 * @cfg {String} placeHolder
+                 * A string value displayed in the input when the control is empty.
+                 * @deprecated 6.5.0 Use the all lowercase {@link #placeholder} config.
+                 */
+                placeHolder: 'placeholder',
+                clearIcon: 'clearable'
+            },
+            methods: {
+                getPlaceHolder: 'getPlaceholder',
+                setPlaceHolder: 'setPlaceholder'
             }
         }
     }
 });
-

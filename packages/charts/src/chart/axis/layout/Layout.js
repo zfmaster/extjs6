@@ -51,11 +51,11 @@ Ext.define('Ext.chart.axis.layout.Layout', {
             viewMin = attr.min + range * attr.visibleMin,
             viewMax = attr.min + range * attr.visibleMax,
             estStepSize = attr.estStepSize * zoom,
-            out = me.snapEnds(context, attr.min, attr.max, estStepSize);
+            majorTicks = me.snapEnds(context, attr.min, attr.max, estStepSize);
 
-        if (out) {
-            me.trimByRange(context, out, viewMin, viewMax);
-            context.majorTicks = out;
+        if (majorTicks) {
+            me.trimByRange(context, majorTicks, viewMin, viewMax);
+            context.majorTicks = majorTicks;
         }
     },
 
@@ -103,38 +103,38 @@ Ext.define('Ext.chart.axis.layout.Layout', {
     /**
      * Trims the layout of the axis by the defined minimum and maximum.
      * @param {Object} context
-     * @param {Object} out
+     * @param {Object} ticks Ticks object (e.g. major ticks) to be modified.
      * @param {Number} trimMin
      * @param {Number} trimMax
      */
-    trimByRange: function (context, out, trimMin, trimMax) {
+    trimByRange: function (context, ticks, trimMin, trimMax) {
         var segmenter = context.segmenter,
-            unit = out.unit,
-            beginIdx = segmenter.diff(out.from, trimMin, unit),
-            endIdx = segmenter.diff(out.from, trimMax, unit),
-            begin = Math.max(0, Math.ceil(beginIdx / out.step)),
-            end = Math.min(out.steps, Math.floor(endIdx / out.step));
+            unit = ticks.unit,
+            beginIdx = segmenter.diff(ticks.from, trimMin, unit),
+            endIdx = segmenter.diff(ticks.from, trimMax, unit),
+            begin = Math.max(0, Math.ceil(beginIdx / ticks.step)),
+            end = Math.min(ticks.steps, Math.floor(endIdx / ticks.step));
 
-        if (end < out.steps) {
-            out.to = segmenter.add(out.from, end * out.step, unit);
+        if (end < ticks.steps) {
+            ticks.to = segmenter.add(ticks.from, end * ticks.step, unit);
         }
 
-        if (out.max > trimMax) {
-            out.max = out.to;
+        if (ticks.max > trimMax) {
+            ticks.max = ticks.to;
         }
 
-        if (out.from < trimMin) {
-            out.from = segmenter.add(out.from, begin * out.step, unit);
-            while (out.from < trimMin) {
+        if (ticks.from < trimMin) {
+            ticks.from = segmenter.add(ticks.from, begin * ticks.step, unit);
+            while (ticks.from < trimMin) {
                 begin++;
-                out.from = segmenter.add(out.from, out.step, unit);
+                ticks.from = segmenter.add(ticks.from, ticks.step, unit);
             }
         }
 
-        if (out.min < trimMin) {
-            out.min = out.from;
+        if (ticks.min < trimMin) {
+            ticks.min = ticks.from;
         }
 
-        out.steps = end - begin;
+        ticks.steps = end - begin;
     }
 });

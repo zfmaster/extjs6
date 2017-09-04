@@ -59,13 +59,12 @@ Ext.define('Ext.LoadMask', {
      * hidden on either load success, or load fail.
      */
 
-    //<locale>
     /**
      * @cfg {String} [msg="Loading..."]
      * The text to display in a centered loading message box.
+     * @locale
      */
     msg: 'Loading...',
-    //</locale>
 
     msgCls: Ext.baseCSSPrefix + 'mask-loading',
 
@@ -382,6 +381,7 @@ Ext.define('Ext.LoadMask', {
     /**
      * Changes the data store bound to this LoadMask.
      * @param {Ext.data.Store} store The store to bind to this LoadMask
+     * @param [initial]
      */
     bindStore: function(store, initial) {
         var me = this;
@@ -499,7 +499,8 @@ Ext.define('Ext.LoadMask', {
     hide: function() {
         var me = this,
             ownerCt = me.ownerCt;
-        
+
+        me.target.removeCls(Ext.baseCSSPrefix + "masked");
         // Element support to be deprecated
         if (me.isElement) {
             ownerCt.unmask();
@@ -521,11 +522,11 @@ Ext.define('Ext.LoadMask', {
     show: function() {
         var me = this;
 
+        me.target.addCls(Ext.baseCSSPrefix + "masked");
         // Element support to be deprecated
         if (me.isElement) {
             me.ownerCt.mask(this.useMsg ? this.msg : '', this.msgCls);
             me.fireEvent('show', this);
-            
             return;
         }
 

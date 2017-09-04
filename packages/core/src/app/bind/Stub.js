@@ -101,6 +101,9 @@ Ext.define('Ext.app.bind.Stub', {
     getChildValue: function (parentData) {
         var me = this,
             name = me.name,
+            bindMappings = me.bindMappings,
+            storeMappings = bindMappings.store,
+            modelMappings = bindMappings.model,
             ret;
 
         if (!parentData && !Ext.isString(parentData)) {
@@ -112,9 +115,18 @@ Ext.define('Ext.app.bind.Stub', {
             if (!ret) {
                 if (parentData.isEntity) {
                     // If we get here, we know it's not an association
-                    ret = parentData.data[name];
+                    if (modelMappings[name]) {
+                        ret = parentData[modelMappings[name]]();
+                    } else {
+                        ret = parentData.data[name];
+                    }
+                } else if (parentData.isStore && storeMappings[name]) {
+                    ret = parentData[storeMappings[name]]();
                 } else {
                     ret = parentData[name];
+                    if (ret === undefined && me.hadValue) {
+                        ret = null;
+                    }
                 }
             }
         }
@@ -126,14 +138,19 @@ Ext.define('Ext.app.bind.Stub', {
             parentData = me.parent.getDataObject(), // RootStub does not get here
             name = me.name,
             ret = parentData ? parentData[name] : null,
+            storeMappings = me.bindMappings.store,
             associations;
 
-        if (!ret && parentData && parentData.isEntity) {
-            // Check if the item is an association, if it is, grab it but don't load it.
-            associations = parentData.associations;
-            if (associations && name in associations) {
-                ret = parentData[associations[name].getterName]();
+        if (!ret) {
+            if (parentData && parentData.isEntity) {
+                // Check if the item is an association, if it is, grab it but don't load it.
+                associations = parentData.associations;
+                if (associations && name in associations) {
+                    ret = parentData[associations[name].getterName]();
+                }
             }
+        } else if (parentData.isStore && name in storeMappings) {
+            ret = parentData[storeMappings[name]]();
         }
 
         if (!ret || !(ret.$className || Ext.isObject(ret))) {
@@ -159,7 +176,7 @@ Ext.define('Ext.app.bind.Stub', {
             parent = me.parent,
             children = me.children,
             name = me.name,
-            i;
+            i, ret;
 
         replacement.parent = parent;
         replacement.children = children;
@@ -177,41 +194,17 @@ Ext.define('Ext.app.bind.Stub', {
 
         replacement.checkHadValue();
 
-        return me.callParent([ replacement ]);
+        ret = me.callParent([ replacement ]);
+        ret.invalidate(true, true);
+        return ret;
     },
 
-    isLoading: function () {
-        var me = this,
-            parent = me.parent,
-            loading = false,
-            associations, parentValue, value, loadSet;
-        
-        if (parent && !(loading = parent.isLoading())) {
-            parentValue = me.getParentValue();
-            value = me.inspectValue(parentValue);
-            // If we get a value back, it's something we can ask for the loading state
-            if (value) {
-                loading = value.isLoading();
-            } else {
-                if (parentValue && parentValue.isModel) {
-                    associations = parentValue.associations;
-                    // At this point, we know the value is not a record or a store, otherwise
-                    // something would have been returned from inspectValue. We also check here
-                    // that we are not a defined association, because we don't treat it like a field.
-                    // Otherwise, we are a field on a model, so we're never in a loading state.
-                    if (!(associations && me.name in associations)) {
-                        loading = false;
-                        loadSet = true;
-                    }
-                }
+    isAvailable: function() {
+        return this.checkAvailability();
+    },
 
-                if (!loadSet) {
-                    loading = !me.hadValue && me.getRawValue() === undefined;
-                }
-            }
-        }
-
-        return loading;
+    isLoading: function() {
+        return !this.checkAvailability(true);
     },
 
     invalidate: function (deep, dirtyOnly) {
@@ -219,10 +212,10 @@ Ext.define('Ext.app.bind.Stub', {
             children = me.children,
             name;
 
+        me.dirty = true;
         me.checkHadValue();
 
-        me.dirty = true;
-        if (!dirtyOnly && !me.isLoading()) {
+        if (!dirtyOnly && me.isAvailable()) {
             if (!me.scheduled) {
                 // If we have no children, we're a leaf
                 me.schedule();
@@ -241,7 +234,7 @@ Ext.define('Ext.app.bind.Stub', {
         return !!(formula && !formula.set);
     },
 
-    set: function (value) {
+    set: function (value, preventClimb) {
         var me = this,
             parent = me.parent,
             name = me.name,
@@ -287,8 +280,10 @@ Ext.define('Ext.app.bind.Stub', {
 
             // Setting fields or associated records will fire change notifications so we
             // handle the side effects there
-        } else if ((value && value.constructor === Object) || value !== parentData[name]) {
-            if (!me.setByLink(value)) {
+        } else if ((value && value.constructor === Object) || !(value === parentData[name] && parentData.hasOwnProperty(name))) {
+            // The hasOwnProperty check is important, even though the value might be the same here, that value
+            // could exist in a viewmodel above us
+            if (preventClimb || !me.setByLink(value)) {
                 if (value === undefined) {
                     delete parentData[name];
                 } else {
@@ -303,7 +298,7 @@ Ext.define('Ext.app.bind.Stub', {
         }
     },
 
-    onStoreLoad: function() {
+    onStoreDataChanged: function() {
         this.invalidate(true);
     },
 
@@ -320,6 +315,7 @@ Ext.define('Ext.app.bind.Stub', {
         var children = this.children,
             len = modifiedFieldNames && modifiedFieldNames.length,
             associations = record.associations,
+            bindMappings = this.bindMappings.model,
             key, i, child;
 
         // No point checking anything if we don't have children
@@ -340,6 +336,15 @@ Ext.define('Ext.app.bind.Stub', {
                     if (!(associations && key in associations)) {
                         children[key].invalidate();
                     }
+                }
+            }
+
+            // Whether we know what changed or not, valid/dirty are meta properties so
+            // trigger them regardless
+            for (key in bindMappings) {
+                child = children[key];
+                if (child) {
+                    child.invalidate();
                 }
             }
         }
@@ -363,7 +368,8 @@ Ext.define('Ext.app.bind.Stub', {
     setByLink: function (value) {
         var me = this,
             n = 0,
-            i, link, path, stub;
+            ret = false,
+            i, link, path, stub, root, name;
 
         for (stub = me; stub; stub = stub.parent) {
             if (stub.isLinkStub) {
@@ -379,18 +385,31 @@ Ext.define('Ext.app.bind.Stub', {
             ++n;
         }
 
-        if (!link || !(stub = link.getTargetStub())) {
-            return false;
+        stub = null;
+
+        if (link) {
+            root = link.parent;
+            name = link.name;
+            if (!root.shouldClimb(name)) {
+                // Write to root, descend to stub
+                stub = root.insertChild(name);
+            } else {
+                stub = link.getTargetStub();
+            }
         }
 
-        // We are a child of a link stub and that stub links to a Stub, so forward the set
-        // call over there. This is needed to fire the bindings on that side of the link
-        // and that will also arrive back here since we are a linked to it.
-        if (path) {
-            stub = stub.descend(path);
+        if (stub) {
+            // We are a child of a link stub and that stub links to a Stub, so forward the set
+            // call over there. This is needed to fire the bindings on that side of the link
+            // and that will also arrive back here since we are a linked to it.
+            if (path) {
+                stub = stub.descend(path);
+            }
+            stub.set(value);
+            ret = true;
         }
-        stub.set(value);
-        return true;
+        return ret;
+
     },
 
     setFormula: function (formula) {
@@ -429,11 +448,6 @@ Ext.define('Ext.app.bind.Stub', {
                     // Trigger validity checks
                     bound.isValid();
                 }
-            } else if (bound.isStore) {
-                // If we're loading and never delivered, don't do it here
-                if (bound.isLoading() && !bound.loadCount) {
-                    return;
-                }
             }
         }
 
@@ -441,6 +455,78 @@ Ext.define('Ext.app.bind.Stub', {
     },
 
     privates: {
+        bindMappings: {
+            store: {
+                count: 'getCount',
+                first: 'first',
+                last: 'last',
+                loading: 'hasPendingLoad',
+                totalCount: 'getTotalCount'
+            },
+            model: {
+                dirty: 'isDirty',
+                phantom: 'isPhantom',
+                valid: 'isValid'
+            }
+        },
+
+        checkAvailability: function(isLoading) {
+            var me = this,
+                parent = me.parent,
+                bindMappings = me.bindMappings,
+                name = me.name,
+                available = !!(parent && parent.checkAvailability(isLoading)),
+                associations, parentValue, value, availableSet, loading;
+            
+            if (available) {
+                parentValue = me.getParentValue();
+                value = me.inspectValue(parentValue);
+                // If we get a value back, it's something we can ask for the loading state
+                if (value) {
+                    if (isLoading) {
+                        available = !value.hasPendingLoad();
+                    } else {
+                        // If it's a store, it should be always available, even if loading
+                        if (value.isStore) {
+                            available = true;
+                        } else {
+                            // If it's a model and it's loading, only available if it's after
+                            // the first time
+                            available = !value.isLoading() || value.loadCount > 0;
+                        }
+                    }
+                } else {
+                    if (parentValue) {
+                        if (parentValue.isModel) {
+                            if (bindMappings.model[name]) {
+                                available = !parent.isLoading();
+                                availableSet = true;
+                            } else {
+                                associations = parentValue.associations;
+                                // At this point, we know the value is not a record or a store, otherwise
+                                // something would have been returned from inspectValue. We also check here
+                                // that we are not a defined association, because we don't treat it like a field.
+                                // Otherwise, we are a field on a model, so we're never in a loading state.
+                                if (!(associations && name in associations)) {
+                                    available = true;
+                                    availableSet = true;
+                                }
+                            }
+                        } else if (parentValue.isStore && bindMappings.store[name] && name !== 'loading') {
+                            available = !parent.isLoading();
+                            availableSet = true;
+                        }
+                    }
+
+                    if (!availableSet) {
+                        available = me.hadValue || me.getRawValue() !== undefined;
+                    }
+                }
+            }
+
+            return available;
+        },
+
         checkHadValue: function() {
             if (!this.hadValue) {
                 this.hadValue = this.getRawValue() !== undefined;
@@ -493,9 +579,6 @@ Ext.define('Ext.app.bind.Stub', {
                 associations = parentData.associations;
                 if (associations && (name in associations)) {
                     boundValue = parentData[associations[name].getterName]();
-                    if (boundValue && boundValue.isStore) {
-                        boundValue.$associatedStore = true;
-                    }
                 } else if (name === me.validationKey) {
                     boundValue = parentData.getValidation();
                     // Binding a new one, reset the generation
@@ -530,10 +613,11 @@ Ext.define('Ext.app.bind.Stub', {
                         // store object won't change from then on
                         boundValue.on({
                             scope: me,
-                            load: {
-                                fn: 'onStoreLoad',
-                                single: true
-                            },
+                            // Capture beforeload/load so we can bind to the loading state of the store.
+                            // We need load because a load may be unsuccessful which means datachanged won't fire
+                            beforeload: 'onStoreDataChanged',
+                            load: 'onStoreDataChanged',
+                            datachanged: 'onStoreDataChanged',
                             destroy: 'onDestroyBound'
                         });
                     }
@@ -547,13 +631,15 @@ Ext.define('Ext.app.bind.Stub', {
             var me = this,
                 current = me.boundValue;
 
-            if (current) {
+            if (current && !current.destroyed) {
                 if (current.isModel) {
                     current.unjoin(me);
                 } else {
                     current.un({
                         scope: me,
-                        load: 'onStoreLoad',
+                        beforeload: 'onStoreDataChanged',
+                        load: 'onStoreDataChanged',
+                        datachanged: 'onStoreDataChanged',
                         destroy: 'onDestroyBound'
                     });
                 }

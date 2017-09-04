@@ -1,4 +1,4 @@
-describe("Ext.data.identifier.Uuid", function() {
+topSuite("Ext.data.identifier.Uuid", function() {
     
     var Generator = Ext.data.identifier.Generator,
         idgen;

@@ -1,5 +1,12 @@
-describe('Ext.chart.axis.Axis', function () {
-
+topSuite("Ext.chart.axis.Axis",
+    ['Ext.chart.*', 'Ext.data.ArrayStore', 'Ext.app.ViewController',
+     'Ext.Container', 'Ext.layout.Fit'],
+function() {
+    beforeEach(function() {
+        // Tons of warnings regarding Sencha download server
+        spyOn(Ext.log, 'warn');
+    });
+    
     describe('getRange', function () {
         it("linked axes should always return the range of the master axis", function () {
             var chartConfig = {
@@ -84,7 +91,7 @@ describe('Ext.chart.axis.Axis', function () {
                 var range = originalGetRange.apply(this, arguments),
                     masterAxis = this.masterAxis;
 
-                if (masterAxis) {
+                if (range && masterAxis) {
                     expect(range[0]).toEqual(masterAxis.range[0]);
                     expect(range[1]).toEqual(masterAxis.range[1]);
                 }
@@ -103,6 +110,73 @@ describe('Ext.chart.axis.Axis', function () {
             horizontalNumericChart.destroy();
 
             axisProto.getRange = originalGetRange;
+        });
+    });
+
+    describe('adjustByMajorUnit', function () {
+        var chart;
+
+        afterEach(function () {
+            Ext.destroy(chart);
+        });
+
+        it('should round the axis range to nice values', function () {
+            var layoutDone;
+
+            chart = new Ext.chart.CartesianChart({
+                renderTo: Ext.getBody(),
+                width: 400,
+                height: 400,
+                store: {
+                    data: [
+                        { year: 1890, men: 1002, women: 988},
+                        { year: 1900, men: 1007, women: 999},
+                        { year: 1910, men: 1056, women: 1043},
+                        { year: 1920, men: 1077, women: 1044},
+                        { year: 1930, men: 1099, women: 1082},
+                        { year: 1940, men: 1125, women: 1098},
+                        { year: 1950, men: 885,  women: 1076}
+                    ]
+                },
+                axes: [
+                    {
+                        id: 'left',
+                        type: 'numeric',
+                        position: 'left',
+                        grid: true
+                    },
+                    {
+                        type: 'category',
+                        position: 'bottom'
+                    }
+                ],
+                series: [
+                    {
+                        stacked: false,
+                        type: 'bar',
+                        xField: 'year',
+                        yField: ['men','women']
+                    }
+                ],
+                listeners: {
+                    layout: function () {
+                        layoutDone = true;
+                    }
+                }
+            });
+
+            waitsFor(function () {
+                return layoutDone;
+            });
+
+            runs(function () {
+                var leftAxis = chart.getAxis('left'),
+                    attr = leftAxis.getSprites()[0].attr;
+
+                expect(attr.max).toBe(1200);
+                expect(attr.dataMax).toBe(1200); // TODO: One would expect this to be 1125.
+            });
+
         });
     });
 

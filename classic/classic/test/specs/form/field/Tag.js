@@ -1,6 +1,9 @@
 /* global Ext, expect, jasmine */
 
-describe("Ext.form.field.Tag", function() {
+topSuite("Ext.form.field.Tag",
+    ['Ext.grid.Panel', 'Ext.grid.plugin.CellEditing', 'Ext.data.ArrayStore',
+     'Ext.app.ViewModel'],
+function() {
     var tagField, store, changeSpy,
         describeNotIE9_10 = Ext.isIE9 || Ext.isIE10 ? xdescribe : describe;
 
@@ -934,20 +937,28 @@ describe("Ext.form.field.Tag", function() {
             });
 
             it("should select a tag when clicking", function() {
-                clickTag(4);
-                fireInputKey(Ext.event.Event.DELETE);
-                expectValue([6, 10, 13, 2]);
-                expectChange([6, 10, 13, 2], [6, 4, 10, 13, 2]);
+                focusAndWait(tagField);
+                
+                runs(function() {
+                    clickTag(4);
+                    fireInputKey(Ext.event.Event.DELETE);
+                    expectValue([6, 10, 13, 2]);
+                    expectChange([6, 10, 13, 2], [6, 4, 10, 13, 2]);
+                });
             });
 
             describe('clicking the close icon', function () {
                 it('should remove an item', function () {
-                    clickTag(4, true);
-                    expectValue([6, 10, 13, 2]);
-                    expectChange([6, 10, 13, 2], [6, 4, 10, 13, 2]);
-                    clickTag(13, true);
-                    expectValue([6, 10, 2]);
-                    expectChange([6, 10, 2], [6, 10, 13, 2], 2);
+                    focusAndWait(tagField);
+
+                    runs(function() {
+                        clickTag(4, true);
+                        expectValue([6, 10, 13, 2]);
+                        expectChange([6, 10, 13, 2], [6, 4, 10, 13, 2]);
+                        clickTag(13, true);
+                        expectValue([6, 10, 2]);
+                        expectChange([6, 10, 2], [6, 10, 13, 2], 2);
+                    });
                 });
 
                 it('should be able to remove an item when used as an editor', function () {
@@ -1284,6 +1295,24 @@ describe("Ext.form.field.Tag", function() {
                 expect(v[3]).toBe('200');
             });
         });
+
+        it("should keep values in order when adding and selecting", function() {
+                makeField({
+                    createNewOnEnter: true,
+                    filterPickList: true
+                });
+
+                clickListItem(store.getAt(0));
+                jasmine.focusAndWait(tagField.inputEl);
+
+                runs(function() {
+                    tagField.inputEl.dom.value = 'foo';
+                    jasmine.fireKeyEvent(tagField.inputEl.dom, 'keyup', Ext.event.Event.ENTER);
+                    clickListItem(store.getAt(7));
+
+                    expect(tagField.getValue()).toEqual([1, 'foo', 9]);
+                });
+            });
     });
 
     describe("allowBlank: false", function() {

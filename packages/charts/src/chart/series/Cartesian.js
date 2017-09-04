@@ -56,6 +56,8 @@ Ext.define('Ext.chart.series.Cartesian', {
      *
      *     series.<fieldConfig1>Field, series.<fieldConfig2>Field, ...
      *
+     * See {@link Ext.chart.series.StackedCartesian#getFields}.
+     *
      */
     fieldCategoryX: ['X'],
     fieldCategoryY: ['Y'],
@@ -99,8 +101,8 @@ Ext.define('Ext.chart.series.Cartesian', {
                 if (index !== -1) {
                     item = {
                         series: me,
-                        category: me.getItemInstancing() ? 'items' : 'markers',
                         index: index,
+                        category: me.getItemInstancing() ? 'items' : 'markers',
                         record: store.getData().items[index],
                         field: me.getYField(),
                         sprite: sprite
@@ -134,45 +136,17 @@ Ext.define('Ext.chart.series.Cartesian', {
     getSprites: function () {
         var me = this,
             chart = this.getChart(),
-            animation = me.getAnimation() || chart && chart.getAnimation(),
-            itemInstancing = me.getItemInstancing(),
-            sprites = me.sprites,
-            sprite;
+            sprites = me.sprites;
 
         if (!chart) {
-            return [];
+            return Ext.emptyArray;
         }
 
         if (!sprites.length) {
-            sprite = me.createSprite();
-        } else {
-            sprite = sprites[0];
+            me.createSprite();
         }
 
-        if (animation) {
-            if (itemInstancing) {
-                sprite.itemsMarker.getTemplate().setAnimation(animation);
-            }
-            sprite.setAnimation(animation);
-        }
         return sprites;
-    },
-
-    provideLegendInfo: function (target) {
-        var me = this,
-            style = me.getSubStyleWithTheme(),
-            fill = style.fillStyle;
-
-        if (Ext.isArray(fill)) {
-            fill = fill[0];
-        }
-        target.push({
-            name: me.getTitle() || me.getYField() || me.getId(),
-            mark: (Ext.isObject(fill) ? fill.stops && fill.stops[0].color : fill) || style.strokeStyle || 'black',
-            disabled: me.getHidden(),
-            series: me.getId(),
-            index: 0
-        });
     },
 
     getXRange: function () {
@@ -182,5 +156,4 @@ Ext.define('Ext.chart.series.Cartesian', {
     getYRange: function () {
         return [this.dataRange[1], this.dataRange[3]];
     }
-})
-;
+});

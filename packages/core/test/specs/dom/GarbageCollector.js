@@ -1,4 +1,4 @@
-describe("Ext.dom.GarbageCollector", function() {
+topSuite("Ext.dom.GarbageCollector", function() {
     var skipGarbageCollection;
 
     beforeEach(function() {

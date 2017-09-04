@@ -1,4 +1,4 @@
-xdescribe("Ext.grid.filters.filter.DateTime", function () {
+xtopSuite("Ext.grid.filters.filter.DateTime", function() {
     var viewReady = false,
         grid, plugin, store;
 

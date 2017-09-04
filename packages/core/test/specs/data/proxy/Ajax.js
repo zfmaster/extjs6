@@ -1,4 +1,4 @@
-describe("Ext.data.proxy.Ajax", function() {
+topSuite("Ext.data.proxy.Ajax", ['Ext.data.ArrayStore'], function() {
     var proxy;
     
     function makeProxy(cfg) {

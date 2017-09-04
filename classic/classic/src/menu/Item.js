@@ -544,7 +544,7 @@ Ext.define('Ext.menu.Item', {
         
         me.cancelDeferExpand();
         me.cancelDeferHide();
-        clearTimeout(me.deferHideParentMenusTimer);
+        Ext.undefer(me.deferHideParentMenusTimer);
 
         me.setMenu(null);
         
@@ -805,6 +805,8 @@ Ext.define('Ext.menu.Item', {
      *
      *   - **String** : A string to be used as innerHTML (html tags are accepted) to show in a tooltip
      *   - **Object** : A configuration object for {@link Ext.tip.QuickTipManager#register}.
+     *
+     * @param {Boolean} [initial] (private)
      *
      * @return {Ext.menu.Item} this
      */

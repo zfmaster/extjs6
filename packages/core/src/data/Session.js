@@ -35,6 +35,11 @@
  * class, there is the `getSaveBatch` method. That method returns an `Ext.data.Batch`
  * object populated with the necessary `create`, `update` and `destory` operations to
  * save all of the changes in the Session.
+ *
+ * ## Conflicts
+ *
+ * If data is loaded from the server (for example a store load) and there is an existing record,
+ * the {@link Ext.data.Model#method-mergeData `mergeData`} method will be called to resolve the conflict.
  * 
  * @since 5.0.0
  */
@@ -202,7 +207,6 @@ Ext.define('Ext.data.Session', {
         }
         //</debug>
         if (record.session !== me) {
-            record.session = me;
             me.add(record);
 
             if (associations) {
@@ -227,7 +231,10 @@ Ext.define('Ext.data.Session', {
         var me = this,
             data = me.data,
             matrices = me.matrices,
+            dirtyWas = me.getDirty(),
             entityName, entities, id, record;
+
+        me.suspendEvent('dirtychange');
 
         for (entityName in data) {
             entities = data[entityName];
@@ -244,6 +251,11 @@ Ext.define('Ext.data.Session', {
         }
 
         me.clearRecordStates();
+
+        me.resumeEvent('dirtychange');
+        if (me.getDirty() !== dirtyWas) {
+            me.fireDirtyChange();
+        }
     },
 
     /**
@@ -251,9 +263,10 @@ Ext.define('Ext.data.Session', {
      *
      * @param {String/Ext.Class} type The `entityName` or the actual class of record to create.
      * @param {Object} [data] The data for the record.
+     * @param {Boolean} [preventAdd] (private) `true` to prevent the record from being added to the session
      * @return {Ext.data.Model} The new record.
      */
-    createRecord: function (type, data) {
+    createRecord: function (type, data, preventAdd) {
         //<debug>
         this.checkModelType(type);
         //</debug>
@@ -269,7 +282,7 @@ Ext.define('Ext.data.Session', {
             }
         }
         // By passing the session to the constructor, it will call session.add()
-        return new Model(data, this);
+        return new Model(data, preventAdd ? null : this);
     },
 
     /**
@@ -315,7 +328,7 @@ Ext.define('Ext.data.Session', {
      * described.
      * @param {Object} id The id of the record.
      * @param {Boolean/Object} [autoLoad=true] `false` to prevent the record from being loaded if
-     * it does not exist. If this parameter is an object, it will be passed to the {@link Ext.data.Model#load} call.
+     * it does not exist. If this parameter is an object, it will be passed to the {@link Ext.data.Model#method!load} call.
      * @return {Ext.data.Model} The record.
      */
     getRecord: function(type, id, autoLoad) {
@@ -527,8 +540,11 @@ Ext.define('Ext.data.Session', {
             crudOperations = me.crudOperations,
             len = crudOperations.length,
             crudKeys = me.crudKeys,
+            dirtyWas = me.getDirty(),
             entityName, entityType, entityInfo, i,
             operation, item, associations, key, role, associationData;
+
+        me.suspendEvent('dirtychange');
 
         // Force the schema to process any pending drops
         me.getSchema().processKeyChecks(true);
@@ -573,14 +589,76 @@ Ext.define('Ext.data.Session', {
                 role.processUpdate(me, associationData);
             }
         }
-    }, 
+
+        me.resumeEvent('dirtychange');
+
+        if (me.getDirty() !== dirtyWas) {
+            me.fireDirtyChange();
+        }
+    },
 
     //-------------------------------------------------------------------------
+
+    /**
+     * Template method, will be called by Model after a record is committed.
+     * @param {Ext.data.Model} record The record.
+     *
+     * @protected
+     * @since 6.2.0
+     */
+    afterCommit: function (record) {
+        this.trackRecordState(record);
+    },
+
+    /**
+     * Template method, will be called by Model after a record is dropped.
+     * @param {Ext.data.Model} record The record.
+     *
+     * @protected
+     * @since 6.2.0
+     */
+    afterDrop: function (record) {
+        this.trackRecordState(record);
+    },
+
+    /**
+     * Template method, will be called by Model after a record is edited.
+     * @param {Ext.data.Model} record The record.
+     *
+     * @protected
+     * @since 6.2.0
+     */
+    afterEdit: function (record) {
+        this.trackRecordState(record);
+    },
+
+    /**
+     * Template method, will be called by Model after a record is erased (a drop
+     * that is committed).
+     * @param {Ext.data.Model} record The record.
+     *
+     * @protected
+     */
+    afterErase: function(record) {
+        this.evict(record);
+    },
+
+    /**
+     * Template method, will be called by Model after a record is rejected.
+     * @param {Ext.data.Model} record The record.
+     *
+     * @protected
+     * @since 6.5.1
+     */
+    afterReject: function (record) {
+        this.trackRecordState(record);
+    },
+
     privates: {
         /**
          * Add a record instance to this session. Called by model.
          * @param {Ext.data.Model} record The record.
-         * 
+         *
          * @private
          */
         add: function (record) {
@@ -595,6 +673,8 @@ Ext.define('Ext.data.Session', {
             }
             //</debug>
 
+            record.session = me;
+
             entry.record = record;
 
             me.trackRecordState(record, true);
@@ -603,50 +683,6 @@ Ext.define('Ext.data.Session', {
             for (roleName in associations) {
                 associations[roleName].checkMembership(me, record);
             }
-        },
-
-        /**
-         * Template method, will be called by Model after a record is committed.
-         * @param {Ext.data.Model} record The record.
-         *
-         * @protected
-         * @since 6.2.0
-         */
-        afterCommit: function (record) {
-            this.trackRecordState(record);
-        },
-
-        /**
-         * Template method, will be called by Model after a record is dropped.
-         * @param {Ext.data.Model} record The record.
-         *
-         * @protected
-         * @since 6.2.0
-         */
-        afterDrop: function (record) {
-            this.trackRecordState(record);
-        },
-
-        /**
-         * Template method, will be called by Model after a record is edited.
-         * @param {Ext.data.Model} record The record.
-         *
-         * @protected
-         * @since 6.2.0
-         */
-        afterEdit: function (record) {
-            this.trackRecordState(record);
-        },
-
-        /**
-         * Template method, will be called by Model after a record is erased (a drop
-         * that is committed).
-         * @param {Ext.data.Model} record The record.
-         *
-         * @protected
-         */
-        afterErase: function(record) {
-            this.evict(record);
         },
 
         /**
@@ -686,21 +722,34 @@ Ext.define('Ext.data.Session', {
          * @private
          */
         createEntities: function(entityType, items) {
-            var len = items.length,
+            var me = this,
+                len = items.length,
                 i, data, rec, id;
 
             for (i = 0; i < len; ++i) {
                 data = items[i];
                 id = entityType.getIdFromData(data);
-                rec = this.peekRecord(entityType, id);
+                rec = me.peekRecord(entityType, id);
                 if (!rec) {
-                    rec = this.createRecord(entityType, data);
+                    // Wait until after creating the record before adding it to the session,
+                    // instead of allowing the Model constructor to call session.add().
+                    // This allows us to first initialize the phantom and crudState properties.
+                    // so that the session sets its dirty state correctly when add() is called.
+                    // The Model constructor usually handles setting phantom/crudState,
+                    // but in this case it will not detect the record as phantom because
+                    // we are passing an id (generated by the child session) to the Model
+                    // constructor.
+                    rec = me.createRecord(entityType, data, true);
+
+                    rec.phantom = true;
+                    rec.crudState = 'C';
+
+                    me.add(rec);
+                    // Be sure to set this after "notifying" the session.
+                    rec.crudStateWas = 'C';
                 } else {
-                    this.onInvalidEntityCreate(entityType, id);
+                    me.onInvalidEntityCreate(entityType, id);
                 }
-                // This record has been marked as being created, so we must
-                // be a phantom
-                rec.phantom = true;
             }
         },
 
@@ -990,21 +1039,23 @@ Ext.define('Ext.data.Session', {
          * @private
          */
         readEntities: function(entityType, items) {
-            var len = items.length,
+            var me = this,
+                len = items.length,
                 i, data, rec, id;
 
             for (i = 0; i < len; ++i) {
                 data = items[i];
                 id = entityType.getIdFromData(data);
-                rec = this.peekRecord(entityType, id);
+                rec = me.peekRecord(entityType, id);
                 if (!rec) {
-                    rec = this.createRecord(entityType, data);
+                    rec = me.createRecord(entityType, data, true);
                 } else {
-                    this.onInvalidEntityRead(entityType, id);
+                    me.onInvalidEntityRead(entityType, id);
                 }
                 // We've been read from a "server", so we aren't a phantom,
                 // regardless of whether or not we have an id
                 rec.phantom = false;
+                me.add(rec);
             }
         },
 
@@ -1021,13 +1072,8 @@ Ext.define('Ext.data.Session', {
                 // and the stub will deal with it onLoad.
                 record = new Model(data, me);
             } else {
-                //TODO no easy answer here... we are trying to create a record and have
-                //TODO some (potentially new) data. We probably should check for mid-air
-                //TODO collisions using versionProperty but for now we just ignore the
-                //TODO new data in favor of our potentially edited data.
-                
-                // Peek checks if it exists at any level, by getting it we ensure that the record is copied down
                 record = me.getRecord(Model, id);
+                record.mergeData(data);
             }
 
             return record;

@@ -1,4 +1,4 @@
-describe("Ext.panel.Table", function () {
+topSuite("Ext.panel.Table", ['Ext.grid.Panel'], function() {
     var createGrid = function (storeCfg, gridCfg) {
         store = Ext.create('Ext.data.Store', Ext.apply({
             storeId:'simpsonsStore',
@@ -32,9 +32,8 @@ describe("Ext.panel.Table", function () {
     },
     store, grid;
 
-    afterEach(function(){
-        Ext.destroy(grid);
-        grid = null;
+    afterEach(function() {
+        grid = store = Ext.destroy(store, grid);
     });
 
     describe('forceFit', function () {

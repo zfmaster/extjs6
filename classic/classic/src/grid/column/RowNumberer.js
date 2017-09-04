@@ -35,7 +35,7 @@ Ext.define('Ext.grid.column.RowNumberer', {
      * @cfg {Number} width
      * The default width in pixels of the row number column.
      */
-    width: 23,
+    width: 30,
 
     /**
      * @cfg {Boolean} sortable
@@ -89,10 +89,43 @@ Ext.define('Ext.grid.column.RowNumberer', {
     innerCls: Ext.baseCSSPrefix + 'grid-cell-inner-row-numberer',
     rowspan: undefined,
 
+    onAdded: function() {
+        var me = this;
+        
+        // Coalesce multiple item mutation events by routing them to a buffered function
+        me.renumberRows = Ext.Function.createBuffered(me.renumberRows, 1, me);
+
+        me.callParent(arguments);
+
+        me.storeListener = me.getView().on({
+            itemadd: me.renumberRows,
+            itemremove: me.renumberRows,
+            destroyable: true
+        });
+    },
+
+    onRemoved: function() {
+        var me = this;
+
+        me.callParent(arguments);
+        
+        if (me.storeListener) {
+            me.storeListener = me.storeListener.destroy();
+        }
+        
+        if (me.renumberRows.timer) {
+            Ext.undefer(me.renumberRows.timer);
+        }
+        
+        me.renumberRows = null;
+        delete me.renumberRows;
+    },
+
     defaultRenderer: function(value, metaData, record, rowIdx, colIdx, dataSource, view) {
-        var rowspan = this.rowspan,
+        var me = this,
+            rowspan = me.rowspan,
             page = dataSource.currentPage,
-            result = view.store.indexOf(record);
+            result = record ? view.store.indexOf(record) : value - 1;
 
         if (metaData && rowspan) {
             metaData.tdAttr = 'rowspan="' + rowspan + '"';
@@ -105,6 +138,29 @@ Ext.define('Ext.grid.column.RowNumberer', {
     },
 
     updater: function(cell, value, record, view, dataSource) {
-        Ext.fly(cell).down(this.getView().innerSelector, true).innerHTML = this.defaultRenderer(value, null, record, null, null, dataSource, view);
+        var cellInner = cell && cell.querySelector(this.getView().innerSelector);
+        
+        if (cellInner) {
+            cellInner.innerHTML = this.defaultRenderer(value, null, record, null, null, dataSource, view);
+        }
+    },
+
+    renumberRows: function() {
+        if (this.destroying || this.destroyed) {
+            return;
+        }
+        
+        var me = this,
+            view = me.getView(),
+            dataSource = view.dataSource,
+            recCount = dataSource.getCount(),
+            context = new Ext.grid.CellContext(view).setColumn(me),
+            rows = me.getView().all,
+            index = rows.startIndex;
+
+        while (index <= rows.endIndex && index < recCount) {
+            context.setRow(index);
+            me.updater(context.getCell(true), ++index, null, view, dataSource);
+        }
     }
 });

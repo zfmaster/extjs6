@@ -1,4 +1,4 @@
-describe("Ext.direct.PollingProvider", function() {
+topSuite("Ext.direct.PollingProvider", ['Ext.direct.*'], function() {
     var provider, remotingProvider;
     
     function createProvider(config) {

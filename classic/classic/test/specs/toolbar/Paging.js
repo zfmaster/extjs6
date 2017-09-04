@@ -1,4 +1,6 @@
-describe("Ext.toolbar.Paging", function() {
+topSuite("Ext.toolbar.Paging",
+    ['Ext.grid.Panel', 'Ext.Button', 'Ext.grid.feature.Grouping'],
+function() {
     var keyEvent = Ext.supports.SpecialKeyDownRepeat ? 'keydown' : 'keypress',
         tb, store, store2,
         describeNotIE9_10 = Ext.isIE9 || Ext.isIE10 ? xdescribe : describe,

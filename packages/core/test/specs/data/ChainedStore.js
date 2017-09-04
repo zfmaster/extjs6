@@ -1,6 +1,9 @@
 /* global expect, Ext, MockAjaxManager, jasmine, spyOn */
 
-describe("Ext.data.ChainedStore", function() {
+topSuite("Ext.data.ChainedStore", [
+    'Ext.data.Session',
+    'Ext.data.summary.*'
+], function() {
     var fakeScope = {},
         abeRec, aaronRec, edRec, tommyRec, 
         abeRaw, aaronRaw, edRaw, tommyRaw,
@@ -41,10 +44,7 @@ describe("Ext.data.ChainedStore", function() {
     }
     
     function completeWithData(data) {
-        Ext.Ajax.mockComplete({
-            status: 200,
-            responseText: Ext.JSON.encode(data)
-        });
+        Ext.Ajax.mockCompleteWithData(data);
     }
     
     function expectOrder(recs, s) {
@@ -807,6 +807,37 @@ describe("Ext.data.ChainedStore", function() {
                     
                     expect(dataChangedSpy).toHaveBeenCalled();
                     expect(dataChangedSpy.mostRecentCall.args[0]).toBe(store);
+                });
+
+                it("should forward on beforeload/load events when the source is chained", function() {
+                    createStore();
+
+                    var readSpy = spyOn(User.getProxy(), 'read').andCallThrough();
+
+                    var beforeLoadSpy = jasmine.createSpy(),
+                        loadSpy = jasmine.createSpy(),
+                        child = new Ext.data.ChainedStore({
+                            source: store,
+                            listeners: {
+                                beforeload: beforeLoadSpy,
+                                load: loadSpy
+                            }
+                        });
+
+                    source.load();
+                    expect(beforeLoadSpy.callCount).toBe(1);
+                    expect(beforeLoadSpy.mostRecentCall.args[0]).toBe(child);
+                    expect(beforeLoadSpy.mostRecentCall.args[1]).toBe(readSpy.mostRecentCall.args[0]);
+
+                    completeWithData([abeRaw, tommyRaw, edRaw, aaronRaw]);
+                    expect(loadSpy.callCount).toBe(1);
+
+                    expect(loadSpy.mostRecentCall.args[0]).toBe(child);
+                    expect(loadSpy.mostRecentCall.args[1]).toEqual([source.getAt(0), source.getAt(1), source.getAt(2), source.getAt(3)]);
+                    expect(loadSpy.mostRecentCall.args[2]).toBe(true);
+                    expect(loadSpy.mostRecentCall.args[3]).toBe(readSpy.mostRecentCall.args[0]);
+
+                    child.destroy();
                 });
             });
         });
@@ -1746,6 +1777,341 @@ describe("Ext.data.ChainedStore", function() {
             // if all went as planned, the chained store's collection should have been notified of the removal as well
             expect(store.getCount()).toBe(0);
             expect(spy).toHaveBeenCalled();
+        });
+    });
+
+    describe("session", function() {
+        beforeEach(function() {
+            source = Ext.destroy(source);
+        });
+
+        it("should return the session from the source", function() {
+            source = Ext.destroy(source);
+
+            var s = new Ext.data.Session();
+            createSource({
+                session: s
+            });
+            createStore();
+            expect(store.getSession()).toBe(s);
+        });
+
+        it("should return null when there is no source", function() {
+            createStore();
+            expect(store.getSession()).toBeNull();
+        });
+    });
+
+    describe("getModel", function() {
+        it("should return the model from the source", function() {
+            createStore();
+            expect(store.getModel()).toBe(User);
+        });
+
+        it("should return null when there is no source", function() {
+            source = Ext.destroy(source);
+            createStore();
+            expect(store.getModel()).toBeNull();
+        });
+    });
+
+    describe("hasPendingLoad", function() {
+        it("should return the hasPendingLoad from the source", function() {
+            createStore();
+            source.load();
+            expect(store.hasPendingLoad()).toBe(true);
+            completeWithData([]);
+        });
+
+        it("should return false when there is no source", function() {
+            source = Ext.destroy(source);
+            createStore();
+            expect(store.hasPendingLoad()).toBe(false);
+        });
+    });
+
+    describe("isLoaded", function() {
+        it("should return the isLoaded from the source", function() {
+            createStore();
+            source.load();
+            completeWithData([]);
+            expect(store.isLoaded()).toBe(true);
+        });
+
+        it("should return false when there is no source", function() {
+            source = Ext.destroy(source);
+            createStore();
+            expect(store.isLoaded()).toBe(false);
+        });
+    });
+
+    describe("isLoading", function() {
+        it("should return the isLoading from the source", function() {
+            createStore();
+            source.load();
+            expect(store.isLoading()).toBe(true);
+            completeWithData([]);
+        });
+
+        it("should return false when there is no source", function() {
+            source = Ext.destroy(source);
+            createStore();
+            expect(store.isLoading()).toBe(false);
+        });
+    });
+
+    describe("summaries", function() {
+        var M = Ext.define(null, {
+            extend: 'Ext.data.Model',
+            fields: ['group', {
+                name: 'rate',
+                summary: 'average'
+            }],
+            summary: {
+                maxRate: {
+                    summary: 'max',
+                    field: 'rate'
+                }
+            }
+        }), data;
+
+        beforeEach(function() {
+            data = [
+                { group: 'g1', rate: 8 },
+                { group: 'g1', rate: 12 },
+                { group: 'g2', rate: 15 },
+                { group: 'g2', rate: 13 }
+            ];
+
+            source.destroy();
+
+            createSource({
+                model: M,
+                data: data
+            });
+        });
+
+        afterEach(function() {
+            data = null;
+        });
+
+        describe("group summaries", function() {
+            function getSummaryFor(group) {
+                return store.getGroups().get(group).getSummaryRecord();
+            }
+
+            beforeEach(function() {
+                createStore({
+                    model: M,
+                    groupField: 'group'
+                }, false);
+            });
+
+            it("should return the calculated values", function() {
+                var r = getSummaryFor('g1');
+                expect(r.get('rate')).toBe(10);
+                expect(r.get('maxRate')).toBe(12);
+
+                r = getSummaryFor('g2');
+                expect(r.get('rate')).toBe(14);
+                expect(r.get('maxRate')).toBe(15);
+            });
+
+            describe("dynamic", function() {
+                beforeEach(function() {
+                    // Force creation
+                    getSummaryFor('g1');
+                    getSummaryFor('g2');
+                });
+
+                describe("adding", function() {
+                    it("should react to a new group being created", function() {
+                        source.add({ group: 'g3', rate: 100 });
+
+                        var r = getSummaryFor('g1');
+                        expect(r.get('rate')).toBe(10);
+                        expect(r.get('maxRate')).toBe(12);
+
+                        r = getSummaryFor('g2');
+                        expect(r.get('rate')).toBe(14);
+                        expect(r.get('maxRate')).toBe(15);
+
+                        r = getSummaryFor('g3');
+                        expect(r.get('rate')).toBe(100);
+                        expect(r.get('maxRate')).toBe(100);
+                    });
+
+                    it("should react to an add in an existing group", function() {
+                        source.add({ group: 'g1', rate: 100 });
+
+                        var r = getSummaryFor('g1');
+                        expect(r.get('rate')).toBe(40);
+                        expect(r.get('maxRate')).toBe(100);
+
+                        r = getSummaryFor('g2');
+                        expect(r.get('rate')).toBe(14);
+                        expect(r.get('maxRate')).toBe(15);
+                    });
+                });
+
+                describe("updating", function() {
+                    it("should react to an update", function() {
+                        store.getAt(0).set('rate', 200);
+
+                        var r = getSummaryFor('g1');
+                        expect(r.get('rate')).toBe(106);
+                        expect(r.get('maxRate')).toBe(200);
+
+                        r = getSummaryFor('g2');
+                        expect(r.get('rate')).toBe(14);
+                        expect(r.get('maxRate')).toBe(15);
+                    });
+
+                    it("should react to an update that forces a group change", function() {
+                        store.getAt(0).set('group', 'g2');
+
+                        var r = getSummaryFor('g1');
+                        expect(r.get('rate')).toBe(12);
+                        expect(r.get('maxRate')).toBe(12);
+
+                        r = getSummaryFor('g2');
+                        expect(r.get('rate')).toBe(12);
+                        expect(r.get('maxRate')).toBe(15);
+                    });
+                });
+
+                it("should react to a remove", function() {
+                    source.removeAt(1);
+
+                    var r = getSummaryFor('g1');
+                    expect(r.get('rate')).toBe(8);
+                    expect(r.get('maxRate')).toBe(8);
+
+                    r = getSummaryFor('g2');
+                    expect(r.get('rate')).toBe(14);
+                    expect(r.get('maxRate')).toBe(15);
+                });
+
+                it("should react to filtering", function() {
+                    store.getFilters().add({
+                        filterFn: function(rec) {
+                            var rate = rec.get('rate');
+                            return rate === 12 || rate === 13;
+                        }
+                    });
+
+                    var r = getSummaryFor('g1');
+                    expect(r.get('rate')).toBe(12);
+                    expect(r.get('maxRate')).toBe(12);
+
+                    r = getSummaryFor('g2');
+                    expect(r.get('rate')).toBe(13);
+                    expect(r.get('maxRate')).toBe(13);
+
+                    store.getFilters().removeAll();
+
+                    r = getSummaryFor('g1');
+                    expect(r.get('rate')).toBe(10);
+                    expect(r.get('maxRate')).toBe(12);
+
+                    r = getSummaryFor('g2');
+                    expect(r.get('rate')).toBe(14);
+                    expect(r.get('maxRate')).toBe(15);
+                });
+
+                it("should react to a loadData", function() {
+                    source.loadData([
+                        { group: 'g1', rate: 82 },
+                        { group: 'g1', rate: 81 },
+                        { group: 'g2', rate: 99 },
+                        { group: 'g2', rate: 100 }
+                    ]);
+                    
+                    var r = getSummaryFor('g1');
+                    expect(r.get('rate')).toBe(81.5);
+                    expect(r.get('maxRate')).toBe(82);
+
+                    r = getSummaryFor('g2');
+                    expect(r.get('rate')).toBe(99.5);
+                    expect(r.get('maxRate')).toBe(100);
+                });
+            });
+        });
+
+        describe("total summaries", function() {
+            beforeEach(function() {
+                createStore({
+                    model: M
+                }, false);
+            });
+
+            it("should return the calculated values", function() {
+                var r = store.getSummaryRecord();
+                expect(r.get('rate')).toBe(12);
+                expect(r.get('maxRate')).toBe(15);
+            });
+
+
+            describe("dynamic changes", function() {
+                beforeEach(function() {
+                    // Force creation
+                    store.getSummaryRecord();
+                });
+
+                it("should react to an add", function() {
+                    source.add({ rate: 20 });
+                    var r = store.getSummaryRecord();
+                    expect(r.get('rate')).toBe(13.6);
+                    expect(r.get('maxRate')).toBe(20);
+                });
+
+                it("should react to a remove", function() {
+                    source.removeAt(2);
+                    var r = store.getSummaryRecord();
+                    expect(r.get('rate')).toBe(11);
+                    expect(r.get('maxRate')).toBe(13);
+                });
+
+                it("should react to a removeAll", function() {
+                    source.removeAll();
+                    var r = store.getSummaryRecord();
+                    expect(r.get('rate')).toBeUndefined();
+                    expect(r.get('maxRate')).toBeUndefined();
+                });
+
+                it("should react to an update", function() {
+                    source.getAt(2).set('rate', 1);
+                    var r = store.getSummaryRecord();
+                    expect(r.get('rate')).toBe(8.5);
+                    expect(r.get('maxRate')).toBe(13);
+                });
+
+                it("should react to filtering", function() {
+                    store.getFilters().add({
+                        filterFn: function(rec) {
+                            return rec.get('rate') < 13;
+                        }
+                    });
+                    var r = store.getSummaryRecord();
+                    expect(r.get('rate')).toBe(10);
+                    expect(r.get('maxRate')).toBe(12);
+
+                    store.getFilters().removeAll();
+                    r = store.getSummaryRecord();
+                    expect(r.get('rate')).toBe(12);
+                    expect(r.get('maxRate')).toBe(15);
+                });
+
+                it("should react to a loadData", function() {
+                    source.loadData([
+                        { rate: 20 },
+                        { rate: 30 }
+                    ]);
+                    var r = store.getSummaryRecord();
+                    expect(r.get('rate')).toBe(25);
+                    expect(r.get('maxRate')).toBe(30);
+                });
+            });
         });
     });
 });

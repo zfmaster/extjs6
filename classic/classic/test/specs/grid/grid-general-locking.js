@@ -1,6 +1,9 @@
 /* global Ext, expect, spyOn, jasmine, xit, MockAjaxManager, it */
 
-describe("grid-general-locking", function() {
+topSuite("grid-general-locking",
+    [false, 'Ext.grid.Panel', 'Ext.data.ArrayStore', 'Ext.layout.container.Border',
+     'Ext.grid.plugin.CellEditing', 'Ext.form.field.Text'],
+function() {
     var grid, view, store, colRef, navModel,
         synchronousLoad = true,
         proxyStoreLoad = Ext.data.ProxyStore.prototype.load,
@@ -332,7 +335,79 @@ describe("grid-general-locking", function() {
                     expect(grid.lockedGrid.getWidth()).toBe(grid.lockedGrid.headerCt.getTableWidth() + grid.lockedGrid.gridPanelBorderWidth);
                 });
             });
-            
+
+            (Ext.getScrollbarSize().height ? describe : xdescribe)("collpasing and expanding", function() {
+                it("should display the scroller if needed", function() {
+                    var spy = jasmine.createSpy();
+                    
+                    makeGrid(2, null, {
+                        width: 100,
+                        collapsible: true,
+                        listeners: {
+                            expand: spy,
+                            collapse: spy
+                        }
+                    });
+
+                    grid.lockedGrid.collapse();
+
+                    waitsFor(function() {
+                        return spy.callCount === 1;
+                    });
+
+                    runs(function() {
+                        grid.lockedGrid.expand();
+                    });
+
+                    waitsFor(function() {
+                        return spy.callCount === 2;
+                    });
+
+                    runs(function() {
+                        expect(grid.lockedScrollbarScroller.getElement().getWidth()).toBe(grid.lockedGrid.getWidth());
+                        expect(grid.lockedScrollbarScroller.getElement().isScrollable()).toBe(true);
+                        // overflow of the locked side should be handled by the lockedScrollbarScroller, not the view's body
+                        expect(grid.lockedGrid.body.dom.style.overflowX).toBe('');
+                    });
+                });
+
+                it("should display the scroller if need and the normal side continued to be scrollable during expand/collapse", function() {
+                    var spy = jasmine.createSpy();
+                    
+                    makeGrid(2, {
+                        width: 400
+                    }, {
+                        width: 100,
+                        collapsible: true,
+                        listeners: {
+                            expand: spy,
+                            collapse: spy
+                        }
+                    });
+
+
+                    grid.lockedGrid.collapse();
+
+                    waitsFor(function() {
+                        return spy.callCount === 1;
+                    });
+
+                    runs(function() {
+                        grid.lockedGrid.expand();
+                    });
+
+                    waitsFor(function() {
+                        return spy.callCount === 2;
+                    });
+
+                    runs(function() {
+                        expect(grid.lockedScrollbarScroller.getElement().getWidth()).toBe(grid.lockedGrid.getWidth());
+                        expect(grid.lockedScrollbarScroller.getElement().isScrollable()).toBe(true);
+                        // overflow of the locked side should be handled by the lockedScrollbarScroller, not the view's body
+                        expect(grid.lockedGrid.body.dom.style.overflowX).toBe('');
+                    });
+                });
+            });
         });
     });
 
@@ -367,6 +442,237 @@ describe("grid-general-locking", function() {
                 expect(p.view === grid.normalGrid.view);
                 expect(p.rowIdx).toBe(0);
                 expect(p.colIdx).toBe(0);
+            });
+        });
+    });
+
+    describe('Focusing the view el, not a cell', function() {
+        Ext.isIE8 ? xit: it('should move to the same row on the other side', function() {
+            var errorSpy = jasmine.createSpy('error handler'),
+                old = window.onError;
+
+            store = new Ext.data.ArrayStore({
+                data: [
+                    [ 1, 'Lorem'],
+                    [ 2, 'Ipsum'],
+                    [ 3, 'Dolor']
+                ],
+                fields: ['row', 'lorem']
+            });
+
+            window.onerror = errorSpy.andCallFake(function() {
+                if (old) {
+                    old();
+                }
+            });
+
+            createGrid();
+
+            runs(function() {
+                jasmine.fireMouseEvent(grid.normalGrid.view.el, 'click', 200, 200);
+                expect(errorSpy).not.toHaveBeenCalled();
+            });
+
+            waitsFor(function() {
+                return grid.normalGrid.containsFocus;
+            });
+
+            runs(function() {
+                jasmine.fireMouseEvent(grid.lockedGrid.view.el, 'click', 25, 200);
+                expect(errorSpy).not.toHaveBeenCalled();
+            });
+
+            waitsFor(function() {
+                return grid.lockedGrid.containsFocus;
+            });
+
+            runs(function() {
+                jasmine.fireMouseEvent(grid.normalGrid.view.el, 'click', 200, 200);
+                expect(errorSpy).not.toHaveBeenCalled();
+            });
+
+            waitsFor(function() {
+                return grid.normalGrid.containsFocus;
+            });
+
+            runs(function() {
+                jasmine.fireMouseEvent(grid.lockedGrid.view.el, 'click', 25, 200);
+                expect(errorSpy).not.toHaveBeenCalled();
+            });
+
+            waitsFor(function() {
+                return grid.lockedGrid.containsFocus;
+            });
+
+            runs(function() {
+                expect(errorSpy).not.toHaveBeenCalled();
+                window.onerror = old;
+            });
+        });
+    });
+
+    describe("scrolling", function() {
+        beforeEach(function() {
+            store = new Ext.data.Store({
+                fields: ['name', 'email', 'phone'],
+                data: [
+                { name: 'Lisa',  email: 'lisa@simpsons.com',  phone: '555-111-1224' }, 
+                { name: 'Bart',  email: 'bart@simpsons.com',  phone: '555-222-1234' }, 
+                { name: 'Homer', email: 'homer@simpsons.com', phone: '555-222-1244' }, 
+                { name: 'Marge', email: 'marge@simpsons.com', phone: '555-222-1254' },
+                { name: 'Lisa',  email: 'lisa@simpsons.com',  phone: '555-111-1224' }, 
+                { name: 'Bart',  email: 'bart@simpsons.com',  phone: '555-222-1234' }, 
+                { name: 'Homer', email: 'homer@simpsons.com', phone: '555-222-1244' }, 
+                { name: 'Marge', email: 'marge@simpsons.com', phone: '555-222-1254' },
+                { name: 'Lisa',  email: 'lisa@simpsons.com',  phone: '555-111-1224' }, 
+                { name: 'Bart',  email: 'bart@simpsons.com',  phone: '555-222-1234' }, 
+                { name: 'Homer', email: 'homer@simpsons.com', phone: '555-222-1244' }, 
+                { name: 'Marge', email: 'marge@simpsons.com', phone: '555-222-1254' },
+                { name: 'Lisa',  email: 'lisa@simpsons.com',  phone: '555-111-1224' }, 
+                { name: 'Bart',  email: 'bart@simpsons.com',  phone: '555-222-1234' }, 
+                { name: 'Homer', email: 'homer@simpsons.com', phone: '555-222-1244' }, 
+                { name: 'Marge', email: 'marge@simpsons.com', phone: '555-222-1254' }
+                ]
+            });
+        });
+
+        it("should not scroll back to top when selecting records", function() {
+            var scroller,
+                cell;
+
+            createGrid({
+                columns: [{
+                    text: 'Name',
+                    dataIndex: 'name',
+                    locked: true
+                }, {
+                    text: 'Email',
+                    dataIndex: 'email',
+                    width: 300
+                }, {
+                    text: 'Phone',
+                    dataIndex: 'phone',
+                    width: 300
+                }],
+                height: 200,
+                width: 400
+            });
+
+
+
+            scroller = grid.getScrollable();
+            scroller.scrollTo(null, 100);
+            scroller.scrollTo(100, null);
+
+            waitsFor(function() {
+                return scroller.position.y === scroller.position.x && scroller.position.y === 100;
+            });
+
+            runs(function(){ 
+                cell = grid.normalGrid.view.getCell(7, 0);
+                jasmine.fireMouseEvent(cell, 'mousedown');
+            });
+
+            // Need waits here because we are waitign for the scroller not to move
+            waits(100);
+
+            runs(function() {
+                expect(scroller.getPosition().y).toBe(100);
+                // finish the click to avoid even publisher leaks
+                jasmine.fireMouseEvent(cell, 'mouseup'); 
+            });
+        });
+    });
+    
+    describe('View focus from cell editor', function () {
+        it('should set position to the closest cell', function () {
+            var rowIdx = 0,
+                colIdx = 2,
+                editor, editorActive, position,
+                record, cellEl, cellRegion, viewRegion,
+                x, y;
+    
+            store = new Ext.data.ArrayStore({
+                data: [
+                    [ 1, 'Lorem'],
+                    [ 2, 'Ipsum'],
+                    [ 3, 'Dolor']
+                ],
+                fields: ['row', 'lorem']
+            });
+            
+            createGrid({
+                plugins: [{
+                    ptype: 'cellediting',
+                    listeners: {
+                        beforeedit: function () {
+                            editorActive = true;
+                        }
+                    }
+                }],
+                columns: [{
+                    text: 'Row',
+                    dataIndex: 'row',
+                    locked: true,
+                    width: 50
+                }, {
+                    text: 'Lorem',
+                    dataIndex: 'lorem'
+                }, {
+                    text: 'Lorem (editor)',
+                    dataIndex: 'lorem',
+                    editor: 'textfield'
+                }]
+            });
+            
+            view = grid.normalGrid.view;
+            editor = grid.findPlugin('cellediting');
+            navModel = grid.normalGrid.getNavigationModel();
+            record = store.getAt(0);
+            
+            editor.startEditByPosition({row: rowIdx, column: colIdx});
+    
+            waitFor(function () {
+                return editorActive;
+            });
+    
+            run(function () {
+                cellEl = view.getCell(record, colIdx-1, true);
+                cellRegion = cellEl.getRegion();
+                viewRegion = view.getRegion();
+                
+                // get the XY position in the middle between the grid cell and the
+                // bottom of the view
+                x = (cellRegion.left + cellRegion.right) / 2;
+                y = (cellRegion.bottom + viewRegion.bottom) / 2;
+                
+                // mousedown in the view container below the cell being edited
+                jasmine.fireMouseEvent(view, 'mousedown', x, y);
+                position = navModel.getPosition();
+                jasmine.fireMouseEvent(view, 'mouseup', x, y);
+                
+                // position should remain on the same cell
+                expect({
+                    rowIdx: position.rowIdx,
+                    colIdx: position.colIdx}).
+                toEqual({
+                    rowIdx: rowIdx,
+                    colIdx: --colIdx
+                });
+                
+                // mousedown below the cell to the left
+                jasmine.fireMouseEvent(view.el, 'mousedown', x - cellRegion.width, y);
+                position = navModel.getPosition();
+                jasmine.fireMouseEvent(view.el, 'mouseup', x - cellRegion.width, y);
+    
+                // position should be moved to the cell to the left
+                expect({
+                    rowIdx: position.rowIdx,
+                    colIdx: position.colIdx}).
+                toEqual({
+                    rowIdx: rowIdx,
+                    colIdx: --colIdx
+                });
             });
         });
     });

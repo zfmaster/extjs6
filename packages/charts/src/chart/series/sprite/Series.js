@@ -50,7 +50,17 @@ Ext.define('Ext.chart.series.sprite.Series', {
                 /**
                  * @cfg {Object} [dataY=null] Data items on the y-axis.
                  */
-                dataY: 'data'
+                dataY: 'data',
+
+                /**
+                 * @cfg {Object} [labels=null] Labels used in the series.
+                 */
+                labels: 'default',
+
+                /**
+                 * @cfg {Number} [labelOverflowPadding=10] Padding around labels to determine overlap.
+                 */
+                labelOverflowPadding: 'number'
             },
 
             defaults: {
@@ -61,7 +71,9 @@ Ext.define('Ext.chart.series.sprite.Series', {
                 rangeX: null,
                 rangeY: null,
                 dataX: null,
-                dataY: null
+                dataY: null,
+                labels: null,
+                labelOverflowPadding: 10
             },
 
             triggers: {

@@ -1,4 +1,4 @@
-describe("Ext.direct.Provider", function() {
+topSuite("Ext.direct.Provider", ['Ext.direct.*'], function() {
     var ajaxSpy, provider, connectSpy, disconnectSpy;
     
     function makeProvider(config) {

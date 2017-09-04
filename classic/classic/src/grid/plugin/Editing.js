@@ -474,7 +474,7 @@ Ext.define('Ext.grid.plugin.Editing', {
         } 
         // Clicking on a component in a widget column
         else if (ownerGrid.actionableMode && view.owns(e.target) &&
-                 (targetCmp = Ext.Component.fromElement(e.target, cell) && targetCmp.focusable)) {
+                 (targetCmp = Ext.Component.from(e, cell)) && targetCmp.focusable) {
             return;
         }
         // The cell is not actionable, we we must exit actionable mode

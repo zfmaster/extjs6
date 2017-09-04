@@ -1,5 +1,4 @@
-describe("Ext.grid.column.Boolean", function() {
-    
+topSuite("Ext.grid.column.Boolean", ['Ext.grid.Panel'], function() {
     var grid, store, colRef;
 
     var Model = Ext.define(null, {
@@ -14,14 +13,24 @@ describe("Ext.grid.column.Boolean", function() {
         return grid.getView().getCellInclusive({
             row: rowIdx,
             column: colIdx
-        });
+        }, true);
     }
-    
+
+    function getCellInnerHtml(rowIdx, colIdx) {
+        var cell = getCell(rowIdx, colIdx);
+        return cell.querySelector(grid.getView().innerSelector).innerHTML;
+    }
+
     function getCellText(rowIdx, colIdx) {
         var cell = getCell(rowIdx, colIdx);
-        return Ext.fly(cell).down(grid.getView().innerSelector).dom.innerHTML;
+
+        // Go down to the first textNode
+        while (cell.nodeType !== 3) {
+            cell = cell.firstChild
+        }
+        return cell.data;
     }
-    
+
     function makeGrid(value, colCfg) {
         store = new Ext.data.Store({
             model: Model,
@@ -55,11 +64,8 @@ describe("Ext.grid.column.Boolean", function() {
         describe("undefinedText", function() {
             it("should render the undefined text", function() {
                 makeGrid(undefined);
+
                 var text = getCellText(0, 0);
-                // Normalize the text for cross browser
-                if (text === '&nbsp;') {
-                    text = '&#160;'
-                }
                 expect(text).toBe(colRef[0].undefinedText);
             });    
         });
@@ -91,12 +97,12 @@ describe("Ext.grid.column.Boolean", function() {
             
             store.first().set('field', true);
             
-            var text = getCellText(0, 0).replace(/\"/g, '').toLowerCase();
+            var text = getCellInnerHtml(0, 0).replace(/\"/g, '').toLowerCase();
             expect(text).toBe('<div class=foo>istrue</div>');
             
             store.first().set('field', false);
             
-            text = getCellText(0, 0).replace(/\"/g, '').toLowerCase();
+            text = getCellInnerHtml(0, 0).replace(/\"/g, '').toLowerCase();
             expect(text).toBe('<div class=bar>isfalse</div>');
         });
     })

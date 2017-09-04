@@ -7,6 +7,10 @@
  */
 Ext.define('Ext.drag.Manager', {
     singleton: true,
+    
+    uses: [
+        'Ext.mixin.Inheritable'
+    ],
 
     /**
      * @property {String} dragCls

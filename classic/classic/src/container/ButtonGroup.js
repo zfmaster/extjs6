@@ -48,10 +48,6 @@ Ext.define('Ext.container.ButtonGroup', {
     requires: [
         'Ext.layout.container.Table'
     ],
-
-    mixins: [
-        'Ext.util.FocusableContainer'
-    ],
     
     /**
      * @cfg {Number} columns
@@ -98,6 +94,7 @@ Ext.define('Ext.container.ButtonGroup', {
     
     bodyAriaRole: 'toolbar',
     focusableContainerEl: 'body',
+    focusableContainer: true,
 
     initComponent: function() {
         // Copy the component's columns config to the layout if specified
@@ -105,7 +102,7 @@ Ext.define('Ext.container.ButtonGroup', {
             cols = me.columns;
 
         if (cols) {
-            me.layout = Ext.apply({}, {columns: cols}, me.layout);
+            me.layout = Ext.apply({columns: cols}, me.layout);
         }
 
         if (!me.title) {

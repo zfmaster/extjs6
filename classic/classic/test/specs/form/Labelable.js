@@ -1,4 +1,6 @@
-describe('Ext.form.Labelable', function() {
+/* global Ext, spec, expect, xit, xdescribe */
+
+topSuite('Ext.form.Labelable', ['Ext.Component'], function() {
     var separator = ':',
         component;
 
@@ -41,7 +43,7 @@ describe('Ext.form.Labelable', function() {
                 fieldBodyCls: 'spec-body-cls',
                 extraFieldBodyCls: 'spec-body-extra',
                 getSubTplMarkup: function() {
-                    return '<div style="height:50px;width:150px;background-color:green;"></div>'
+                    return '<div style="height:50px;width:150px;background-color:green;"></div>';
                 }
             });
         });
@@ -388,7 +390,7 @@ describe('Ext.form.Labelable', function() {
                     var count = component.componentLayoutCounter;
                     component.setHideLabel(false);
                     expect(component.componentLayoutCounter).toBe(count + 1);
-                    count = component.componentLayoutCounter
+                    count = component.componentLayoutCounter;
                     component.setHideLabel(true);
                     expect(component.componentLayoutCounter).toBe(count + 1);
                 });
@@ -497,7 +499,7 @@ describe('Ext.form.Labelable', function() {
                     var count = component.componentLayoutCounter;
                     component.setHideEmptyLabel(false);
                     expect(component.componentLayoutCounter).toBe(count + 1);
-                    count = component.componentLayoutCounter
+                    count = component.componentLayoutCounter;
                     component.setHideEmptyLabel(true);
                     expect(component.componentLayoutCounter).toBe(count + 1);
                 });

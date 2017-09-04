@@ -31,11 +31,8 @@
  * A lower-level technique that does not use the `Ext.app.Application` architecture is
  * {@link Ext#onReady Ext.onReady}.
  *
- * For more information about how to use the Ext classes, see:
- *
- * - <a href="http://www.sencha.com/learn/">The Learning Center</a>
- * - <a href="http://www.sencha.com/learn/Ext_FAQ">The FAQ</a>
- * - <a href="http://www.sencha.com/forum/">The forums</a>
+ * You can also discuss concepts and issues with others on the
+ * <a href="http://www.sencha.com/forum/">Sencha Forums</a>.
  *
  * @singleton
  */
@@ -48,7 +45,7 @@ var Ext = Ext || {}; // jshint ignore:line
         toString = objectPrototype.toString,
         enumerables = [//'hasOwnProperty', 'isPrototypeOf', 'propertyIsEnumerable',
                        'valueOf', 'toLocaleString', 'toString', 'constructor'],
-        emptyFn = function () {},
+        emptyFn = Ext.fireIdle = function () {},  // see GlobalEvents for true fireIdle
         privateFn = function () {},
         identityFn = function(o) { return o; },
         // This is the "$previous" method of a hook function on an instance. When called, it
@@ -60,9 +57,11 @@ var Ext = Ext || {}; // jshint ignore:line
         manifest = Ext.manifest || {},
         i,
         iterableRe = /\[object\s*(?:Array|Arguments|\w*Collection|\w*List|HTML\s+document\.all\s+class)\]/,
-        MSDateRe = /^\\?\/Date\(([-+])?(\d+)(?:[+-]\d{4})?\)\\?\/$/;
+        MSDateRe = /^\\?\/Date\(([-+])?(\d+)(?:[+-]\d{4})?\)\\?\/$/,
+        elevateArgs, elevateFn, elevateRet, elevateScope;
 
     Ext.global = global;
+    Ext.$nextIid = 0;
 
     /**
      * Returns the current timestamp.
@@ -129,22 +128,24 @@ var Ext = Ext || {}; // jshint ignore:line
      * @return {Object} returns `object`.
      */
     Ext.apply = function(object, config, defaults) {
-        if (defaults) {
-            Ext.apply(object, defaults);
-        }
-
-        if (object && config && typeof config === 'object') {
-            var i, j, k;
-
-            for (i in config) {
-                object[i] = config[i];
+        if (object) {
+            if (defaults) {
+                Ext.apply(object, defaults);
             }
 
-            if (enumerables) {
-                for (j = enumerables.length; j--;) {
-                    k = enumerables[j];
-                    if (config.hasOwnProperty(k)) {
-                        object[k] = config[k];
+            if (config && typeof config === 'object') {
+                var i, j, k;
+
+                for (i in config) {
+                    object[i] = config[i];
+                }
+
+                if (enumerables) {
+                    for (j = enumerables.length; j--;) {
+                        k = enumerables[j];
+                        if (config.hasOwnProperty(k)) {
+                            object[k] = config[k];
+                        }
                     }
                 }
             }
@@ -259,8 +260,8 @@ var Ext = Ext || {}; // jshint ignore:line
         frameStartTime: Ext.now(),
 
         /**
-         * This object is initialized prior to loading the framework (Ext JS or Sencha
-         * Touch) and contains settings and other information describing the application.
+         * This object is initialized prior to loading the framework
+         * and contains settings and other information describing the application.
          *
          * For applications built using Sencha Cmd, this is produced from the `"app.json"`
          * file with information extracted from all of the required packages' `"package.json"`
@@ -269,20 +270,7 @@ var Ext = Ext || {}; // jshint ignore:line
          * requested as `"foo.json"` and the object in that JSON file will parsed and set
          * as this object.
          *
-         * @cfg {String/Object} manifest
-         *
-         * @cfg {String/Object} manifest.compatibility An object keyed by package name with
-         * the value being to desired compatibility level as a version number. If this is
-         * just a string, this version is assumed to apply to the framework ('ext' or
-         * 'touch'). Setting this value to less than 5 for 'ext' will enable the compatibility
-         * layer to assist in the application upgrade process. For details on the upgrade
-         * process, see the (Upgrade Guide)[#/guides/upgrade_50].
-         *
-         * @cfg {Object} manifest.debug An object configuring the debugging characteristics
-         * of the framework. See `Ext.debugConfig` which is set to this value.
-         *
-         * @cfg {Object} manifest.packages An object keyed by package name with the value
-         * being a subset of the package's `"package.json"` descriptor.
+         * @cfg {String/Ext.Manifest} manifest
          * @since 5.0.0
          */
         manifest: manifest,
@@ -371,7 +359,7 @@ var Ext = Ext || {}; // jshint ignore:line
          *      });
          *
          * @since 6.0.0
-         * @deprecated 6.0.2
+         * @deprecated 6.0.2 This property is no longer necessary, so no replacement is required.
          */
         enableAria: true,
         
@@ -451,6 +439,13 @@ var Ext = Ext || {}; // jshint ignore:line
         emptyString: new String(), // jshint ignore:line
 
         /**
+         * An immutable empty array if Object.freeze is supported by the browser
+         * @since 6.5.0
+         * @private
+         */
+        emptyArray: Object.freeze ? Object.freeze([]) : [],
+
+        /**
          * @property {String} [baseCSSPrefix='x-']
          * The base prefix to use for all `Ext` components. To configure this property, you should use the
          * Ext.buildSettings object before the framework is loaded:
@@ -483,7 +478,6 @@ var Ext = Ext || {}; // jshint ignore:line
         // TODO: inlinable function - SDKTOOLS-686
         /**
          * @private
-         * @inline
          */
         canonicalEventName: function(name) {
             return Ext.$eventNameMap[name] || (Ext.$eventNameMap[name] =
@@ -496,11 +490,9 @@ var Ext = Ext || {}; // jshint ignore:line
          * @param {Object} config The source of the properties
          * @return {Object} returns obj
          */
-        applyIf: function(object, config) {
-            var property;
-
-            if (object) {
-                for (property in config) {
+        applyIf: function (object, config) {
+            if (object && config && typeof config === 'object') {
+                for (var property in config) {
                     if (object[property] === undefined) {
                         object[property] = config[property];
                     }
@@ -530,7 +522,7 @@ var Ext = Ext || {}; // jshint ignore:line
                 if (arg) {
                     if (Ext.isArray(arg)) {
                         this.destroy.apply(this, arg);
-                    } else if (Ext.isFunction(arg.destroy)) {
+                    } else if (Ext.isFunction(arg.destroy) && !arg.destroyed) {
                         arg.destroy();
                     }
                 }
@@ -567,7 +559,7 @@ var Ext = Ext || {}; // jshint ignore:line
          *
          * If the `target` is an instance of a class declared using {@link Ext#define Ext.define},
          * the `overrides` are applied to only that instance. In this case, methods are
-         * specially processed to allow them to use {@link Ext.Base#callParent}.
+         * specially processed to allow them to use {@link Ext.Base#method!callParent}.
          *
          *      var panel = new Ext.Panel({ ... });
          *
@@ -657,11 +649,11 @@ var Ext = Ext || {}; // jshint ignore:line
 
         /**
          * Returns `true` if the passed value is a JavaScript Date object, `false` otherwise.
-         * @param {Object} object The object to test.
+         * @param {Object} obj The object to test.
          * @return {Boolean}
          */
-        isDate: function(value) {
-            return toString.call(value) === '[object Date]';
+        isDate: function(obj) {
+            return toString.call(obj) === '[object Date]';
         },
 
         /**
@@ -686,7 +678,7 @@ var Ext = Ext || {}; // jshint ignore:line
         isObject: (toString.call(null) === '[object Object]') ?
         function(value) {
             // check ownerDocument here as well to exclude DOM nodes
-            return value !== null && value !== undefined && toString.call(value) === '[object Object]' && value.ownerDocument === undefined;
+            return value != null && toString.call(value) === '[object Object]' && value.ownerDocument === undefined;
         } :
         function(value) {
             return toString.call(value) === '[object Object]';
@@ -829,6 +821,7 @@ var Ext = Ext || {}; // jshint ignore:line
          * given `className`.
          * @param {String} className The name of the class.
          * @return {Boolean} `true` if debug is enabled for the specified class.
+         * @method
          */
         isDebugEnabled:
             //<debug>
@@ -878,7 +871,7 @@ var Ext = Ext || {}; // jshint ignore:line
          * @return {Object} clone
          */
         clone: function(item, cloneDom) {
-            if (item === null || item === undefined) {
+            if (item == null) {
                 return item;
             }
 
@@ -1096,7 +1089,188 @@ var Ext = Ext || {}; // jshint ignore:line
     
                 return result;
             };
-        })()
+        })(),
+
+        /**
+         * This is the target of the user-supplied `Ext.elevateFunction`. It wraps the
+         * call to a function and concludes by calling {@link Ext#fireIdle}.
+         * @since 6.5.1
+         * @private
+         */
+        doElevate: function () {
+            var fn = elevateFn,
+                args = elevateArgs,
+                scope = elevateScope;
+
+            // We really should never re-enter here, but we'll latch these vars just
+            // in case.
+            elevateFn = elevateArgs = elevateScope = null;
+            elevateRet = args ? fn.apply(scope, args) : fn.call(scope);
+
+            // Be sure to fire the idle event while elevated or its handlers will
+            // be running in an unprivileged context.
+            Ext.fireIdle();
+        },
+
+        /**
+         * Runs the given `fn` directly or using the user-provided `Ext.elevateFunction`
+         * (if present). After calling the `fn` the global `idle` event is fired using
+         * the {@link Ext#fireIdle} method.
+         *
+         * @param {Function} fn
+         * @param {Object} [scope]
+         * @param {Array} [args]
+         * @param {Object} [timer]
+         * @return {Mixed}
+         * @since 6.5.1
+         * @private
+         */
+        elevate: function (fn, scope, args
+                           //<debug>
+                           , timer
+                           //</debug>
+        ) {
+            var ret;
+
+            if (args && !args.length) {
+                args = null;
+            }
+
+            Ext._suppressIdle = false;
+
+            //<debug>
+            if (timer) {
+                timer.tick();
+            }
+            //</debug>
+
+            if (Ext.elevateFunction) {
+                elevateFn = fn;
+                elevateScope = scope;
+                elevateArgs = args;
+
+                // We reuse the same fn here to avoid GC pressure.
+                Ext.elevateFunction(Ext.doElevate);
+
+                ret = elevateRet;
+
+                elevateRet = null;
+            }
+            else {
+                ret = args ? fn.apply(scope, args) : fn.call(scope);
+
+                Ext.fireIdle();
+            }
+
+            //<debug>
+            if (timer) {
+                timer.tock();
+            }
+            //</debug>
+
+            return ret;
+        },
+
+        //<debug>
+        Timer: {
+            all: {},
+            track: false,
+
+            created: function (kind, id, info) {
+                if (!Ext.Timer.track) {
+                    return null;
+                }
+
+                var timer = Ext.apply({
+                    kind: kind,
+                    id: id,
+                    done: false,
+                    firing: false,
+                    creator: new Error().stack,
+                    tick: Ext.Timer.tick,
+                    tock: Ext.Timer.tock
+                }, info);
+
+                var timers = Ext.Timer.all[kind] || (Ext.Timer.all[kind] = {});
+                timers[timer.id] = timer;
+
+                if (Ext.Timer.hook) {
+                    Ext.Timer.hook(timer);
+                }
+
+                return timer;
+            },
+
+            get: function (id, kind) {
+                kind = kind || 'timeout';
+
+                var timers = Ext.Timer.all[kind];
+
+                return timers && timers[id] || null;
+            },
+
+            cancel: function (kind, id) {
+                var timers = Ext.Timer.all[kind];
+                var timer = timers && timers[id];
+
+                if (timer) {
+                    timer.cancelled = true;
+
+                    delete timers[id];
+                }
+            },
+
+            tick: function () {
+                if (Ext.Timer.firing) {
+                    // One reason for Ext.Timer.firing to get stuck is exception thrown
+                    // in timer handler. In that case the timer is never tock()ed
+                    // and will be left hanging. Just clean it up.
+                    Ext.log.error('Previous timer state not cleaned up properly: ' +
+                        Ext.Timer.firing.creator);
+                }
+
+                if (this.kind !== 'interval') {
+                    this.done = true;
+                    delete Ext.Timer.all[this.kind][this.id];
+                }
+
+                this.firing = true;
+
+                Ext.Timer.firing = this;
+            },
+
+            tock: function () {
+                this.firing = false;
+
+                if (Ext.Timer.firing === this) {
+                    Ext.Timer.firing = null;
+                }
+            }
+        },
+        //</debug>
+
+        /**
+         * @private
+         */
+        getExpando: function(target, id) {
+            var expandos = target.$expandos;
+
+            return expandos && expandos[id] || null;
+        },
+
+        /**
+         * @private
+         */
+        setExpando: function(target, id, value) {
+            var expandos = target.$expandos;
+
+            if (value !== undefined) {
+                (expandos || (target.$expandos = {}))[id] = value;
+            } else if (expandos) {
+                delete expandos[id];
+            }
+        }
+
     }); // Ext.apply(Ext
 
     Ext.returnTrue.$nullFn = Ext.returnId.$nullFn = true;

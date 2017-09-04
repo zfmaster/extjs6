@@ -447,6 +447,10 @@ Ext.define('Ext.button.Button', {
         'btnEl', 'btnWrap', 'btnInnerEl', 'btnIconEl', 'arrowEl'
     ],
 
+    /**
+     * @cfg
+     * @inheritdoc
+     */
     publishes: {
         pressed: 1
     },
@@ -847,8 +851,9 @@ Ext.define('Ext.button.Button', {
      *
      * @param {Ext.menu.Menu/String/Object/null} menu Accepts a menu component, a menu id or a menu config.
      * @param {Boolean} destroyMenu By default, will destroy the previous set menu and remove it from the menu manager. Pass `false` to prevent the destroy.
+     * @param {Boolean} [initial] (private)
      */
-    setMenu: function (menu, destroyMenu, /* private */ initial) {
+    setMenu: function (menu, destroyMenu, initial) {
         var me = this,
             oldMenu = me.menu,
             ariaDom = me.isSplitButton ? me.arrowEl && me.arrowEl.dom : me.ariaEl.dom,
@@ -1287,6 +1292,7 @@ Ext.define('Ext.button.Button', {
      *   - **String** : A string to be used as innerHTML (html tags are accepted) to show in a tooltip
      *   - **Object** : A configuration object for {@link Ext.tip.QuickTipManager#register}.
      *
+     * @param initial
      * @return {Ext.button.Button} this
      */
     setTooltip: function(tooltip, initial) {
@@ -1386,6 +1392,11 @@ Ext.define('Ext.button.Button', {
     doDestroy: function() {
         var me = this,
             menu = me.menu;
+        
+        if (me.deferFocusTimer) {
+            Ext.undefer(me.deferFocusTimer);
+            me.deferFocusTimer = null;
+        }
 
         if (me.rendered) {
             me.clearTip();
@@ -1584,7 +1595,9 @@ Ext.define('Ext.button.Button', {
     },
 
     onTouchStart: function(e) {
-        this.doPreventDefault(e);
+        if (this.disabled) {
+            this.doPreventDefault(e);
+        }
     },
 
     /**
@@ -1805,7 +1818,7 @@ Ext.define('Ext.button.Button', {
         me.callParent();
 
         me.removeCls(me._disabledCls);
-        dom.setAttribute('tabIndex', me.tabIndex);
+        me.el.setTabIndex(me.tabIndex);
 
         // https://sencha.jira.com/browse/EXTJS-11964
         // Disabled links are clickable on iPad, and right clickable on desktop browsers.
@@ -1827,7 +1840,7 @@ Ext.define('Ext.button.Button', {
         me.addCls(me._disabledCls);
         me.removeCls(me.overCls);
 
-        dom.removeAttribute('tabIndex');
+        me.el.setTabIndex(null);
 
         // https://sencha.jira.com/browse/EXTJS-11964
         // Disabled links are clickable on iPad, and right clickable on desktop browsers.
@@ -1872,14 +1885,31 @@ Ext.define('Ext.button.Button', {
      * @private
      */
     onMouseDown: function(e) {
-        var me = this;
+        var me = this,
+            activeEl;
 
         if (Ext.isIE || e.pointerType === 'touch') {
             // In IE the use of unselectable on the button's elements causes the element
             // to not receive focus, even when it is directly clicked.
             // On Touch devices, we need to explicitly focus on touchstart.
-            Ext.defer(function() {
-                var focusEl = me.getFocusEl();
+            if (me.deferFocusTimer) {
+                Ext.undefer(me.deferFocusTimer);
+            }
+
+            activeEl = Ext.Element.getActiveElement();
+            me.deferFocusTimer = Ext.defer(function() {
+                var focusEl;
+                
+                me.deferFocusTimer = null;
+
+                // We can't proceed if we've been destroyed, or the app has since controlled
+                // the focus, or if we are no longer focusable.
+                if (me.destroying || me.destroyed || (Ext.Element.getActiveElement() !== activeEl) || !me.canFocus()) {
+                    return;
+                }
+                
+                focusEl = me.getFocusEl();
+                
                 // Deferred to give other mousedown handlers the chance to preventDefault
                 if (focusEl && !e.defaultPrevented) {
                     focusEl.focus();

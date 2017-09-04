@@ -1,6 +1,8 @@
 /* global expect, Ext, jasmine */
 
-describe("Ext.ZIndexManager", function() {
+topSuite("Ext.ZIndexManager",
+    ['Ext.window.*', 'Ext.grid.Panel', 'Ext.form.field.*', 'Ext.Button', 'Ext.grid.plugin.CellEditing'],
+function() {
     function cancelFocus() {
         var task = Ext.focusTask;
         if (task) {
@@ -561,9 +563,7 @@ describe("Ext.ZIndexManager", function() {
 
             jasmine.fireMouseEvent(cell, 'dblclick');
 
-            waitsFor(function() {
-                return plugin.editing;
-            }, 'plugin to edit');
+            waitsForFocus(plugin.activeEditor.field, 'plugin to edit');
 
             runs(function(){
                 jasmine.fireKeyEvent(Ext.Element.getActiveElement(), 'keydown', Ext.event.Event.ENTER);
@@ -571,7 +571,7 @@ describe("Ext.ZIndexManager", function() {
 
             waitsFor(function() {
                 return Ext.MessageBox.isVisible();
-            }, 'become visible');
+            }, 'message box to become visible');
 
             runs(function() {
                 expect(Ext.MessageBox.el.getZIndex()).toBeGreaterThan(win.el.getZIndex());
@@ -836,53 +836,60 @@ describe("Ext.ZIndexManager", function() {
         });
         
         it("should restore focus after showing", function() {
-            var xy, x, child, text;
+            var xy, headerXY, x, y, child, text;
             
             win = new Ext.window.Window({
                 title: 'Test Window',
                 width: 410,
-                height: 400
+                height: 400,
+                x: 0, y: 0,
+                items: child = new Ext.window.Window({
+                    width: 200,
+                    height: 100,
+                    items: {
+                        xtype: 'textfield'
+                    }
+                })
             });
-
-            win.show();
-
-            xy = win.getXY();
-            x = win.header.getX();
-
-            child = new Ext.window.Window({
-                width: 200,
-                height: 100,
-                items: {
-                    xtype: 'textfield'
-                }
-            });
-
-            win.add(child);
-            child.show();
 
             text = child.items.first();
 
-            text.focus();
+            win.show();
 
-            jasmine.waitForFocus(text);
+            jasmine.waitForFocus(win, 'top window to focus');
 
             runs(function() {
+                child.show();
+            });
+
+            jasmine.waitForFocus(child, 'child window to focus');
+
+            jasmine.focusAndWait(text, text, 'text field within child window to focus');
+
+            runs(function() {
+                xy = win.getXY();
+                headerXY = win.header.el.getAnchorXY('c'),
+                x = headerXY[0];
+                y = headerXY[1];
+
                 expect(text.hasFocus).toBe(true);
                 // Drag the Window by the header
-                jasmine.fireMouseEvent(win.header.el, 'mousedown', x);
-                jasmine.fireMouseEvent(win.header.el, 'mousemove', x + 100);
+                jasmine.fireMouseEvent(win.header.el, 'mousedown', x, y);
+                jasmine.fireMouseEvent(Ext.getBody(), 'mousemove', x + 100, y);
+            });
 
+            waits(100);
+
+            runs(function() {
                 expect(child.isVisible()).toBe(false);
 
-                jasmine.fireMouseEvent(Ext.getBody(), 'mouseup');
+                jasmine.fireMouseEvent(Ext.getBody(), 'mouseup', x + 100, y);
+            });
 
+            runs(function() {
                 // Window should have moved 100px right
                 xy[0] += 100;
                 expect(win.getXY()).toEqual(xy);
-            });
-
-            jasmine.waitForFocus(text);
-            runs(function() {
                 expect(text.hasFocus).toBe(true);
             });
         });

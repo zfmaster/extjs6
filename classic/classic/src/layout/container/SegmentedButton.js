@@ -41,7 +41,7 @@ Ext.define('Ext.layout.container.SegmentedButton', {
         // 'segmented-button-row' element, which is not a childEl of either the container
         // or the layout and so it does not get automatically cleaned up upon destruction,
         // leaving the element orphaned, unless we destroy it now.
-        if (this.rendered) {
+        if (this.owner.rendered) {
             var targetEl = this.getRenderTarget(),
                 row;
 

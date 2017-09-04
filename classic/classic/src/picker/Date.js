@@ -13,7 +13,7 @@
  *     @example
  *     Ext.create('Ext.panel.Panel', {
  *         title: 'Choose a future date:',
- *         width: 200,
+ *         width: 330,
  *         bodyPadding: 10,
  *         renderTo: Ext.getBody(),
  *         items: [{
@@ -39,29 +39,26 @@ Ext.define('Ext.picker.Date', {
     alias: 'widget.datepicker',
     alternateClassName: 'Ext.DatePicker',
     
-    //<locale>
     /**
      * @cfg {String} todayText
-     * The text to display on the button that selects the current date
+     * The text to display on the button that selects the current date.
+     * @locale
      */
     todayText: 'Today',
-    //</locale>
-    
-    //<locale>
+
     /**
      * @cfg {String} ariaTitle
-     * The text to display for the aria title
+     * The text to display for the aria title.
+     * @locale
      */
     ariaTitle: 'Date Picker: {0}',
-    //</locale>
-    
-    //<locale>
+
     /**
      * @cfg {String} ariaTitleDateFormat
-     * The date format to display for the current value in the {@link #ariaTitle}
+     * The date format to display for the current value in the {@link #ariaTitle}.
+     * @locale
      */
     ariaTitleDateFormat: 'F d',
-    //</locale>
 
     /**
      * @cfg {Function} handler
@@ -84,48 +81,43 @@ Ext.define('Ext.picker.Date', {
      * Defaults to this DatePicker instance.
      */
 
-    //<locale>
     /**
      * @cfg {String} todayTip
      * A string used to format the message for displaying in a tooltip over the button that selects the current date.
      * The `{0}` token in string is replaced by today's date.
+     * @locale
      */
     todayTip: '{0} (Spacebar)',
-    //</locale>
 
-    //<locale>
     /**
      * @cfg {String} minText
      * The error text to display if the minDate validation fails.
+     * @locale
      */
     minText: 'This date is before the minimum date',
-    //</locale>
-    
-    //<locale>
+
     /**
      * @cfg {String} ariaMinText The text that will be announced by Assistive Technologies
      * such as screen readers when user is navigating to the cell which date is less than
      * {@link #minDate}.
+     * @locale
      */
     ariaMinText: "This date is before the minimum date",
-    //</locale>
 
-    //<locale>
     /**
      * @cfg {String} maxText
      * The error text to display if the maxDate validation fails.
+     * @locale
      */
     maxText: 'This date is after the maximum date',
-    //</locale>
-    
-    //<locale>
+
     /**
      * @cfg {String} ariaMaxText The text that will be announced by Assistive Technologies
      * such as screen readers when user is navigating to the cell which date is later than
      * {@link #maxDate}.
+     * @locale
      */
     ariaMaxText: "This date is after the maximum date",
-    //</locale>
 
     /**
      * @cfg {String} format
@@ -133,100 +125,89 @@ Ext.define('Ext.picker.Date', {
      * according to {@link Ext.Date#parse} (defaults to {@link Ext.Date#defaultFormat}).
      */
 
-    //<locale>
     /**
      * @cfg {String} disabledDaysText
      * The tooltip to display when the date falls on a disabled day.
+     * @locale
      */
     disabledDaysText: 'Disabled',
-    //</locale>
-    
-    //<locale>
+
     /**
      * @cfg {String} ariaDisabledDaysText The text that Assistive Technologies such as screen readers
      * will announce when the date falls on a disabled day of week.
+     * @locale
      */
     ariaDisabledDaysText: "This day of week is disabled",
-    //</locale>
-    
-    //<locale>
+
     /**
      * @cfg {String} disabledDatesText
      * The tooltip text to display when the date falls on a disabled date.
+     * @locale
      */
     disabledDatesText: 'Disabled',
-    //</locale>
 
-    //<locale>
     /**
      * @cfg {String} ariaDisabledDatesText The text that Assistive Technologies such as screen readers
      * will announce when the date falls on a disabled date.
+     * @locale
      */
     ariaDisabledDatesText: "This date is disabled",
     
-    //</locale>
     /**
      * @cfg {String[]} monthNames
      * An array of textual month names which can be overriden for localization support (defaults to Ext.Date.monthNames)
-     * @deprecated This config is deprecated. In future the month names will be retrieved from {@link Ext.Date}
+     * @deprecated 6.5.0 This config is deprecated. In future the month names will be retrieved from {@link Ext.Date}
      */
 
     /**
      * @cfg {String[]} dayNames
      * An array of textual day names which can be overriden for localization support (defaults to Ext.Date.dayNames)
-     * @deprecated This config is deprecated. In future the day names will be retrieved from {@link Ext.Date}
+     * @deprecated 6.5.0 This config is deprecated. In future the day names will be retrieved from {@link Ext.Date}
      */
 
-    //<locale>
     /**
      * @cfg {String} nextText
-     * The next month navigation button tooltip
+     * The next month navigation button tooltip.
+     * @locale
      */
     nextText: 'Next Month (Control+Right)',
-    //</locale>
 
-    //<locale>
     /**
      * @cfg {String} prevText
-     * The previous month navigation button tooltip
+     * The previous month navigation button tooltip.
+     * @locale
      */
     prevText: 'Previous Month (Control+Left)',
-    //</locale>
 
-    //<locale>
     /**
      * @cfg {String} monthYearText
-     * The header month selector tooltip
+     * The header month selector tooltip.
+     * @locale
      */
     monthYearText: 'Choose a month (Control+Up/Down to move years)',
-    //</locale>
-    
-    //<locale>
+
     /**
      * @cfg {String} monthYearFormat
-     * The date format for the header month
+     * The date format for the header month.
+     * @locale
      */
     monthYearFormat: 'F Y',
-    //</locale>
 
-    //<locale>
     /**
      * @cfg {Number} [startDay=undefined]
      * Day index at which the week should begin, 0-based.
      *
-     * Defaults to `0` (Sunday).
+     * Defaults to the value of {@link Ext.Date.firstDayOfWeek}.
+     * @locale
      */
-    startDay: 0,
-    //</locale>
 
-    //<locale>
     /**
      * @cfg {Boolean} showToday
      * False to hide the footer area containing the Today button and disable the keyboard handler for spacebar that
      * selects the current date.
+     * @locale
      */
     showToday: true,
-    //</locale>
 
     /**
      * @cfg {Date} [minDate=null]
@@ -236,6 +217,13 @@ Ext.define('Ext.picker.Date', {
     /**
      * @cfg {Date} [maxDate=null]
      * Maximum allowable date (JavaScript date object)
+     */
+
+     /**
+     * @cfg {Date} [defaultValue=new Date()]
+     * @since 6.5.1
+     * A default date for this picker, only used when a value is not set. (JavaScript date object)
+     * Note: This value with be constrained to the minDate/maxDate if they are specified.
      */
 
     /**
@@ -288,13 +276,12 @@ Ext.define('Ext.picker.Date', {
      * The class to apply to disabled cells.
      */
 
-    //<locale>
     /**
      * @cfg {String} longDayFormat
      * The format for displaying a date in a longer format.
+     * @locale
      */
     longDayFormat: 'F d, Y',
-    //</locale>
 
     /**
      * @cfg {Object} keyNavConfig
@@ -320,11 +307,7 @@ Ext.define('Ext.picker.Date', {
     ],
     
     border: true,
-    
-    /**
-     * @cfg
-     * @inheritdoc
-     */
+
     renderTpl: [
         '<div id="{id}-innerEl" data-ref="innerEl" role="presentation">',
             '<div class="{baseCls}-header">',
@@ -407,18 +390,25 @@ Ext.define('Ext.picker.Date', {
         me.cellCls = me.baseCls + '-cell';
         me.nextCls = me.baseCls + '-prevday';
         me.todayCls = me.baseCls + '-today';
+        me.defaultValue = Ext.isDate(me.defaultValue) ? me.defaultValue : new Date();
         
         if (!me.format) {
             me.format = Ext.Date.defaultFormat;
         }
+        
         if (!me.dayNames) {
             me.dayNames = Ext.Date.dayNames;
         }
+        
+        if (me.startDay == null) {
+            me.startDay = Ext.Date.firstDayOfWeek;
+        }
+        
         me.dayNames = me.dayNames.slice(me.startDay).concat(me.dayNames.slice(0, me.startDay));
 
         me.callParent();
 
-        me.value = me.value ? clearTime(me.value, true) : clearTime(new Date());
+        me.value = me.value ? clearTime(me.value, true) : clearTime(me.defaultValue);
 
         me.initDisabledDays();
     },
@@ -566,105 +556,34 @@ Ext.define('Ext.picker.Date', {
         // Month button is pointer interactive only, it should not be allowed to focus.
         me.monthBtn.el.on('mousedown', me.onMouseDown, me);
 
-        me.prevRepeater = new Ext.util.ClickRepeater(me.prevEl, {
+        me.prevRepeater = new Ext.util.ClickRepeater({
+            el: me.prevEl,
             handler: me.showPrevMonth,
             scope: me,
             mousedownStopEvent: true
         });
 
-        me.nextRepeater = new Ext.util.ClickRepeater(me.nextEl, {
+        me.nextRepeater = new Ext.util.ClickRepeater({
+            el: me.nextEl,
             handler: me.showNextMonth,
             scope: me,
             mousedownStopEvent: true
         });
 
-        me.keyNav = new Ext.util.KeyNav(me.eventEl, Ext.apply({
+        me.keyNav = new Ext.util.KeyNav(Ext.apply({
+            target: me.eventEl,
             scope: me,
 
-            left: function(e) {
-                if (e.ctrlKey) {
-                    this.showPrevMonth();
-                }
-                else {
-                    this.update(Ext.Date.add(this.activeDate, Ext.Date.DAY, -1));
-                }
-                
-                // We need to prevent default to avoid scrolling the nearest container
-                // which in case of a floating Date picker will be the document body.
-                // This applies to all navigation keys.
-                e.preventDefault();
-            },
-
-            right: function(e) {
-                if (e.ctrlKey) {
-                    this.showNextMonth();
-                }
-                else {
-                    this.update(Ext.Date.add(this.activeDate, Ext.Date.DAY, 1));
-                }
-                
-                e.preventDefault();
-            },
-
-            up: function(e) {
-                // This is non-standard behavior kept for backward compatibility.
-                // Ctrl-PageUp is reverse to this and it should be used instead.
-                if (e.ctrlKey) {
-                    this.showNextYear();
-                }
-                else {
-                    this.update(Ext.Date.add(this.activeDate, Ext.Date.DAY, -7));
-                }
-                
-                e.preventDefault();
-            },
-
-            down: function(e) {
-                // This is non-standard behavior kept for backward compatibility.
-                // Ctrl-PageDown is reverse to this and it should be used instead.
-                if (e.ctrlKey) {
-                    this.showPrevYear();
-                }
-                else {
-                    this.update(Ext.Date.add(this.activeDate, Ext.Date.DAY, 7));
-                }
-                
-                e.preventDefault();
-            },
-
-            pageUp: function(e) {
-                if (e.ctrlKey) {
-                    this.showPrevYear();
-                }
-                else {
-                    this.showPrevMonth();
-                }
-                
-                e.preventDefault();
-            },
-
-            pageDown: function(e) {
-                if (e.ctrlKey) {
-                    this.showNextYear();
-                }
-                else {
-                    this.showNextMonth();
-                }
-                
-                e.preventDefault();
-            },
-            
-            home: function(e) {
-                this.update(Ext.Date.getFirstDateOfMonth(this.activeDate));
-                
-                e.preventDefault();
-            },
-
-            end: function(e) {
-                this.update(Ext.Date.getLastDateOfMonth(this.activeDate));
-                
-                e.preventDefault();
-            },
+            left: me.onLeftKey,
+            right: me.onRightKey,
+            up: me.onUpKey,
+            down: me.onDownKey,
+            pageUp: me.onPageUpKey,
+            pageDown: me.onPageDownKey,
+            home: me.onHomeKey,
+            end: me.onEndKey,
+            enter: me.onEnterKey,
+            space: me.onSpaceKey,
             
             tab: function(e) {
                 // When the picker is floating and attached to an input field, its
@@ -676,41 +595,19 @@ Ext.define('Ext.picker.Date', {
                 
                 // Allow default behaviour of TAB - it MUST be allowed to navigate.
                 return true;
-            },
-
-            enter: function(e) {
-                this.handleDateClick(e, this.activeCell.firstChild);
-            },
-
-            space: function(e) {
-                var me = this,
-                    pickerField = me.pickerField,
-                    startValue, value, pickerValue;
-                
-                me.setValue(new Date(me.activeCell.firstChild.dateValue));
-                
-                if (pickerField) {
-                    startValue = me.startValue;
-                    value = me.value;
-                    pickerValue = pickerField.getValue();
-                    
-                    if (pickerValue && startValue && pickerValue.getTime() === value.getTime()) {
-                        pickerField.setValue(startValue);
-                    }
-                    else {
-                        pickerField.setValue(value);
-                    }
-                }
-                
-                // Space key causes scrolling, too :(
-                e.preventDefault();
             }
         }, me.keyNavConfig));
 
         if (me.disabled) {
             me.syncDisabled(true, true);
         }
-        
+
+        if (me.minDate && me.minDate > me.value) {
+            me.value = me.minDate;
+        } else if (me.maxDate && me.maxDate < me.value) {
+            me.value = me.maxDate;
+        }
+
         me.update(me.value);
     },
 
@@ -729,6 +626,12 @@ Ext.define('Ext.picker.Date', {
             me.fireEvent('select', me, me.value);
             if (handler) {
                 Ext.callback(handler, me.scope, [me, me.value], null, me, me);
+            }
+
+            // If the ownerfield is part of an editor we must preventDefault and let
+            // the navigationModel handle the tab event.
+            if (me.pickerField && me.pickerField.isEditorComponent) {
+                e.preventDefault();
             }
             me.onSelect();
         }
@@ -790,7 +693,7 @@ Ext.define('Ext.picker.Date', {
 
     /**
      * Replaces any existing disabled dates with new values and refreshes the DatePicker.
-     * @param {String[]/RegExp} disabledDates An array of date strings (see the {@link #disabledDates} config for
+     * @param {String[]/RegExp} dd An array of date strings (see the {@link #disabledDates} config for
      * details on supported values), or a JavaScript regular expression used to disable a pattern of dates.
      * @return {Ext.picker.Date} this
      */
@@ -814,28 +717,28 @@ Ext.define('Ext.picker.Date', {
      * on supported values.
      * @return {Ext.picker.Date} this
      */
-    setDisabledDays: function(dd) {
-        this.disabledDays = dd;
+    setDisabledDays: function (disabledDays) {
+        this.disabledDays = disabledDays;
         return this.update(this.value, true);
     },
 
     /**
      * Replaces any existing {@link #minDate} with the new value and refreshes the DatePicker.
-     * @param {Date} value The minimum date that can be selected
+     * @param {Date} minDate The minimum date that can be selected
      * @return {Ext.picker.Date} this
      */
-    setMinDate: function(dt) {
-        this.minDate = dt;
+    setMinDate: function(minDate) {
+        this.minDate = minDate;
         return this.update(this.value, true);
     },
 
     /**
      * Replaces any existing {@link #maxDate} with the new value and refreshes the DatePicker.
-     * @param {Date} value The maximum date that can be selected
+     * @param {Date} maxDate The maximum date that can be selected
      * @return {Ext.picker.Date} this
      */
-    setMaxDate: function(dt) {
-        this.maxDate = dt;
+    setMaxDate: function(maxDate) {
+        this.maxDate = maxDate;
         return this.update(this.value, true);
     },
 
@@ -846,7 +749,7 @@ Ext.define('Ext.picker.Date', {
      */
     setValue: function(value) {
         // If passed a null value just pass in a new date object.
-        this.value = Ext.Date.clearTime(value || new Date(), true);
+        this.value = Ext.Date.clearTime(value || this.defaultValue, true);
         return this.update(this.value);
     },
 
@@ -858,15 +761,14 @@ Ext.define('Ext.picker.Date', {
         return this.value;
     },
 
-    //<locale type="function">
     /**
      * Gets a single character to represent the day of the week
      * @return {String} The character
+     * @locale
      */
     getDayInitial: function(value) {
         return value.substr(0,1);
     },
-    //</locale>
 
     /**
      * @inheritdoc
@@ -955,6 +857,11 @@ Ext.define('Ext.picker.Date', {
             picker = me.monthPicker;
 
         if (picker && picker.isVisible()) {
+            // The animated hide causes focus movement to the wrap el
+            // from the soon to be focused button (Button focuses in a delay)
+            // Controlling the focus now will prevent both erroneous
+            // focus movements.
+            me.focus();
             if (me.shouldAnimate(animate)) {
                 me.runAnimation(true);
             } else {
@@ -1054,6 +961,149 @@ Ext.define('Ext.picker.Date', {
             me.on('beforehide', me.doHideMonthPicker, me);
         }
         return picker;
+    },
+    
+    /**
+     * @private
+     */
+    onLeftKey: function(e) {
+        if (e.ctrlKey) {
+            this.showPrevMonth();
+        }
+        else {
+            this.update(Ext.Date.add(this.activeDate, Ext.Date.DAY, -1));
+        }
+        
+        // We need to prevent default to avoid scrolling the nearest container
+        // which in case of a floating Date picker will be the document body.
+        // This applies to all navigation keys.
+        e.preventDefault();
+    },
+    
+    /**
+     * @private
+     */
+    onRightKey: function(e) {
+        if (e.ctrlKey) {
+            this.showNextMonth();
+        }
+        else {
+            this.update(Ext.Date.add(this.activeDate, Ext.Date.DAY, 1));
+        }
+        
+        e.preventDefault();
+    },
+    
+    /**
+     * @private
+     */
+    onUpKey: function(e) {
+        // This is non-standard behavior kept for backward compatibility.
+        // Ctrl-PageUp is reverse to this and it should be used instead.
+        if (e.ctrlKey) {
+            this.showNextYear();
+        }
+        else {
+            this.update(Ext.Date.add(this.activeDate, Ext.Date.DAY, -7));
+        }
+        
+        e.preventDefault();
+    },
+    
+    /**
+     * @private
+     */
+    onDownKey: function(e) {
+        // This is non-standard behavior kept for backward compatibility.
+        // Ctrl-PageDown is reverse to this and it should be used instead.
+        if (e.ctrlKey) {
+            this.showPrevYear();
+        }
+        else {
+            this.update(Ext.Date.add(this.activeDate, Ext.Date.DAY, 7));
+        }
+        
+        e.preventDefault();
+    },
+    
+    /**
+     * @private
+     */
+    onPageUpKey: function(e) {
+        if (e.ctrlKey) {
+            this.showPrevYear();
+        }
+        else {
+            this.showPrevMonth();
+        }
+        
+        e.preventDefault();
+    },
+    
+    /**
+     * @private
+     */
+    onPageDownKey: function(e) {
+        if (e.ctrlKey) {
+            this.showNextYear();
+        }
+        else {
+            this.showNextMonth();
+        }
+        
+        e.preventDefault();
+    },
+    
+    /**
+     * @private
+     */
+    onHomeKey: function(e) {
+        this.update(Ext.Date.getFirstDateOfMonth(this.activeDate));
+        
+        e.preventDefault();
+    },
+    
+    /**
+     * @private
+     */
+    onEndKey: function(e) {
+        this.update(Ext.Date.getLastDateOfMonth(this.activeDate));
+        
+        e.preventDefault();
+    },
+    
+    /**
+     * @private
+     */
+    onEnterKey: function(e) {
+        this.handleDateClick(e, this.activeCell.firstChild);
+    },
+    
+    /**
+     * @private
+     */
+    onSpaceKey: function(e) {
+        var me = this,
+            pickerField = me.pickerField,
+            startValue, value, pickerValue;
+        
+        me.setValue(new Date(me.activeCell.firstChild.dateValue));
+        
+        if (pickerField) {
+            startValue = me.startValue;
+            value = me.value;
+            pickerValue = pickerField.getValue();
+            
+            if (pickerValue && startValue && pickerValue.getTime() === value.getTime()) {
+                pickerField.setValue(startValue);
+            }
+            else {
+                pickerField.setValue(value);
+            }
+        }
+        
+        // Space key causes scrolling, too :(
+        e.preventDefault();
     },
 
     /**
@@ -1440,6 +1490,7 @@ Ext.define('Ext.picker.Date', {
         /**
          * Set the disabled state of various internal components
          * @param {Boolean} disabled
+         * @param {Boolean} doButton
          * @private
          */
         syncDisabled: function (disabled, doButton) {

@@ -89,14 +89,13 @@ Ext.define('Ext.form.field.File', {
         }
     },
 
-    //<locale>
     /**
      * @cfg {String} buttonText
      * The button text to display on the upload button. Note that if you supply a value for
      * {@link #buttonConfig}, the buttonConfig.text value will be used instead if available.
+     * @locale
      */
     buttonText: 'Browse...',
-    //</locale>
 
     /**
      * @cfg {Boolean} buttonOnly
@@ -256,7 +255,8 @@ Ext.define('Ext.form.field.File', {
 
         // Ensure the trigger element is sized correctly upon render
         trigger.el.setWidth(buttonEl.getWidth() + buttonEl.getMargin('lr'));
-        if (Ext.isIE) {
+        
+        if (Ext.isIE8) {
             me.button.getEl().repaint();
         }
     },

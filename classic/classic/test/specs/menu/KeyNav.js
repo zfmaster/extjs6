@@ -1,5 +1,6 @@
-describe('Ext.menu.KeyNav', function () {
-    var menu;
+topSuite("Ext.menu.KeyNav", [false, 'Ext.menu.Menu'], function() {
+    var itNotTouch = jasmine.supportsTouch ? xit : it,
+        menu;
     
     function makeMenu(cfg) {
         menu = new Ext.menu.Menu(Ext.apply({
@@ -114,7 +115,7 @@ describe('Ext.menu.KeyNav', function () {
             node = childMenu = null;
         });
 
-        it('should only hide child menus', function () {
+        itNotTouch('should only hide child menus', function () {
             // Activate the menu item and expand its menu.
             node = menu.down('[text="Menu Two"]').el.dom;
             jasmine.fireMouseEvent(node, 'mouseover');
@@ -125,11 +126,12 @@ describe('Ext.menu.KeyNav', function () {
             waitsFor(function() {
                 return childMenu.el;
             });
+            
+            runs(function() {
+                pressKey(childMenu.down('menuitem'), 'left');
+            });
 
             runs(function() {
-                node = childMenu.el.down('.x-menu-item-link', true);
-                jasmine.fireKeyEvent(node, 'keydown', 37);
-
                 expect(childMenu.hidden).toBe(true);
             });
         });
@@ -143,7 +145,7 @@ describe('Ext.menu.KeyNav', function () {
                 expect(menu.hidden).toBe(false);
             });
 
-            it('should not hide (tests hiding child menu first)', function () {
+            itNotTouch('should not hide (tests hiding child menu first)', function () {
                 // Activate the menu item and expand its menu.
                 node = menu.down('[text="Menu Two"]').el.dom;
                 jasmine.fireMouseEvent(node, 'mouseover');

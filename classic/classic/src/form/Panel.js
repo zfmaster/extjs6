@@ -147,73 +147,86 @@ Ext.define('Ext.form.Panel', {
     
     basicFormConfigs: [
         /**
-         * @cfg api
-         * @inheritdoc Ext.form.Basic#api
+         * @cfg {Object} api
+         * @inheritdoc Ext.form.Basic#cfg!api
          */
         'api', 
+
         /**
-         * @cfg baseParams
-         * @inheritdoc Ext.form.Basic#baseParams
+         * @cfg {Object} baseParams
+         * @inheritdoc Ext.form.Basic#cfg!baseParams
          */
         'baseParams', 
+
         /**
-         * @cfg errorReader
-         * @inheritdoc Ext.form.Basic#errorReader
+         * @cfg {Object/Ext.data.reader.Reader} errorReader
+         * @inheritdoc Ext.form.Basic#cfg!errorReader
          */
         'errorReader', 
+
         /**
-         * @cfg jsonSubmit
-         * @inheritdoc Ext.form.Basic#jsonSubmit
+         * @cfg {Boolean} jsonSubmit
+         * @inheritdoc Ext.form.Basic#cfg!jsonSubmit
          */
         'jsonSubmit',
+
         /**
-         * @cfg method
-         * @inheritdoc Ext.form.Basic#method
+         * @cfg {String} method
+         * @inheritdoc Ext.form.Basic#cfg!method
          */
         'method', 
+
         /**
-         * @cfg paramOrder
-         * @inheritdoc Ext.form.Basic#paramOrder
+         * @cfg {String/String[]} paramOrder
+         * @inheritdoc Ext.form.Basic#cfg!paramOrder
          */
         'paramOrder',
+
         /**
-         * @cfg paramsAsHash
-         * @inheritdoc Ext.form.Basic#paramsAsHash
+         * @cfg {Boolean} paramsAsHash
+         * @inheritdoc Ext.form.Basic#cfg!paramsAsHash
          */
         'paramsAsHash',
+
         /**
-         * @cfg reader
-         * @inheritdoc Ext.form.Basic#reader
+         * @cfg {Object/Ext.data.reader.Reader} reader
+         * @inheritdoc Ext.form.Basic#cfg!reader
          */
         'reader',
+
         /**
-         * @cfg standardSubmit
-         * @inheritdoc Ext.form.Basic#standardSubmit
+         * @cfg {Boolean} standardSubmit
+         * @inheritdoc Ext.form.Basic#cfg!standardSubmit
          */
         'standardSubmit',
+
         /**
-         * @cfg timeout
-         * @inheritdoc Ext.form.Basic#timeout
+         * @cfg {Number} timeout
+         * @inheritdoc Ext.form.Basic#cfg!timeout
          */
         'timeout',
+
         /**
-         * @cfg trackResetOnLoad
-         * @inheritdoc Ext.form.Basic#trackResetOnLoad
+         * @cfg {Boolean} trackResetOnLoad
+         * @inheritdoc Ext.form.Basic#cfg!trackResetOnLoad
          */
         'trackResetOnLoad',
+
         /**
-         * @cfg url
-         * @inheritdoc Ext.form.Basic#url
+         * @cfg {String} url
+         * @inheritdoc Ext.form.Basic#cfg!url
          */
         'url',
+
         /**
-         * @cfg waitMsgTarget
-         * @inheritdoc Ext.form.Basic#waitMsgTarget
+         * @cfg {String/HTMLElement/Ext.dom.Element} waitMsgTarget
+         * @inheritdoc Ext.form.Basic#cfg!waitMsgTarget
          */
         'waitMsgTarget',
+
         /**
-         * @cfg waitTitle
-         * @inheritdoc Ext.form.Basic#waitTitle
+         * @cfg {String} waitTitle
+         * @inheritdoc Ext.form.Basic#cfg!waitTitle
          */
         'waitTitle'
     ],
@@ -234,21 +247,25 @@ Ext.define('Ext.form.Panel', {
              * @inheritdoc Ext.form.Basic#beforeaction
              */
             'beforeaction',
+
             /**
              * @event actionfailed
              * @inheritdoc Ext.form.Basic#actionfailed
              */
             'actionfailed',
+
             /**
              * @event actioncomplete
              * @inheritdoc Ext.form.Basic#actioncomplete
              */
             'actioncomplete',
+
             /**
              * @event validitychange
              * @inheritdoc Ext.form.Basic#validitychange
              */
             'validitychange',
+
             /**
              * @event dirtychange
              * @inheritdoc Ext.form.Basic#dirtychange
@@ -411,13 +428,12 @@ Ext.define('Ext.form.Panel', {
      */
     startPolling: function(interval) {
         this.stopPolling();
-        var task = new Ext.util.TaskRunner(interval);
-        task.start({
-            interval: 0,
+
+        this.pollTask = Ext.util.TaskManager.start({
+            interval: interval,
             run: this.checkChange,
             scope: this
         });
-        this.pollTask = task;
     },
 
     /**
@@ -426,8 +442,8 @@ Ext.define('Ext.form.Panel', {
     stopPolling: function() {
         var task = this.pollTask;
         if (task) {
-            task.stopAll();
-            delete this.pollTask;
+            Ext.util.TaskManager.stop(task, true);
+            this.pollTask = null;
         }
     },
 

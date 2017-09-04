@@ -8,7 +8,7 @@ Ext.define('Ext.chart.series.sprite.Scatter', {
     alias: 'sprite.scatterSeries',
     extend: 'Ext.chart.series.sprite.Cartesian',
 
-    renderClipped: function (surface, ctx, clip, clipRect) {
+    renderClipped: function (surface, ctx, dataClipRect, surfaceClipRect) {
         if (this.cleanRedraw) {
             return;
         }
@@ -30,15 +30,15 @@ Ext.define('Ext.chart.series.sprite.Scatter', {
             x, y, i;
 
         if (attr.flipXY) {
-            left = clipRect[1] - xx * xScalingDirection;
-            right = clipRect[1] + clipRect[3] + xx * xScalingDirection;
-            top = clipRect[0] - yy;
-            bottom = clipRect[0] + clipRect[2] + yy;
+            left = surfaceClipRect[1] - xx * xScalingDirection;
+            right = surfaceClipRect[1] + surfaceClipRect[3] + xx * xScalingDirection;
+            top = surfaceClipRect[0] - yy;
+            bottom = surfaceClipRect[0] + surfaceClipRect[2] + yy;
         } else {
-            left = clipRect[0] - xx * xScalingDirection;
-            right = clipRect[0] + clipRect[2] + xx * xScalingDirection;
-            top = clipRect[1] - yy;
-            bottom = clipRect[1] + clipRect[3] + yy;
+            left = surfaceClipRect[0] - xx * xScalingDirection;
+            right = surfaceClipRect[0] + surfaceClipRect[2] + xx * xScalingDirection;
+            top = surfaceClipRect[1] - yy;
+            bottom = surfaceClipRect[1] + surfaceClipRect[3] + yy;
         }
 
         for (i = 0; i < dataX.length; i++) {
@@ -62,7 +62,7 @@ Ext.define('Ext.chart.series.sprite.Scatter', {
                 }
                 me.putMarker('items', markerCfg, i, !attr.renderer);
                 if (isDrawLabels && labels[i]) {
-                    me.drawLabel(labels[i], x, y, i, clipRect);
+                    me.drawLabel(labels[i], x, y, i, surfaceClipRect);
                 }
             }
         }

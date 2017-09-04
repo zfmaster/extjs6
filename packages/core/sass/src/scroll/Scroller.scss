@@ -1,5 +1,6 @@
 .#{$prefix}scroller {
     -webkit-overflow-scrolling: touch; // enable momentum scrolling on iOS
+    overflow-anchor: none;             // Chrome 56 enables this by default
 }
 
 .#{$prefix}scroller-spacer {

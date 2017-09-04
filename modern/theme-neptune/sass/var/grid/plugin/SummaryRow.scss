@@ -71,14 +71,9 @@ $summaryrow-border-color: dynamic(null);
 ) {
     $ui-suffix: ui-suffix($ui);
 
+    $arguments: intersect-arguments(summaryrow-ui, listitem-base);
+
     .#{$prefix}summaryrow#{$ui-suffix} {
-        @include listitem-base(
-            $xtype: $xtype,
-            $color: $color,
-            $background-color: $background-color,
-            $border-width: $border-width,
-            $border-style: $border-style,
-            $border-color: $border-color
-        );
+        @include listitem-base($arguments...);
     }
 }

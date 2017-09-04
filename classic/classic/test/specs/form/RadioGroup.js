@@ -1,4 +1,4 @@
-describe("Ext.form.RadioGroup", function() {
+topSuite("Ext.form.RadioGroup", ['Ext.app.ViewModel'], function() {
     var group;
 
     function makeGroup(items, cfg) {

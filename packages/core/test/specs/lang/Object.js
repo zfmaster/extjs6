@@ -1,4 +1,4 @@
-describe("Ext.Object", function(){
+topSuite("Ext.Object", function(){
     
     describe("size", function(){
        it("should return 0 when there are no properties", function(){

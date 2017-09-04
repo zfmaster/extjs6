@@ -1,4 +1,4 @@
-describe("Ext.data.request.Ajax", function () {
+topSuite("Ext.data.request.Ajax", function () {
     describe("parseStatus", function () {
         var parseStatus = Ext.data.request.Ajax.parseStatus;
 

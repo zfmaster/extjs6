@@ -1,6 +1,9 @@
 /* global Ext, expect, jasmine */
 
-describe('Ext.grid.Panel', function(){
+topSuite("Ext.grid.Panel",
+    ['Ext.data.ArrayStore', 'Ext.ux.PreviewPlugin', 'Ext.grid.feature.*', 'Ext.form.field.Text',
+     'Ext.container.Viewport'],
+function(){
     var itShowsScrollbars = Ext.getScrollbarSize().width ? it : xit,
         synchronousLoad = true,
         proxyStoreLoad = Ext.data.ProxyStore.prototype.load,
@@ -465,7 +468,7 @@ describe('Ext.grid.Panel', function(){
                 }
             });
 
-            var table = grid.view.el.down('table').dom,
+            var table = grid.view.el.down('table', true),
                 tbody = table.tBodies[0],
                 firstRow = tbody.children[0];
 
@@ -668,34 +671,34 @@ describe('Ext.grid.Panel', function(){
                 })
             });
             col = grid.getVisibleColumnManager().getColumns()[0];
-            col.triggerEl.show();
-            jasmine.fireMouseEvent(col.triggerEl.dom, 'click');
-            menu = col.activeMenu;
-            expect(menu.isVisible()).toBe(true);
 
-            columnsItem = menu.child('[text=Columns]');
+            Ext.testHelper.showHeaderMenu(col);
 
-            // The single menu item should be for the "Forename" column
-            expect(columnsItem.menu.items.items.length).toBe(1);
-            expect(columnsItem.menu.items.items[0].text).toBe('Forename');
+            runs(function() {
+                menu = col.activeMenu;
+                columnsItem = menu.child('[text=Columns]');
 
-            menu.hide();
+                // The single menu item should be for the "Forename" column
+                expect(columnsItem.menu.items.items.length).toBe(1);
+                expect(columnsItem.menu.items.items[0].text).toBe('Forename');
 
-            // Reconfigure and check that the columns menu reflects the new column set
-            grid.reconfigure(null, [{dataIndex: 'surname', text: 'Surname'}]);
+                menu.hide();
 
-            col = grid.getVisibleColumnManager().getColumns()[0];
-            col.triggerEl.show();
-            jasmine.fireMouseEvent(col.triggerEl.dom, 'click');
-            menu = col.activeMenu;
-            expect(menu.isVisible()).toBe(true);
+                // Reconfigure and check that the columns menu reflects the new column set
+                grid.reconfigure(null, [{dataIndex: 'surname', text: 'Surname'}]);
 
-            columnsItem = menu.child('[text=Columns]');
+                col = grid.getVisibleColumnManager().getColumns()[0];
+                Ext.testHelper.showHeaderMenu(col);
+            });
 
-            // The single menu item should be for the "Surname" column
-            expect(columnsItem.menu.items.items.length).toBe(1);
-            expect(columnsItem.menu.items.items[0].text).toBe('Surname');
+            runs(function() {
+                menu = col.activeMenu;
+                columnsItem = menu.child('[text=Columns]');
 
+                // The single menu item should be for the "Surname" column
+                expect(columnsItem.menu.items.items.length).toBe(1);
+                expect(columnsItem.menu.items.items[0].text).toBe('Surname');
+            });
         });
 
         it("Should reconfigure the grid with no error", function() {
@@ -1302,9 +1305,9 @@ describe('Ext.grid.Panel', function(){
             });
         
             // create the Data Store
-            var store = new Ext.data.Store({
+            var store = new Ext.data.BufferedStore({
                 model: 'ForumThread',
-                buffered: true,
+                asynchronousLoad: false,
                 pageSize: 350,
                 proxy: {
                     type: 'ajax',
@@ -1406,9 +1409,9 @@ describe('Ext.grid.Panel', function(){
                 fields: ['id', 'title']
             });
 
-            var store = new Ext.data.Store({
+            var store = new Ext.data.BufferedStore({
                 model: 'ForumThread',
-                buffered: true,
+                asynchronousLoad: false,
                 pageSize: 50,
                 proxy: {
                     type: 'memory',
@@ -1460,9 +1463,9 @@ describe('Ext.grid.Panel', function(){
             var wasCalled = false;
 
             function createGrid() {
-                store = new Ext.data.Store({
+                store = new Ext.data.BufferedStore({
                     model: 'Foo',
-                    buffered: true,
+                    asynchronousLoad: false,
                     pageSize: 100,
                     proxy: {
                         type: 'ajax',
@@ -2958,19 +2961,19 @@ describe('Ext.grid.Panel', function(){
             navModel.setPosition(1, 1);
 
             // Navigation conditions must be met.
-            cellBeforeRefresh = view.getCellByPosition({row: 1, column:1});
+            cellBeforeRefresh = view.getCellByPosition({row: 1, column:1}, true);
             expect(view.el.query('.' + view.focusedItemCls).length).toBe(1);
-            expect(cellBeforeRefresh.hasCls(view.focusedItemCls)).toBe(true);
+            expect(cellBeforeRefresh).toHaveCls(view.focusedItemCls);
 
             store.fireEvent('refresh', store);
 
             // The DOM has changed, but focus conditions must be restored
-            cellAfterRefresh = view.getCellByPosition({row: 1, column:1});
-            expect(cellAfterRefresh.dom !== cellBeforeRefresh.dom).toBe(true);
+            cellAfterRefresh = view.getCellByPosition({row: 1, column:1}, true);
+            expect(cellAfterRefresh !== cellBeforeRefresh).toBe(true);
 
             // Navigation conditions must be restored after the refresh.
             expect(view.el.query('.' + view.focusedItemCls).length).toBe(1);
-            expect(cellAfterRefresh.hasCls(view.focusedItemCls)).toBe(true);
+            expect(cellAfterRefresh).toHaveCls(view.focusedItemCls);
         });
 
         it("should restore focus when the view is refreshed with buffered rendering", function() {
@@ -2981,19 +2984,19 @@ describe('Ext.grid.Panel', function(){
             navModel.setPosition(1, 1);
 
             // Navigation conditions must be met.
-            cellBeforeRefresh = view.getCellByPosition({row: 1, column:1});
+            cellBeforeRefresh = view.getCellByPosition({row: 1, column:1}, true);
             expect(view.el.query('.' + view.focusedItemCls).length).toBe(1);
-            expect(cellBeforeRefresh.hasCls(view.focusedItemCls)).toBe(true);
+            expect(cellBeforeRefresh).toHaveCls(view.focusedItemCls);
 
             store.fireEvent('refresh', store);
 
             // The DOM has changed, but focus conditions must be restored
-            cellAfterRefresh = view.getCellByPosition({row: 1, column:1});
-            expect(cellAfterRefresh.dom !== cellBeforeRefresh.dom).toBe(true);
+            cellAfterRefresh = view.getCellByPosition({row: 1, column:1}, true);
+            expect(cellAfterRefresh !== cellBeforeRefresh).toBe(true);
 
             // Navigation conditions must be restored after the refresh.
             expect(view.el.query('.' + view.focusedItemCls).length).toBe(1);
-            expect(cellAfterRefresh.hasCls(view.focusedItemCls)).toBe(true);
+            expect(cellAfterRefresh).toHaveCls(view.focusedItemCls);
         });
 
     });
@@ -3082,6 +3085,72 @@ describe('Ext.grid.Panel', function(){
         });
     });
 
+    describe('buffered store, heighted by a viewport', function() {
+        var ForumThread, viewport;
+
+        beforeEach(function() {
+            MockAjaxManager.addMethods();
+            ForumThread = Ext.define(null, {
+                extend: 'Ext.data.Model',
+                fields: ['id', 'title']
+            });
+        });
+
+        afterEach(function() {
+            MockAjaxManager.removeMethods();
+            Ext.destroy(viewport);
+        });
+
+        it('should successfully render the data', function() {
+            function makeRows(n, total) {
+                var data = [],
+                    i = 1;
+
+                for (i = 1; i <= n; ++i) {
+                    data.push({
+                        id: i,
+                        title: 'Title' + i
+                    });
+                }
+
+                return {
+                    data: data,
+                    totalCount: total
+                };
+            }
+
+            // create the Data Store
+            var store = new Ext.data.BufferedStore({
+                model: ForumThread,
+                asynchronousLoad: false,
+                pageSize: 350,
+                proxy: {
+                    type: 'ajax',
+                    url: 'fakeUrl',
+                    reader: {
+                        rootProperty: 'data',
+                        totalProperty: 'totalCount'
+                    }
+                },
+                remoteFilter: true
+            });
+
+            expect(function() {
+                viewport = new Ext.container.Viewport({
+                    layout: 'fit',
+                    items: grid = new Ext.grid.Panel({
+                        store: store,
+                        columns: [{
+                            text: "Topic",
+                            dataIndex: 'title',
+                            flex: 1
+                        }]
+                    })
+                });
+            }).not.toThrow();
+        });
+    });
+
     describe('buffered store, dataset shrinks on reload', function() {
         var ForumThread;
 
@@ -3101,14 +3170,14 @@ describe('Ext.grid.Panel', function(){
             function makeRows(n, total) {
                 var data = [],
                     i = 1;
-                    
+
                 for (i = 1; i <= n; ++i) {
                     data.push({
                         id: i,
                         title: 'Title' + i
                     });
-                } 
-                
+                }
+
                 return {
                     data: data,
                     totalCount: total
@@ -3116,9 +3185,9 @@ describe('Ext.grid.Panel', function(){
             }
 
             // create the Data Store
-            var store = new Ext.data.Store({
+            var store = new Ext.data.BufferedStore({
                 model: ForumThread,
-                buffered: true,
+                asynchronousLoad: false,
                 pageSize: 350,
                 proxy: {
                     type: 'ajax',
@@ -3130,7 +3199,7 @@ describe('Ext.grid.Panel', function(){
                 },
                 remoteFilter: true
             });
-        
+
             grid = new Ext.grid.Panel({
                 width: 700,
                 height: 500,
@@ -3142,8 +3211,9 @@ describe('Ext.grid.Panel', function(){
                 }],
                 renderTo: Ext.getBody()
             });
-            var view = grid.getView();
-            
+            var view = grid.getView(),
+                scroller = view.getScrollable();
+
             store.load();
 
             Ext.Ajax.mockComplete({
@@ -3152,13 +3222,13 @@ describe('Ext.grid.Panel', function(){
             });
 
             // Scroll until we've moved out of the initial rendered block
-            waitsFor(function() {
+            jasmine.waitsForScroll(scroller, function() {
                 if (view.all.startIndex > 0) {
                     return true;
                 }
-                view.scrollTo(0, view.getScrollY() + 100);
-            });
-            
+                scroller.scrollBy(0, 100);
+            }, 'Initially rendered block to scroll out of view');
+
             runs(function() {
 
                 store.reload();
@@ -3346,6 +3416,7 @@ describe('Ext.grid.Panel', function(){
         beforeEach(function() {
             createGrid({
                 buffered: true,
+                asynchronousLoad: false,
                 pageSize: 4
             });
         });
@@ -3384,14 +3455,14 @@ describe('Ext.grid.Panel', function(){
         });
 
         it("should add and remove the before selected class to the table element when the first row is selected and unselected", function() {
-            var tableEl = view.el.down('table.x-grid-table');
+//             var tableEl = view.el.down('table.x-grid-table');
             triggerCellMouseEvent('click', 0, 0);
             expect(view.getNode(0)).toHaveCls(selectedItemCls);
             triggerCellMouseEvent('click', 2, 0);
         });
 
         it("should add and remove the before focused class to the table element when the first row is focused and unfocused", function() {
-            var tableEl = view.el.down('table.x-grid-table');
+//             var tableEl = view.el.down('table.x-grid-table');
 
             // Move upwards from row 1 to row 0
             triggerCellKeyEvent(1, 0, 'keydown', Ext.event.Event.UP);
@@ -3403,7 +3474,7 @@ describe('Ext.grid.Panel', function(){
         });
 
         it("should add and remove the before over class to the table element when the first row is mouseovered and mouseouted", function() {
-            var tableEl = view.el.down('table.x-grid-table');
+//             var tableEl = view.el.down('table.x-grid-table');
             triggerCellMouseEvent('mouseover', 0, 0);
             expect(view.getNode(0)).toHaveCls(overItemCls);
 
@@ -3425,7 +3496,7 @@ describe('Ext.grid.Panel', function(){
         });
 
         it("should update the selected classes when rows before the selections are removed", function() {
-            var tableEl = view.el.down('table.x-grid-table');
+//             var tableEl = view.el.down('table.x-grid-table');
 
             selModel.select([store.getAt(1), store.getAt(3)]);
             store.remove([0,2]);
@@ -3571,8 +3642,8 @@ describe('Ext.grid.Panel', function(){
 
             var firstRow = grid.view.all.item(0),
                 expanderTarget = Ext.fly(firstRow).down('.' + Ext.baseCSSPrefix + 'grid-row-expander', true),
-                expanderRow = Ext.fly(firstRow).down(Ext.grid.plugin.RowExpander.prototype.rowBodyTrSelector),
-                expanderData = expanderRow.down('.x-grid-rowbody', true);
+                expanderRow = Ext.fly(firstRow).down(Ext.grid.plugin.RowExpander.prototype.rowBodyTrSelector, true),
+                expanderData = Ext.fly(expanderRow).down('.x-grid-rowbody', true);
 
             // Rows begin collapsed
             expect(firstRow).toHaveCls(Ext.grid.plugin.RowExpander.prototype.rowCollapsedCls);
@@ -3695,6 +3766,7 @@ describe('Ext.grid.Panel', function(){
         it('should hide the locked grid when there are no locked columns, and not refresh it', function() {
             createGrid({
                 buffered: true,
+                asynchronousLoad: false,
                 pageSize: 4
             }, {
                 enableLocking: true

@@ -1,3 +1,6 @@
+/**
+ * @class Ext.scroll.Scroller
+ */
 Ext.define(null, {
     override: 'Ext.scroll.Scroller',
     
@@ -9,11 +12,12 @@ Ext.define(null, {
         // reliably when it is done within the same function context.
         doScrollTo: function(x, y, animate) {
             var me = this,
-                element = me.getElement(),
-                maxPosition, dom, to, xInf, yInf;
+                element = me.getScrollElement(),
+                maxPosition, dom, to, xInf, yInf,
+                ret, deferred, callback;
 
             if (element && !element.destroyed) {
-                dom = this.getElement().dom;
+                dom = element.dom;
 
                 xInf = (x === Infinity);
                 yInf = (y === Infinity);
@@ -28,7 +32,9 @@ Ext.define(null, {
                     }
                 }
 
-                x = me.convertX(x);
+                if (x !== null) {
+                    x = me.convertX(x);
+                }
 
                 if (animate) {
                     to = {};
@@ -41,12 +47,27 @@ Ext.define(null, {
                         to.scrollLeft = x;
                     }
 
-                    element.animate(Ext.mergeIf({
+                    animate = Ext.mergeIf({
                         to: {
                             scrollTop: y,
                             scrollLeft: x
                         }
-                    }, animate));
+                    }, animate);
+                    deferred = new Ext.Deferred();
+                    callback = animate.callback;
+                    animate.callback = function() {
+                        if (callback) {
+                            callback.call(animate.scope || Ext.global, arguments);
+                        }
+                        // The callback will be called if the element is destroyed
+                        if (me.destroyed) {
+                            deferred.reject();
+                        } else {
+                            deferred.resolve();
+                        }
+                    };
+                    element.animate(animate);
+                    ret = deferred.promise;
                 }
                 else {
                     // When we need to assign both scrollTop and scrollLeft,
@@ -58,7 +79,7 @@ Ext.define(null, {
                     // has not actually finished yet.
                     // To work around that, we ignore the first event and then
                     // force another one by assigning scrollLeft the second time.
-                    if (x != null && y != null) {
+                    if ((x != null && x !== 0) && y != null) {
                         me.deferDomScroll = true;
                     }
                     
@@ -77,12 +98,19 @@ Ext.define(null, {
                         // will fire the event.
                         +dom.scrollLeft;
                         dom.scrollLeft = x;
+                        +dom.scrollTop;
+                        dom.scrollTop = y;
                     }
+                    ret = Ext.Deferred.getCachedResolved();
                 }
 
                 // Our position object will need refreshing before returning.
                 me.positionDirty = true;
+            } else {
+                ret = Ext.Deferred.getCachedRejected();
             }
+
+            return ret;
         },
         
         onDomScroll: function() {

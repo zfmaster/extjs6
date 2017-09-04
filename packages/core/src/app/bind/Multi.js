@@ -206,6 +206,16 @@ Ext.define('Ext.app.bind.Multi', {
         return false;
     },
 
+    isAvailable: function () {
+        for (var bindings = this.bindings, n = bindings.length; n-- > 0; ) {
+            if (bindings[n].isAvailable()) {
+                return true;
+            }
+        }
+
+        return false;
+    },
+
     isBindingStatic: function(binding) {
         return binding.isTemplateBinding && binding.isStatic;
     },

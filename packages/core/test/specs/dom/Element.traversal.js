@@ -1,4 +1,5 @@
-describe("Ext.Element.traversal", function() {
+// false in dependencies to avoid loading "Ext.dom.Element.scroll"
+topSuite("Ext.dom.Element.traversal", [false, 'Ext.dom.Element'], function() {
     var el, input, child1, child2, child3, child4, child4_1, child4_1_1;
     
     beforeEach(function() {
@@ -348,4 +349,4 @@ describe("Ext.Element.traversal", function() {
             expect(Ext.fly(child4_1_1).contains(child4_1_1)).toBe(true);
         });
     });
-}, "/src/dom/Element.traversal.js");
+});

@@ -1,10 +1,10 @@
-describe("Ext.form.field.Base", function() {
+topSuite("Ext.form.field.Base", function() {
     var c, makeField;
     
     function createField(cfg) {
         cfg = Ext.apply({
             ariaRole: 'foo',
-            renderTo: Ext.getBody(),
+            renderTo: Ext.getBody()
         }, cfg);
         
         return c = new Ext.form.field.Base(cfg);

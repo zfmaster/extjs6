@@ -1,4 +1,6 @@
-describe("Ext.app.Controller", function() {
+/* global Ext, spyOn, expect */
+
+topSuite("Ext.app.Controller", ['Ext.app.Application', 'Ext.Panel'], function() {
     var panelEventFired = false,
         customEventFired = false,
         Controller = Ext.app.Controller,
@@ -618,13 +620,15 @@ describe("Ext.app.Controller", function() {
                 controllers: ['Parent']
             });
             
-            new TestController.Application();
+            var testApp = new TestController.Application();
             
             expect(called1).toBeTruthy();
             // AND
             expect(called2).toBeTruthy();
             // AND
             expect(called3).toBeTruthy();
+
+            testApp.destroy();
         });
     });
 

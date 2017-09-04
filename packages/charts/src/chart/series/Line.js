@@ -110,6 +110,8 @@ Ext.define('Ext.chart.series.Line', {
     type: 'line',
     seriesType: 'lineSeries',
 
+    isLine: true,
+
     requires: [
         'Ext.chart.series.sprite.Line'
     ],
@@ -119,7 +121,17 @@ Ext.define('Ext.chart.series.Line', {
          * @cfg {Number} selectionTolerance
          * The offset distance from the cursor position to the line series to trigger events (then used for highlighting series, etc).
          */
-        selectionTolerance: 20,
+        selectionTolerance: 5,
+
+        /**
+         * @cfg {Object} curve
+         * The type of curve that connects the data points.
+         * Please see {@link Ext.chart.series.sprite.Line#curve line sprite documentation}
+         * for the full description.
+         */
+        curve: {
+            type: 'linear'
+        },
 
         /**
          * @cfg {Object} style
@@ -131,15 +143,17 @@ Ext.define('Ext.chart.series.Line', {
          * @cfg {Boolean} smooth
          * `true` if the series' line should be smoothed.
          * Line smoothing only works with gapless data.
+         * @deprecated 6.5.0 Use the {@link #curve} config instead.
          */
-        smooth: false,
+        smooth: null,
 
         /**
          * @cfg {Boolean} step
          * If set to `true`, the line uses steps instead of straight lines to connect the dots.
          * It is ignored if `smooth` is true.
+         * @deprecated 6.5.0 Use the {@link #curve} config instead.
          */
-        step: false,
+        step: null,
 
         /**
          * @cfg {"gap"/"connect"/"origin"} [nullStyle="gap"]
@@ -174,21 +188,7 @@ Ext.define('Ext.chart.series.Line', {
         aggregator: { strategy: 'double' }
     },
 
-    /**
-     * @private
-     * Default numeric smoothing value to be used when `{@link #smooth} = true`.
-     */
-    defaultSmoothness: 3,
-
-    /**
-     * @private
-     * Size of the buffer area on either side of the viewport to provide seamless zoom/pan
-     * transforms. Expressed as a multiple of the viewport length, e.g. 1 will make the buffer on
-     * each side equal to the length of the visible axis viewport.
-     */
-    overflowBuffer: 1,
-
-    themeMarkerCount: function() {
+    themeMarkerCount: function () {
         return 1;
     },
 
@@ -203,13 +203,13 @@ Ext.define('Ext.chart.series.Line', {
             styleWithTheme,
             fillArea = false;
 
-        if (typeof me.config.fill != 'undefined') {
+        if (me.config.fill !== undefined) {
             // If config.fill is present but there is no fillStyle, then use the
             // strokeStyle to fill (and paint the area the same color as the line).
             if (me.config.fill) {
                 fillArea = true;
-                if (typeof style.fillStyle == 'undefined') {
-                    if (typeof style.strokeStyle == 'undefined') {
+                if (style.fillStyle === undefined) {
+                    if (style.strokeStyle === undefined) {
                         styleWithTheme = me.getStyleWithTheme();
                         style.fillStyle = styleWithTheme.fillStyle;
                         style.strokeStyle = styleWithTheme.strokeStyle;
@@ -236,38 +236,44 @@ Ext.define('Ext.chart.series.Line', {
 
         return Ext.apply(style, {
             fillArea: fillArea,
-            step: me.config.step,
-            smooth: me.config.smooth,
             selectionTolerance: me.config.selectionTolerance
         });
     },
 
-    updateStep: function (step) {
-        var sprite = this.getSprites()[0];
-        if (sprite && sprite.attr.step !== step) {
-            sprite.setAttributes({step: step});
-        }
-    },
-
     updateFill: function (fill) {
-        var sprite = this.getSprites()[0];
-        if (sprite && sprite.attr.fillArea !== fill) {
-            sprite.setAttributes({fillArea: fill});
-        }
+        this.withSprite(function (sprite) {
+            return sprite.setAttributes({fillArea: fill});
+        });
     },
 
-    updateSmooth: function (smooth) {
-        var sprite = this.getSprites()[0];
-        if (sprite && sprite.attr.smooth !== smooth) {
-            sprite.setAttributes({smooth: smooth});
-        }
+    updateCurve: function (curve) {
+        this.withSprite(function (sprite) {
+            return sprite.setAttributes({curve: curve});
+        });
+    },
+
+    getCurve: function () {
+        return this.withSprite(function (sprite) {
+            return sprite.attr.curve;
+        });
     },
 
     updateNullStyle: function (nullStyle) {
-        var sprite = this.getSprites()[0];
-        if (sprite && sprite.attr.nullStyle !== nullStyle) {
-            sprite.setAttributes({nullStyle: nullStyle});
-        }
+        this.withSprite(function (sprite) {
+            return sprite.setAttributes({nullStyle: nullStyle});
+        });
+    },
+
+    updateSmooth: function (smooth) {
+        this.setCurve({
+            type: smooth ? 'natural' : 'linear'
+        });
+    },
+
+    updateStep: function (step) {
+        this.setCurve({
+            type: step ? 'step-after' : 'linear'
+        });
     }
 
 });

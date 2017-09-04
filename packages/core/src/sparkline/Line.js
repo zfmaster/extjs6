@@ -118,7 +118,7 @@ Ext.define('Ext.sparkline.Line', {
         if (valueSpots && !valueSpots.get) {
             valueSpots = new Ext.sparkline.RangeMap(valueSpots);
         }
-        this.applyConfigChange();
+        this.updateConfigChange();
         return valueSpots;
     },
 
@@ -179,29 +179,28 @@ Ext.define('Ext.sparkline.Line', {
             xvalues = me.xvalues,
             yvalues = me.yvalues,
             yminmax = me.yminmax,
-            i, val, isStr, isArray, sp;
+            i, val;
 
         for (i = 0; i < valcount; i++) {
             val = values[i];
-            isStr = typeof(values[i]) === 'string';
-            isArray = typeof(values[i]) === 'object' && values[i] instanceof Array;
-            sp = isStr && values[i].split(':');
+            if (typeof val === 'string') {
+                val = val.split(':');
+            }
 
-            if (isStr && sp.length === 2) { // x:y
-                xvalues.push(Number(sp[0]));
-                yvalues.push(Number(sp[1]));
-                yminmax.push(Number(sp[1]));
-            } else if (isArray) {
-                xvalues.push(val[0]);
-                yvalues.push(val[1]);
-                yminmax.push(val[1]);
-            } else {
+            // Array. Use first two values as X and Y
+            if (val && val.length === 2) {
+                xvalues.push(Number(val[0]));
+                yvalues.push(val = Number(val[1]));
+                yminmax.push(val);
+            }
+            // Single value. Use i as X, the value as Y
+            else {
                 xvalues.push(i);
-                if (values[i] === null || values[i] === 'null') {
+                if (val == null || val === 'null') {
                     yvalues.push(null);
                 } else {
-                    yvalues.push(Number(val));
-                    yminmax.push(Number(val));
+                    yvalues.push(val = Number(val));
+                    yminmax.push(val);
                 }
             }
         }
@@ -447,7 +446,7 @@ Ext.define('Ext.sparkline.Line', {
         me.canvasTop = canvasTop;
 
         // If mouse is over, apply the highlight
-        if (me.currentPageXY && me.el.getRegion().contains(me.currentPageXY)) {
+        if (me.currentPageXY && me.canvasRegion.contains(me.currentPageXY)) {
             me.updateDisplay();
         }
         canvas.render();

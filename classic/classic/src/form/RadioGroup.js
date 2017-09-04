@@ -4,7 +4,7 @@
  * methods for {@link #getValue getting}, {@link #setValue setting}, and {@link #validate validating} the
  * group of radio buttons as a whole.
  *
- * # Validation
+ * ## Validation
  *
  * Individual radio buttons themselves have no default validation behavior, but
  * sometimes you want to require a user to select one of a group of radios. RadioGroup
@@ -12,7 +12,7 @@
  * one of the radio buttons, the entire group will be highlighted as invalid and the
  * {@link #blankText error message} will be displayed according to the {@link #msgTarget} config.
  *
- * # Layout
+ * ## Layout
  *
  * The default layout for RadioGroup makes it easy to arrange the radio buttons into
  * columns; see the {@link #columns} and {@link #vertical} config documentation for details. You may also
@@ -21,13 +21,12 @@
  * of hbox and vbox containers. In that case the Radio components at any depth will 
  * still be managed by the RadioGroup's validation.
  *
- * # Example usage
+ * ## Example usage
  *
  *     @example
  *     Ext.create('Ext.form.Panel', {
  *         title: 'RadioGroup Example',
  *         width: 300,
- *         height: 125,
  *         bodyPadding: 10,
  *         renderTo: Ext.getBody(),
  *         items:[{
@@ -39,6 +38,45 @@
  *             items: [
  *                 { boxLabel: 'Item 1', name: 'rb', inputValue: '1' },
  *                 { boxLabel: 'Item 2', name: 'rb', inputValue: '2', checked: true},
+ *                 { boxLabel: 'Item 3', name: 'rb', inputValue: '3' },
+ *                 { boxLabel: 'Item 4', name: 'rb', inputValue: '4' },
+ *                 { boxLabel: 'Item 5', name: 'rb', inputValue: '5' },
+ *                 { boxLabel: 'Item 6', name: 'rb', inputValue: '6' }
+ *             ]
+ *         }]
+ *     });
+ *
+ * ## Example with value binding to the RadioGroup.  In the below example, "Item 2" will
+ * initially be checked using `myValue: '2'` from the ViewModel.
+ *
+ *     @example
+ *     Ext.define('MyApp.main.view.Main', {
+ *         extend: 'Ext.app.ViewModel',
+ *         alias: 'viewmodel.main',
+ *         data: {
+ *             myValue: '2'
+ *         }
+ *     });
+ *
+ *     Ext.create('Ext.form.Panel', {
+ *         title: 'RadioGroup Example',
+ *         viewModel: {
+ *             type: 'main'
+ *         },
+ *         width: 300,
+ *         bodyPadding: 10,
+ *         renderTo: Ext.getBody(),
+ *         items:[{
+ *             xtype: 'radiogroup',
+ *             fieldLabel: 'Two Columns',
+ *             // Arrange radio buttons into two columns, distributed vertically
+ *             columns: 2,
+ *             vertical: true,
+ *             simpleValue: true,  // set simpleValue to true to enable value binding
+ *             bind: '{myValue}',
+ *             items: [
+ *                 { boxLabel: 'Item 1', name: 'rb', inputValue: '1' },
+ *                 { boxLabel: 'Item 2', name: 'rb', inputValue: '2' },
  *                 { boxLabel: 'Item 3', name: 'rb', inputValue: '3' },
  *                 { boxLabel: 'Item 4', name: 'rb', inputValue: '4' },
  *                 { boxLabel: 'Item 5', name: 'rb', inputValue: '5' },
@@ -78,13 +116,12 @@ Ext.define('Ext.form.RadioGroup', {
      */
     allowBlank : true,
 
-    //<locale>
     /**
      * @cfg {String} blankText
      * Error text to display if the {@link #allowBlank} validation fails
+     * @locale
      */
     blankText : 'You must select one item in this group',
-    //</locale>
 
     defaultType: 'radiofield',
 
@@ -108,6 +145,46 @@ Ext.define('Ext.form.RadioGroup', {
      *
      * This field allows the `radiogroup` to participate in binding an entire group of
      * radio buttons to a single value.
+     *
+     * In the below example, "Item 2" will initially be checked using `myValue: '2'` from
+     * the ViewModel.
+     *
+     *     @example
+     *     Ext.define('MyApp.main.view.Main', {
+     *         extend: 'Ext.app.ViewModel',
+     *         alias: 'viewmodel.main',
+     *         data: {
+     *             myValue: '2'
+     *         }
+     *     });
+     *
+     *     Ext.create('Ext.form.Panel', {
+     *         title: 'RadioGroup Example',
+     *         viewModel: {
+     *             type: 'main'
+     *         },
+     *         width: 300,
+     *         bodyPadding: 10,
+     *         renderTo: Ext.getBody(),
+     *         items:[{
+     *             xtype: 'radiogroup',
+     *             fieldLabel: 'Two Columns',
+     *             // Arrange radio buttons into two columns, distributed vertically
+     *             columns: 2,
+     *             vertical: true,
+     *             simpleValue: true,  // set simpleValue to true to enable value binding
+     *             bind: '{myValue}',
+     *             items: [
+     *                 { boxLabel: 'Item 1', name: 'rb', inputValue: '1' },
+     *                 { boxLabel: 'Item 2', name: 'rb', inputValue: '2' },
+     *                 { boxLabel: 'Item 3', name: 'rb', inputValue: '3' },
+     *                 { boxLabel: 'Item 4', name: 'rb', inputValue: '4' },
+     *                 { boxLabel: 'Item 5', name: 'rb', inputValue: '5' },
+     *                 { boxLabel: 'Item 6', name: 'rb', inputValue: '6' }
+     *             ]
+     *         }]
+     *     });
+     *
      * @since 6.2.0
      */
     simpleValue: false,

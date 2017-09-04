@@ -1,9 +1,8 @@
-describe("Ext.container.Monitor", function(){
-    
+topSuite("Ext.container.Monitor", ['Ext.Container', 'Ext.Button'], function() {
     var ct, mon, makeMon, deepCt, addSpy, removeSpy, invalidateSpy,
         c1, c2, c3;
     
-    beforeEach(function(){
+    beforeEach(function() {
         c1 = new Ext.Component({
             foo: true
         });
@@ -27,7 +26,7 @@ describe("Ext.container.Monitor", function(){
             mon.getItems();
         };
         
-        deepCt = function(depth, c){
+        deepCt = function(depth, c) {
             var root = {
                 xtype: 'container'
             }, out = root;
@@ -50,13 +49,13 @@ describe("Ext.container.Monitor", function(){
         invalidateSpy = jasmine.createSpy('invalidate');
     });
     
-    afterEach(function(){
+    afterEach(function() {
         Ext.destroy(ct, c1, c2, c3);
         deepCt = makeMon = mon = addSpy = removeSpy = null;
     });
     
-    describe("initialization", function(){
-        it("should match direct children of the target", function(){            
+    describe("initialization", function() {
+        it("should match direct children of the target", function() {            
             ct.add(c1, c2, c3);
             
             makeMon();
@@ -66,7 +65,7 @@ describe("Ext.container.Monitor", function(){
             expect(addSpy.calls[1].args[0]).toBe(c3);
         });  
         
-        it("should match docked items", function(){
+        it("should match docked items", function() {
             ct.destroy();
             ct = new Ext.panel.Panel({
                 dockedItems: [{
@@ -81,7 +80,7 @@ describe("Ext.container.Monitor", function(){
             expect(addSpy.calls[0].args[0]).toBe(c1);  
         });
         
-        it("should match Queryable items that aren't containers", function(){
+        it("should match Queryable items that aren't containers", function() {
             ct.add(new Ext.button.Button({
                 menu: {
                     items: c1
@@ -92,7 +91,7 @@ describe("Ext.container.Monitor", function(){
             expect(addSpy.calls[0].args[0]).toBe(c1); 
         });
         
-        it("should match items inside direct containers of the target", function(){            
+        it("should match items inside direct containers of the target", function() {            
             ct.add(
                 deepCt(1, c1),
                 deepCt(1, c2),
@@ -106,7 +105,7 @@ describe("Ext.container.Monitor", function(){
             expect(addSpy.calls[1].args[0]).toBe(c3);
         });
         
-        it("should match items inside deep containers of the target", function(){            
+        it("should match items inside deep containers of the target", function() {            
             ct.add(
                 deepCt(4, c1),
                 deepCt(5, c2),
@@ -121,12 +120,12 @@ describe("Ext.container.Monitor", function(){
         });
     });
     
-    describe("dynamic adding", function(){
+    describe("dynamic adding", function() {
         var expectContains = function(o) {
             expect(mon.getItems().contains(o)).toBe(true);    
         };
         
-        it("should match a direct item of the target", function(){
+        it("should match a direct item of the target", function() {
             makeMon();
             
             ct.add(c1);
@@ -135,7 +134,7 @@ describe("Ext.container.Monitor", function(){
             expectContains(c1);
         });  
         
-        it("should match docked items", function(){
+        it("should match docked items", function() {
             ct.destroy();
             ct = new Ext.panel.Panel();
             makeMon();
@@ -149,7 +148,7 @@ describe("Ext.container.Monitor", function(){
             expectContains(c1);
         });
         
-        it("should match items inside direct children of the target", function(){
+        it("should match items inside direct children of the target", function() {
             makeMon();
             
             var inner = ct.add({});
@@ -160,7 +159,7 @@ describe("Ext.container.Monitor", function(){
             expectContains(c1);
         });
         
-        it("should match Queryable items that aren't containers", function(){
+        it("should match Queryable items that aren't containers", function() {
             makeMon();
             ct.add(new Ext.button.Button({
                 menu: {
@@ -173,7 +172,7 @@ describe("Ext.container.Monitor", function(){
             expectContains(c1);
         });
         
-        it("should match items inside deep containers of the target", function(){
+        it("should match items inside deep containers of the target", function() {
             makeMon();
             
             var inner = new Ext.container.Container();
@@ -185,7 +184,7 @@ describe("Ext.container.Monitor", function(){
             expectContains(c1);
         });
         
-        it("should match items directly inside dynamically added containers", function(){
+        it("should match items directly inside dynamically added containers", function() {
             makeMon();
             
             ct.add(deepCt(1, c1));
@@ -194,7 +193,7 @@ describe("Ext.container.Monitor", function(){
             expectContains(c1);
         });
         
-        it("should match deep items inside dynamically added containers", function(){
+        it("should match deep items inside dynamically added containers", function() {
             makeMon();
             
             ct.add(deepCt(5, c1));
@@ -203,7 +202,7 @@ describe("Ext.container.Monitor", function(){
             expectContains(c1); 
         });
         
-        it("should match items inside dynamic containers", function(){
+        it("should match items inside dynamic containers", function() {
             makeMon();
             
             var child1 = new Ext.container.Container();
@@ -216,12 +215,12 @@ describe("Ext.container.Monitor", function(){
         });
     });
     
-    describe("removing", function(){
-        var expectNotContains = function(o){
+    describe("removing", function() {
+        var expectNotContains = function(o) {
             expect(mon.getItems().contains(o)).toBe(false);    
         };
         
-        it("should handle removal of direct children of the target", function(){
+        it("should handle removal of direct children of the target", function() {
             ct.add(c1);
             makeMon();
             
@@ -231,7 +230,7 @@ describe("Ext.container.Monitor", function(){
             expectNotContains(c1);
         });
         
-        it("should handle the removal of docked items", function(){
+        it("should handle the removal of docked items", function() {
             ct.destroy();
             ct = new Ext.panel.Panel({
                 dockedItems: [{
@@ -247,7 +246,7 @@ describe("Ext.container.Monitor", function(){
             expectNotContains(c1);
         });
         
-        xit("should handle the removal of Queryable items that aren't containers", function(){
+        xit("should handle the removal of Queryable items that aren't containers", function() {
             ct.add(new Ext.button.Button({
                 menu: {
                     items: c1
@@ -262,7 +261,7 @@ describe("Ext.container.Monitor", function(){
             expectNotContains(c1);
         });
         
-        it("should handle removal of items inside direct children of the target", function(){
+        it("should handle removal of items inside direct children of the target", function() {
             ct.add({
                 xtype: 'container',
                 items: c1
@@ -275,7 +274,7 @@ describe("Ext.container.Monitor", function(){
             expectNotContains(c1);
         });
         
-        it("should handle the removal of items in deep containers", function(){
+        it("should handle the removal of items in deep containers", function() {
             var inner = new Ext.container.Container({
                 items: c1
             });
@@ -288,7 +287,7 @@ describe("Ext.container.Monitor", function(){
             expectNotContains(c1);
         });
         
-        it("should handle the removal of a container that contains an item", function(){
+        it("should handle the removal of a container that contains an item", function() {
             var inner = new Ext.container.Container({
                 items: c1
             });
@@ -303,7 +302,7 @@ describe("Ext.container.Monitor", function(){
             inner.destroy();
         });
         
-        it("should handle the removal of a deep container that contains an item", function(){
+        it("should handle the removal of a deep container that contains an item", function() {
             var inner = new Ext.container.Container({
                 items: c1
             });
@@ -318,7 +317,7 @@ describe("Ext.container.Monitor", function(){
             inner.destroy();
         });
         
-        it("should update the collection when removing children that contain items matching the selector", function(){
+        it("should update the collection when removing children that contain items matching the selector", function() {
             ct.add({
                 xtype: 'container',
                 items: c1
@@ -329,7 +328,7 @@ describe("Ext.container.Monitor", function(){
             expectNotContains(c1);
         });
         
-        it("should update the collection when destroying a container that contains items", function(){
+        it("should update the collection when destroying a container that contains items", function() {
             ct.add({
                 xtype: 'container',
                 items: c1
@@ -339,8 +338,8 @@ describe("Ext.container.Monitor", function(){
             expectNotContains(c1);
         });
         
-        describe("container listeners", function(){
-            it("should remove the listeners on a direct child ct", function(){
+        describe("container listeners", function() {
+            it("should remove the listeners on a direct child ct", function() {
                 var inner = new Ext.container.Container({
                     items: c1
                 });
@@ -353,7 +352,7 @@ describe("Ext.container.Monitor", function(){
                 inner.destroy();
             });
             
-            it("should remove listeners on all child containers", function(){
+            it("should remove listeners on all child containers", function() {
                 var inner1 = new Ext.container.Container(),
                     inner2 = new Ext.container.Container(),
                     inner3 = new Ext.container.Container(),

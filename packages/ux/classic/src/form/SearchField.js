@@ -1,3 +1,6 @@
+/**
+ *
+ */
 Ext.define('Ext.ux.form.SearchField', {
     extend: 'Ext.form.field.Text',
 

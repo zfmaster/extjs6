@@ -10,15 +10,11 @@
  * using {@link #getSelection}.
  */
 Ext.define('Ext.toolbar.Breadcrumb', {
-    extend: 'Ext.Container',
+    extend: 'Ext.container.Container',
     xtype: 'breadcrumb',
     requires: [
         'Ext.data.TreeStore',
         'Ext.button.Split'
-    ],
-    
-    mixins: [
-        'Ext.util.FocusableContainer'
     ],
 
     isBreadcrumb: true,
@@ -118,6 +114,10 @@ Ext.define('Ext.toolbar.Breadcrumb', {
         selection: 'root'
     },
 
+    /**
+     * @cfg
+     * @inheritdoc
+     */
     publishes: ['selection'],
     twoWayBindable: ['selection'],
 
@@ -125,6 +125,8 @@ Ext.define('Ext.toolbar.Breadcrumb', {
     _btnCls: Ext.baseCSSPrefix + 'breadcrumb-btn',
     _folderIconCls: Ext.baseCSSPrefix + 'breadcrumb-icon-folder',
     _leafIconCls: Ext.baseCSSPrefix + 'breadcrumb-icon-leaf',
+    
+    focusableContainer: true,
 
     initComponent: function() {
         var me = this,

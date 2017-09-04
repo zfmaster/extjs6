@@ -19,7 +19,7 @@ Ext.define('Ext.grid.plugin.RowWidget', {
 
     config: {
         /**
-         * @cfg defaultWidgetUI
+         * @cfg {Object} defaultWidgetUI
          * A map of xtype to {@link Ext.Component#ui} names to use when using Components in the expansion row.
          */
         defaultWidgetUI: {}
@@ -119,6 +119,7 @@ Ext.define('Ext.grid.plugin.RowWidget', {
             featuresCfg = {
                 ftype: 'rowbody',
                 rowExpander: me,
+                doSync: false,
                 rowIdCls: me.rowIdCls,
                 bodyBefore: me.bodyBefore,
                 recordsExpanded: me.recordsExpanded,
@@ -204,26 +205,30 @@ Ext.define('Ext.grid.plugin.RowWidget', {
             },
 
             toggleChildrenTabbability: function(enableTabbing) {
-            // An override applied to the client view so that it does not interfere with tabbability of elements
-            // within the expander rows.
+                // An override applied to the client view so that it does not interfere
+                // with tabbability of elements within the expander rows.
                 var focusEl = this.getTargetEl(),
                     rows = this.all,
+                    restoreOptions = { skipSelf: true },
+                    saveOptions = { skipSelf: true, includeSaved: false },
                     i;
 
                 for (i = rows.startIndex; i <= rows.endIndex; i++) {
                     // Extract the data row from each row.
                     // We do not interfere with tabbing in the the expander row.
                     focusEl = Ext.fly(this.getRow(rows.item(i)));
+
+                    if (!focusEl) {
+                        continue;
+                    }
+                    
                     if (enableTabbing) {
-                        focusEl.restoreTabbableState(/* skipSelf = */ true);
+                        focusEl.restoreTabbableState(restoreOptions);
                     }
                     else {
                         // Do NOT includeSaved
                         // Once an item has had tabbability saved, do not increment its save level
-                        focusEl.saveTabbableState({
-                            skipSelf: true,
-                            includeSaved: false
-                        });
+                        focusEl.saveTabbableState(saveOptions);
                     }
                 }
             }
@@ -250,7 +255,9 @@ Ext.define('Ext.grid.plugin.RowWidget', {
                 record = newRecords[i];
                 if (!record.isNonData && me.recordsExpanded[record.internalId]) {
                     // If any added items are expanded, we will need a syncRowHeights call on next layout
-                    ownerLockable && (me.grid.syncRowHeightOnNextLayout = true);
+                    if (ownerLockable) {
+                        me.grid.syncRowHeightOnNextLayout = true;
+                    }
                     me.addWidget(view, record);
                 }
             }
@@ -264,22 +271,15 @@ Ext.define('Ext.grid.plugin.RowWidget', {
 
             Ext.suspendLayouts();
             for (itemIndex = rows.startIndex, recordIndex = 0; itemIndex <= rows.endIndex; itemIndex++, recordIndex++) {
-                me.addWidget(view, records[recordIndex]);
+                if (me.recordsExpanded[records[recordIndex].internalId]) {
+                    me.addWidget(view, records[recordIndex]);
+                }
             }
             Ext.resumeLayouts(true);
         },
 
         returnFalse: function() {
             return false;
-        },
-
-        // An injectable resolveListenerScope function for use by the widgets to
-        // link them to the owning view.
-        listenerScopeDecorator: function (defaultScope) {
-            if (defaultScope === 'this') {
-                return this;
-            }
-            return this.ownerCt.resolveListenerScope(defaultScope);
         },
 
         /**
@@ -299,10 +299,8 @@ Ext.define('Ext.grid.plugin.RowWidget', {
             if (record) {
                 widget = me.grid.lockable && view === me.lockedView ? me.lockedWidget : me.widget;
                 if (widget) {
-                    result = me.grid.createManagedWidget(me.getId() + '-' + view.getId(), widget, record);
-                    result.resolveListenerScope = me.listenerScopeDecorator;
+                    result = me.grid.createManagedWidget(view, me.getId() + '-' + view.getId(), widget, record);
                     result.measurer = me;
-                    result.ownerCt = view;
                     result.ownerLayout = view.componentLayout;
                 }
             }
@@ -324,19 +322,13 @@ Ext.define('Ext.grid.plugin.RowWidget', {
                 return;
             }
 
-            target = Ext.fly(view.getNode(record)).down(me.rowBodyFeature.innerSelector);
+            target = Ext.fly(view.getNode(record).querySelector(me.rowBodyFeature.innerSelector));
             width = target.getWidth(true) - target.getPadding('lr');
             widget = me.getWidget(view, record);
 
             // Might be no widget if we are handling a lockable grid
             // and only one side has a widget definition.
             if (widget) {
-
-                // Bind widget to record unless it has declared a binding
-                if (widget.defaultBindProperty && !widget.getBind()) {
-                    widget.setConfig(widget.defaultBindProperty, record);
-                }
-
                 if (hasAttach) {
                     Ext.callback(me.onWidgetAttach, me.scope, [me, widget, record], 0, me);
                 }
@@ -356,6 +348,7 @@ Ext.define('Ext.grid.plugin.RowWidget', {
                     }
                     widget.render(target);
                 }
+                widget.updateLayout();
             }
 
             return widget;
@@ -373,7 +366,7 @@ Ext.define('Ext.grid.plugin.RowWidget', {
                 wasCollapsed = normalRow.hasCls(me.rowCollapsedCls),
                 addOrRemoveCls = wasCollapsed ? 'removeCls' : 'addCls',
                 ownerLockable = me.grid.lockable && me.grid,
-                widget;
+                widget, vm;
 
             normalRow[addOrRemoveCls](me.rowCollapsedCls);
             Ext.fly(nextBd)[addOrRemoveCls](me.rowBodyHiddenCls);
@@ -387,6 +380,7 @@ Ext.define('Ext.grid.plugin.RowWidget', {
             if (wasCollapsed) {
                 me.recordsExpanded[record.internalId] = true;
                 widget = me.addWidget(view, record);
+                vm = widget.lookupViewModel();
             } else {
                 delete me.recordsExpanded[record.internalId];
                 widget = me.getWidget(view, record);
@@ -426,6 +420,12 @@ Ext.define('Ext.grid.plugin.RowWidget', {
 
             me.view.fireEvent(wasCollapsed ? 'expandbody' : 'collapsebody', rowNode, record, nextBd, widget);
             view.updateLayout();
+
+            // Before layouts are resumed, if we have *expanded* the widget row, then ensure bound data
+            // is flushed into the widget so that it assumes its final size.
+            if (vm) {
+                vm.notify();
+            }
             Ext.resumeLayouts(true);
 
             if (me.scrollIntoViewOnExpand && wasCollapsed) {

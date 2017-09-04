@@ -122,6 +122,19 @@ Ext.Date = (function () {
       numberTokenRe = /\{(\d+)\}/g,
       MSFormatRe = new RegExp('\\/Date\\(([-+])?(\\d+)(?:[+-]\\d{4})?\\)\\/'),
       pad = Ext.String.leftPad,
+      
+      monthInfo = {
+        F: true,
+        m: true,
+        M: true,
+        n: true
+      },
+      
+      yearInfo = {
+        o: true,
+        Y: true,
+        y: true
+      },
 
       // Most of the date-formatting functions below are the excellent work of Baron Schwartz.
       // (see http://www.xaprb.com/blog/2005/12/12/javascript-closures-for-runtime-efficiency/)
@@ -548,7 +561,6 @@ utilDate = {
      */
     defaults: {},
 
-    //<locale type="array">
     /**
      * @property {String[]} dayNames
      * An array of textual day names.
@@ -561,6 +573,7 @@ utilDate = {
      *         'MondayInYourLang'
      *         // ...
      *     ];
+     * @locale
      */
     dayNames : [
         "Sunday",
@@ -571,9 +584,7 @@ utilDate = {
         "Friday",
         "Saturday"
     ],
-    //</locale>
 
-    //<locale type="array">
     /**
      * @property {String[]} monthNames
      * An array of textual month names.
@@ -586,6 +597,7 @@ utilDate = {
      *         'FebInYourLang'
      *         // ...
      *     ];
+     * @locale
      */
     monthNames : [
         "January",
@@ -601,9 +613,7 @@ utilDate = {
         "November",
         "December"
     ],
-    //</locale>
 
-    //<locale type="object">
     /**
      * @property {Object} monthNumbers
      * An object hash of zero-based JavaScript month numbers (with short month names as keys).
@@ -621,6 +631,7 @@ utilDate = {
      *         'ShortFebNameInYourLang':1
      *         // ...
      *     };
+     * @locale
      */
     monthNumbers : {
         January: 0,
@@ -647,75 +658,77 @@ utilDate = {
         December: 11,
         Dec: 11
     },
-    //</locale>
-    
-    //<locale>
+
     /**
      * @property {String} defaultFormat
      * The date format string that the {@link Ext.util.Format#dateRenderer}
      * and {@link Ext.util.Format#date} functions use.  See {@link Ext.Date} for details.
      *
      * This may be overridden in a locale file.
+     * @locale
      */
-    defaultFormat : "m/d/Y",
-    //</locale>
+    defaultFormat: 'm/d/Y',
 
-    //<locale>
+    /**
+     * @property {String} defaultTimeFormat
+     * The default time format.
+     *
+     * This may be overridden in a locale file.
+     * @locale
+     */
+    defaultTimeFormat: 'h:i A',
+
     /**
      * @property {Number} firstDayOfWeek
      * The day on which the week starts. `0` being Sunday, through `6` being Saturday.
      *
      * This may be overridden in a locale file.
+     * @locale
      */
     firstDayOfWeek: 0,
-    //</locale>
 
-    //<locale>
     /**
      * @property {Number[]} weekendDays
      * The days on which weekend falls. `0` being Sunday, through `6` being Saturday.
      *
      * This may be overridden in a locale file.
+     * @locale
      */
     weekendDays: [0, 6],
-    //</locale>
 
-    //<locale type="function">
     /**
      * Get the short month name for the given month number.
      * Override this function for international dates.
      * @param {Number} month A zero-based JavaScript month number.
      * @return {String} The short month name.
+     * @locale
      */
     getShortMonthName : function(month) {
         return utilDate.monthNames[month].substring(0, 3);
     },
-    //</locale>
 
-    //<locale type="function">
     /**
      * Get the short day name for the given day number.
      * Override this function for international dates.
      * @param {Number} day A zero-based JavaScript day number.
      * @return {String} The short day name.
+     * @locale
      */
-    getShortDayName : function(day) {
+    getShortDayName: function(day) {
         return utilDate.dayNames[day].substring(0, 3);
     },
-    //</locale>
 
-    //<locale type="function">
     /**
      * Get the zero-based JavaScript month number for the given short/full month name.
      * Override this function for international dates.
      * @param {String} name The short/full month name.
      * @return {Number} The zero-based JavaScript month number.
+     * @locale
      */
     getMonthNumber : function(name) {
         // handle camel casing for English month names (since the keys for the Ext.Date.monthNumbers hash are case sensitive)
         return utilDate.monthNumbers[name.substring(0, 1).toUpperCase() + name.substring(1, 3).toLowerCase()];
     },
-    //</locale>
 
     /**
      * Checks if the specified format contains hour information
@@ -737,6 +750,30 @@ utilDate = {
      */
     formatContainsDateInfo : function(format){
         return dateInfoRe.test(format.replace(stripEscapeRe, ''));
+    },
+    
+    /**
+     * @private
+     * Checks if the specified format contains only month information.
+     * 
+     * @param {String} format Format to check
+     *
+     * @return {Boolean}
+     */
+    isMonthFormat: function(format) {
+        return !!monthInfo[format];
+    },
+    
+    /**
+     * @private
+     * Checks if the specified format contains only year information.
+     *
+     * @param {String} format Format to check.
+     *
+     * @return {Boolean}
+     */
+    isYearFormat: function(format) {
+        return !!yearInfo[format];
     },
     
     /**
@@ -982,12 +1019,13 @@ utilDate = {
      * @private
      */
     parseCodes : {
-        /**
-         * Notes:
-         * g = {Number} calculation group (0 or 1. only group 1 contributes to date calculations.)
-         * c = {String} calculation method (required for group 1. null for group 0. {0} = currentGroup - position in regex result array)
-         * s = {String} regex pattern. all matches are stored in results[], and are accessible by the calculation mapped to 'c'
-         */
+        // Notes:
+        // g = {Number} calculation group (0 or 1. only group 1 contributes to
+        // date calculations.)
+        // c = {String} calculation method (required for group 1. null for group 0.
+        // {0} = currentGroup - position in regex result array)
+        // s = {String} regex pattern. all matches are stored in results[], and are
+        // accessible by the calculation mapped to 'c'
         d: {
             g:1,
             c:"d = parseInt(results[{0}], 10);\n",
@@ -1090,11 +1128,11 @@ utilDate = {
                 + "y = ty > me.y2kYear ? 1900 + ty : 2000 + ty;\n", // 2-digit year
             s:"(\\d{2})"
         },
-        /**
-         * In the am/pm parsing routines, we allow both upper and lower case
-         * even though it doesn't exactly match the spec. It gives much more flexibility
-         * in being able to specify case insensitive regexes.
-         */
+
+        // In the am/pm parsing routines, we allow both upper and lower case
+        // even though it doesn't exactly match the spec. It gives much more flexibility
+        // in being able to specify case insensitive regexes.
+
         //<locale type="object" property="parseCodes">
         a: {
             g:1,
@@ -1291,7 +1329,6 @@ utilDate = {
      * (which may or may not be present), failing which it proceeds to get the timezone abbreviation
      * from the GMT offset portion of the date string.
      * 
-     *     @example
      *     var dt = new Date('9/17/2011');
      *     console.log(Ext.Date.getTimezone(dt));
      *
@@ -1317,7 +1354,6 @@ utilDate = {
     /**
      * Get the offset from GMT of the current date (equivalent to the format specifier 'O').
      * 
-     *     @example
      *     var dt = new Date('9/17/2011');
      *     console.log(Ext.Date.getGMTOffset(dt));
      *
@@ -1336,7 +1372,6 @@ utilDate = {
     /**
      * Get the numeric day number of the year, adjusted for leap year.
      * 
-     *     @example
      *     var dt = new Date('9/17/2011');
      *     console.log(Ext.Date.getDayOfYear(dt)); // 259
      *
@@ -1359,7 +1394,6 @@ utilDate = {
      * Get the numeric ISO-8601 week number of the year.
      * (equivalent to the format specifier 'W', but without a leading zero).
      * 
-     *     @example
      *     var dt = new Date('9/17/2011');
      *     console.log(Ext.Date.getWeekOfYear(dt)); // 37
      *
@@ -1384,7 +1418,6 @@ utilDate = {
     /**
      * Checks if the current date falls within a leap year.
      * 
-     *     @example
      *     var dt = new Date('1/10/2011');
      *     console.log(Ext.Date.isLeapYear(dt)); // false
      *
@@ -1401,7 +1434,6 @@ utilDate = {
      * is the numeric day index within the week (0-6) which can be used in conjunction with
      * the {@link #monthNames} array to retrieve the textual day name.
      *
-     *    @example
      *    var dt = new Date('1/10/2007'),
      *        firstDay = Ext.Date.getFirstDayOfMonth(dt);
      *
@@ -1420,7 +1452,6 @@ utilDate = {
      * is the numeric day index within the week (0-6) which can be used in conjunction with
      * the {@link #monthNames} array to retrieve the textual day name.
      *
-     *    @example
      *    var dt = new Date('1/10/2007'),
      *        lastDay = Ext.Date.getLastDayOfMonth(dt);
      *
@@ -1468,11 +1499,11 @@ utilDate = {
         };
     }()),
 
-    //<locale type="function">
     /**
      * Get the English ordinal suffix of the current day (equivalent to the format specifier 'S').
      * @param {Date} date The date
      * @return {String} 'st, 'nd', 'rd' or 'th'.
+     * @locale
      */
     getSuffix : function(date) {
         switch (date.getDate()) {
@@ -1490,7 +1521,6 @@ utilDate = {
                 return "th";
         }
     },
-    //</locale>
 
     /**
      * Creates and returns a new Date instance with the exact same date value as the called instance.
@@ -1596,9 +1626,11 @@ utilDate = {
      * @param {Date} date The date to modify
      * @param {String} interval A valid date interval enum value.
      * @param {Number} value The amount to add to the current date.
+     * @param {Boolean} [preventDstAdjust=false] `true` to prevent adjustments when crossing
+     * daylight savings boundaries.
      * @return {Date} The new Date instance.
      */
-    add : function(date, interval, value) {
+    add : function(date, interval, value, preventDstAdjust) {
         var d = utilDate.clone(date),
             base = 0,
             day, decimalValue;
@@ -1631,19 +1663,35 @@ utilDate = {
                 // ....
                 // 
                 case utilDate.MILLI:
-                    d.setTime(d.getTime() + value);
+                    if (preventDstAdjust) {
+                        d.setMilliseconds(d.getMilliseconds() + value);
+                    } else {
+                        d.setTime(d.getTime() + value);
+                    }
                     break;
                 case utilDate.SECOND:
-                    d.setTime(d.getTime() + value * 1000);
+                    if (preventDstAdjust) {
+                        d.setSeconds(d.getSeconds() + value);
+                    } else {
+                        d.setTime(d.getTime() + value * 1000);
+                    }
                     break;
                 case utilDate.MINUTE:
-                    d.setTime(d.getTime() + value * 60 * 1000);
+                    if (preventDstAdjust) {
+                        d.setMinutes(d.getMinutes() + value);
+                    } else {
+                        d.setTime(d.getTime() + value * 60 * 1000);
+                    }
                     break;
                 case utilDate.HOUR:
-                    d.setTime(d.getTime() + value * 60 * 60 * 1000);
+                    if (preventDstAdjust) {
+                        d.setHours(d.getHours() + value);
+                    } else {
+                        d.setTime(d.getTime() + value * 60 * 60 * 1000);
+                    }
                     break;
                 case utilDate.DAY:
-                    d.setTime(d.getTime() + value * 24 * 60 * 60 * 1000);
+                    d.setDate(d.getDate() + value);
                     break;
                 case utilDate.MONTH:
                     day = date.getDate();
@@ -1712,10 +1760,12 @@ utilDate = {
      * @param {Date} date The date to modify
      * @param {String} interval A valid date interval enum value.
      * @param {Number} value The amount to subtract from the current date.
+     * @param {Boolean} [preventDstAdjust=false] `true` to prevent adjustments when crossing
+     * daylight savings boundaries.
      * @return {Date} The new Date instance.
      */
-    subtract: function(date, interval, value){
-        return utilDate.add(date, interval, -value);
+    subtract: function(date, interval, value, preventDstAdjust){
+        return utilDate.add(date, interval, -value, preventDstAdjust);
     },
 
     /**

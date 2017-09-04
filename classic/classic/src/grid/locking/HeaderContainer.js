@@ -77,15 +77,6 @@ Ext.define('Ext.grid.locking.HeaderContainer', {
         me.lockedEventRelayers = me.relayEvents(lockedGrid.headerCt, me.headerCtRelayEvents);
         me.normalEventRelayers = me.relayEvents(normalGrid.headerCt, me.headerCtRelayEvents);
     },
-    
-    destroy: function() {
-        var me = this;
-        
-        Ext.destroy(me.lockedEventRelayers, me.normalEventRelayers);
-        me.lockedEventRelayers = me.normalEventRelayers = null;
-        
-        me.callParent();
-    },
 
     getRefItems: function() {
         return this.lockable.lockedGrid.headerCt.getRefItems().concat(this.lockable.normalGrid.headerCt.getRefItems());
@@ -110,14 +101,12 @@ Ext.define('Ext.grid.locking.HeaderContainer', {
     applyColumnsState: function (columnsState, storeState) {
         var me             = this,
             lockedGrid     = me.lockable.lockedGrid,
+            normalGrid     = me.lockable.normalGrid,
             lockedHeaderCt = lockedGrid.headerCt,
             normalHeaderCt = me.lockable.normalGrid.headerCt,
             columns        = lockedHeaderCt.items.items.concat(normalHeaderCt.items.items),
             length         = columns.length,
-            i, column,
-            switchSides,
-            colState,
-            lockedCount;
+            i, colState, column, lockedCount, switchSides;
 
         // Loop through the column set, applying state from the columnsState object.
         // Columns which have their "locked" property changed must be added to the appropriate
@@ -129,7 +118,7 @@ Ext.define('Ext.grid.locking.HeaderContainer', {
 
                 // See if the state being applied needs to cause column movement
                 // Coerce possibly absent locked config to boolean.
-                switchSides = colState.locked != null && Boolean(column.locked) !== colState.locked;
+                switchSides = colState.locked != null && !!column.locked !== colState.locked;
 
                 if (column.applyColumnState) {
                     column.applyColumnState(colState, storeState);
@@ -159,6 +148,15 @@ Ext.define('Ext.grid.locking.HeaderContainer', {
         // Each side must apply individual column's state
         lockedHeaderCt.applyColumnsState(columnsState, storeState);
         normalHeaderCt.applyColumnsState(columnsState, storeState);
+
+        // Account for columns being hidden or moved by state application.
+        if (!lockedGrid.getVisibleColumnManager().getColumns().length) {
+            lockedGrid.hide();
+        }
+
+        if (!normalGrid.getVisibleColumnManager().getColumns().length) {
+            normalGrid.hide();
+        }
     },
 
     disable: function() {

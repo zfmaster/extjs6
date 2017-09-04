@@ -1,5 +1,4 @@
-describe("Ext.data.schema.Schema", function() {
-    
+topSuite("Ext.data.schema.Schema", ['Ext.data.Model'], function() {
     var M = Ext.data.Model,
         schema;
         

@@ -81,7 +81,7 @@ Ext.define('Ext.chart.series.sprite.Pie3DPart', {
                 baseColor: 'color',
 
                 /**
-                 * @cfg {Number} [colorSpread=1]
+                 * @cfg {Number} [colorSpread=0.7]
                  * An attribute used to control how flat the gradient of the sprite looks.
                  * A value of 0 essentially means no gradient (flat color).
                  */
@@ -137,7 +137,7 @@ Ext.define('Ext.chart.series.sprite.Pie3DPart', {
                 distortion: 0.5,
                 baseRotation: 0,
                 baseColor: 'white',
-                colorSpread: 1,
+                colorSpread: 0.5,
                 miterLimit: 1,
                 bevelWidth: 5,
                 strokeOpacity: 0,
@@ -150,6 +150,13 @@ Ext.define('Ext.chart.series.sprite.Pie3DPart', {
                 partZIndex: 'partZIndexUpdater'
             }
         }
+    },
+
+    config: {
+        renderer: null,
+        rendererData: null,
+        rendererIndex: 0,
+        series: null
     },
 
     bevelParams: [],
@@ -169,6 +176,18 @@ Ext.define('Ext.chart.series.sprite.Pie3DPart', {
                 color: 'rgba(255,255,255,0)'
             }]
         });
+    },
+
+    updateRenderer: function () {
+        this.setDirty(true);
+    },
+
+    updateRendererData: function () {
+        this.setDirty(true);
+    },
+
+    updateRendererIndex: function () {
+        this.setDirty(true);
     },
 
     alphaUpdater: function (attr) {
@@ -412,13 +431,43 @@ Ext.define('Ext.chart.series.sprite.Pie3DPart', {
         this[this.attr.part + 'Renderer'](path);
     },
 
-    render: function (surface, ctx) {
+    render: function (surface, ctx, rect) {
         var me = this,
-            attr = me.attr;
+            renderer = me.getRenderer(),
+            attr = me.attr,
+            part = attr.part,
+            itemCfg, changes;
 
         if (!attr.globalAlpha || Ext.Number.isEqual(attr.startAngle, attr.endAngle, 1e-8)) {
             return;
         }
+
+        if (renderer) {
+            itemCfg = {
+                type: 'pie3dPart',
+                part: attr.part,
+                margin: attr.margin,
+                distortion: attr.distortion,
+                centerX: attr.centerX,
+                centerY: attr.centerY,
+                baseRotation: attr.baseRotation,
+                startAngle: attr.startAngle,
+                endAngle: attr.endAngle,
+                startRho: attr.startRho,
+                endRho: attr.endRho
+            };
+            changes = Ext.callback(renderer, null,
+                [me, itemCfg, me.getRendererData(), me.getRendererIndex()], 0, me.getSeries());
+            if (changes) {
+                if (changes.part) {
+                    // Can't let users change the nature of the sprite.
+                    changes.part = part;
+                }
+                me.setAttributes(changes);
+                me.useAttributes(ctx, rect);
+            }
+        }
+
         me.callParent([surface, ctx]);
         me.bevelRenderer(surface, ctx);
 
@@ -451,6 +500,7 @@ Ext.define('Ext.chart.series.sprite.Pie3DPart', {
             calloutLine = labelTpl.getCalloutLine(),
             calloutLineLength = calloutLine && calloutLine.length || 40,
             labelCfg = {},
+            rendererParams, rendererChanges,
             x, y;
 
         surfaceMatrix.appendMatrix(attr.matrix);
@@ -475,6 +525,16 @@ Ext.define('Ext.chart.series.sprite.Pie3DPart', {
         labelCfg.calloutPlaceY = surfaceMatrix.y(x, y);
 
         labelCfg.calloutWidth = 2;
+
+        if (labelTpl.attr.renderer) {
+            rendererParams = [me.attr.label, label, labelCfg, me.getRendererData(), me.getRendererIndex()];
+            rendererChanges = Ext.callback(labelTpl.attr.renderer, null, rendererParams, 0, me.getSeries());
+            if (typeof rendererChanges === 'string') {
+                labelCfg.text = rendererChanges;
+            } else {
+                Ext.apply(labelCfg, rendererChanges);
+            }
+        }
 
         me.putMarker('labels', labelCfg, attributeId);
 

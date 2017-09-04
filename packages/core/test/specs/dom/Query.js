@@ -1,4 +1,4 @@
-describe("Ext.dom.Query", function(){
+topSuite("Ext.dom.Query", function() {
 
     var body = Ext.getBody().dom,
         useQuerySelectorAll = false,
@@ -9,13 +9,13 @@ describe("Ext.dom.Query", function(){
             '<div id="c:last-child" class="myotherclass and-another-class">def</div>',
 
             // another conflict test
-            '<div id="abc:" specialAttr="jkl\\\\tasdf">ghi</div>',
+            '<div id="abc:" aria-label="jkl\\\\tasdf">ghi</div>',
 
             '<div id="nn" class="cls:hover">jkl\\tasdf</div>',
             '<div id="12345">mno:pqr</div>',
-            '<div id="--abc" customAttr="12345678">pqr</div>',
-            '<div id="\\nn" customAttr="myval:ue\t">stu</div>',
-            '<div id="n\\nn" customAttr="my\\tvalue">vwx</div>',
+            '<div id="--abc" role="12345678">pqr</div>',
+            '<div id="\\nn" role="myval:ue\t">stu</div>',
+            '<div id="n\\nn" role="my\\tvalue">vwx</div>',
             '<div id="oddClass" class="#odd-class-name"></div>',
             '<div id="\nn">yz</div>',
             ('<div id=":id">' +
@@ -174,13 +174,13 @@ describe("Ext.dom.Query", function(){
             });
 
             it("should find elements by attribute value", function(){
-                var found = doQuery('div[customAttr="12345678"]', elem),
+                var found = doQuery('div[role="12345678"]', elem),
                     len = found.length;
 
                 expect(len).toBe(1);
                 expect(found[0]).toBe(elem.childNodes[5]);
 
-                found = doQuery('div[customAttr]', elem),
+                found = doQuery('div[role]', elem),
                     len = found.length;
 
                 expect(len).toBe(3);
@@ -352,19 +352,19 @@ describe("Ext.dom.Query", function(){
 
                 if (Ext.isFF3_6) {
                     // ff 3.6 doesn allow \t in attribute values
-                    found = doQuery('div[customAttr="myval\\3a ue"]', elem);
+                    found = doQuery('div[role="myval\\3a ue"]', elem);
                     len = found.length;
 
                     expect(len).toBe(1);
                     expect(found[0]).toBe(elem.childNodes[6]);
 
-                    found = doQuery('div[customAttr="myval:ue"]', elem);
+                    found = doQuery('div[role="myval:ue"]', elem);
                     len = found.length;
 
                     expect(len).toBe(1);
                     expect(found[0]).toBe(elem.childNodes[6]);
 
-                    found = doQuery('div[customAttr="myval\\:ue"]', elem);
+                    found = doQuery('div[role="myval\\:ue"]', elem);
                     len = found.length;
 
                     expect(len).toBe(1);
@@ -372,19 +372,19 @@ describe("Ext.dom.Query", function(){
 
                 } else {
 
-                    found = doQuery('div[customAttr="myval\\3a ue\t"]', elem);
+                    found = doQuery('div[role="myval\\3a ue\t"]', elem);
                     len = found.length;
 
                     expect(len).toBe(1);
                     expect(found[0]).toBe(elem.childNodes[6]);
 
-                    found = doQuery('div[customAttr="myval:ue\t"]', elem);
+                    found = doQuery('div[role="myval:ue\t"]', elem);
                     len = found.length;
 
                     expect(len).toBe(1);
                     expect(found[0]).toBe(elem.childNodes[6]);
 
-                    found = doQuery('div[customAttr="myval\\:ue\t"]', elem);
+                    found = doQuery('div[role="myval\\:ue\t"]', elem);
                     len = found.length;
 
                     expect(len).toBe(1);
@@ -392,13 +392,13 @@ describe("Ext.dom.Query", function(){
                 }
 
 
-                found = doQuery('div[customAttr="my\\\\tvalue"]', elem);
+                found = doQuery('div[role="my\\\\tvalue"]', elem);
                 len = found.length;
 
                 expect(len).toBe(1);
                 expect(found[0]).toBe(elem.childNodes[7]);
 
-                found = doQuery('div[specialAttr="jkl\\\\\\\\tasdf"]', elem);
+                found = doQuery('div[aria-label="jkl\\\\\\\\tasdf"]', elem);
                 len = found.length;
 
                 expect(len).toBe(1);
@@ -454,6 +454,7 @@ describe("Ext.dom.Query", function(){
                     expect(yResult[1].firstChild.nodeValue).toBe('y2');
                 });
             });
+            
             describe("selecting attributes with non-word characters", function() {
                 var doc;
 
@@ -482,7 +483,5 @@ describe("Ext.dom.Query", function(){
                 });
             });
         });
-        
     });
-
 });

@@ -68,7 +68,7 @@
  * means that the custom validator function as well as `Text` and `Mask` fields are added as properties
  * of the `Ext.form.field.VTypes` singleton.
  */
-Ext.define('Ext.form.field.VTypes', (function(){
+Ext.define('Ext.form.field.VTypes', function () {
     // closure these in so they are only created once.
     var alpha = /^[a-zA-Z_]+$/,
         alphanum = /^[a-zA-Z0-9_]+$/,
@@ -132,83 +132,86 @@ Ext.define('Ext.form.field.VTypes', (function(){
          * @param {String} value The email address
          * @return {Boolean} true if the RegExp test passed, and false if not.
          */
-        'email' : function(value){
+        email: function (value) {
             return email.test(value);
         },
-        //<locale>
+
         /**
          * @property {String} emailText
          * The error text to display when the email validation function returns false.
          * Defaults to: 'This field should be an e-mail address in the format "user@example.com"'
+         * @locale
          */
-        'emailText' : 'This field should be an e-mail address in the format "user@example.com"',
-        //</locale>
+        emailText: 'This field should be an e-mail address in the format "user@example.com"',
+
         /**
          * @property {RegExp} emailMask
          * The keystroke filter mask to be applied on email input. See the {@link #email} method for information about
          * more complex email validation. Defaults to: /[a-z0-9_\.\-@]/i
          */
-        'emailMask' : /[\w.\-@'"!#$%&'*+/=?^_`{|}~]/i,
+        emailMask: /[\w.\-@'"!#$%&'*+/=?^_`{|}~]/i,
 
         /**
          * The function used to validate URLs
          * @param {String} value The URL
          * @return {Boolean} true if the RegExp test passed, and false if not.
          */
-        'url' : function(value){
+        url: function (value) {
             return url.test(value);
         },
-        //<locale>
+
         /**
          * @property {String} urlText
          * The error text to display when the url validation function returns false.
          * Defaults to: 'This field should be a URL in the format "http:/'+'/www.example.com"'
+         * @locale
          */
-        'urlText' : 'This field should be a URL in the format "http:/'+'/www.example.com"',
-        //</locale>
+        urlText: 'This field should be a URL in the format "http:/'+'/www.example.com"',
 
         /**
          * The function used to validate alpha values
          * @param {String} value The value
          * @return {Boolean} true if the RegExp test passed, and false if not.
          */
-        'alpha' : function(value){
+        alpha: function(value){
             return alpha.test(value);
         },
-        //<locale>
+
         /**
          * @property {String} alphaText
          * The error text to display when the alpha validation function returns false.
          * Defaults to: 'This field should only contain letters and _'
+         * @locale
          */
-        'alphaText' : 'This field should only contain letters and _',
-        //</locale>
+        alphaText: 'This field should only contain letters and _',
+
         /**
          * @property {RegExp} alphaMask
          * The keystroke filter mask to be applied on alpha input. Defaults to: /[a-z_]/i
          */
-        'alphaMask' : /[a-z_]/i,
+        alphaMask: /[a-z_]/i,
 
         /**
          * The function used to validate alphanumeric values
          * @param {String} value The value
          * @return {Boolean} true if the RegExp test passed, and false if not.
          */
-        'alphanum' : function(value){
+        alphanum: function(value){
             return alphanum.test(value);
         },
-        //<locale>
+
         /**
          * @property {String} alphanumText
          * The error text to display when the alphanumeric validation function returns false.
          * Defaults to: 'This field should only contain letters, numbers and _'
+         * @locale
          */
-        'alphanumText' : 'This field should only contain letters, numbers and _',
-        //</locale>
+        alphanumText: 'This field should only contain letters, numbers and _',
+
         /**
          * @property {RegExp} alphanumMask
          * The keystroke filter mask to be applied on alphanumeric input. Defaults to: /[a-z0-9_]/i
          */
-        'alphanumMask' : /[a-z0-9_]/i
+        alphanumMask: /[a-z0-9_]/i
     };
-}()));
+});

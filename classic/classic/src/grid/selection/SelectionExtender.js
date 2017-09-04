@@ -77,7 +77,7 @@ Ext.define('Ext.grid.selection.SelectionExtender', {
 
         // If we've done a "select all rows" and there is buffered rendering, then
         // the cells might not be rendered, so we can't activate the replicator.
-        if (firstPos && lastPos && firstPos.getCell() && lastPos.getCell()) {
+        if (firstPos && lastPos && firstPos.getCell(true) && lastPos.getCell(true)) {
             if (me.curPos) {
                 me.curPos.setPosition(lastPos);
             } else {
@@ -93,8 +93,8 @@ Ext.define('Ext.grid.selection.SelectionExtender', {
 
     alignHandle: function() {
         var me = this,
-            firstCell = me.firstPos && me.firstPos.getCell(),
-            lastCell = me.lastPos && me.lastPos.getCell();
+            firstCell = me.firstPos && me.firstPos.getCell(true),
+            lastCell = me.lastPos && me.lastPos.getCell(true);
 
         // Cell corresponding to the position might not be rendered.
         // This will be called upon scroll

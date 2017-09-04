@@ -1,6 +1,6 @@
 /**
  * A superclass for inclusion/exclusion validators.
- * @private
+ * @abstract
  */
 Ext.define('Ext.data.validator.List', {
     extend: 'Ext.data.validator.Validator',
@@ -13,7 +13,9 @@ Ext.define('Ext.data.validator.List', {
          * @cfg {Array} list (required)
          * The list to check the passed value against.
          */
-        list: null
+        list: null,
+
+        message: null
     },
     
     inclusion: null,

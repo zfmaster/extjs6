@@ -1,4 +1,4 @@
-describe("Ext.data.BufferedStore", function() {
+topSuite("Ext.data.BufferedStore", function() {
     var bufferedStore, captured,
         synchronousLoad = true,
         bufferedStoreLoad = Ext.data.BufferedStore.prototype.load,
@@ -124,7 +124,6 @@ describe("Ext.data.BufferedStore", function() {
     it("should be able to start from any page", function() {
         createStore();
         bufferedStore.loadPage(10);
-
         satisfyRequests();
 
         expect(bufferedStore.currentPage).toBe(10);
@@ -188,7 +187,7 @@ describe("Ext.data.BufferedStore", function() {
                 }
             });
 
-            // Sorter mutation shuold trigger a load
+            // Sorter mutation should trigger a load
             bufferedStore.sort('title', 'ASC');
             satisfyRequests();
             expect(spy).toHaveBeenCalled();
@@ -203,7 +202,7 @@ describe("Ext.data.BufferedStore", function() {
                 }
             });
 
-            // Sorter mutation shuold trigger a load
+            // Sorter mutation should trigger a load
             bufferedStore.sort('title', 'ASC');
             satisfyRequests();
             expect(spy).toHaveBeenCalled();
@@ -356,6 +355,17 @@ describe("Ext.data.BufferedStore", function() {
                 expect(bufferedStore.getAt(0).id).toBe(1);
                 expect(bufferedStore.isLoading()).toBe(false);
             });
+        });
+
+        it("should work when holding only 1 record", function() {
+            createStore();
+            bufferedStore.load();
+            satisfyRequests(1);
+
+            expect(function() {
+                bufferedStore.reload();
+                satisfyRequests(1);
+            }).not.toThrow();
         });
 
         it("should not increase the number of pages when reloading", function () {
@@ -526,6 +536,73 @@ describe("Ext.data.BufferedStore", function() {
 
             // The indexMap must contain only the keys to the records that are now there.
             expect(Ext.Object.getKeys(bufferedStore.getData().indexMap)).toEqual(keys);
+        });
+    });
+    
+    // only applies to stateful toolkits
+    (Ext.state ? describe : xdescribe)('statefulness', function () {
+        var state;
+        
+        beforeEach(function () {
+            // disabling so that flushLoad() isn't immediately called
+            synchronousLoad = false;
+        });
+        
+        afterEach(function () {
+            bufferedStore.destroy();
+            synchronousLoad = true;
+        });
+        
+        describe('loading', function () {
+            it('should only fire the event once per creation when loading from a stateful component', function () {
+                var spy = jasmine.createSpy();
+                
+                function createStatefulStore (state) {
+                    createStore({
+                        autoLoad: true,
+                        sorters: [{
+                            property: 'title',
+                            direction: 'ASC'
+                        }],
+                        listeners: {
+                            beforeload: spy
+                        }
+                    });
+                    
+                    if (state) {
+                        bufferedStore.applyState(state);
+                    }
+                    
+                    // wait for the request to be built since this is being handled async
+                    waits(10);
+                    runs(function () {
+                        satisfyRequests();
+                    });
+                }
+                
+                // create the new grid (no existing state)
+                createStatefulStore();
+                
+                waitsFor(function () {
+                    return bufferedStore.isLoaded();
+                });
+                
+                runs(function () {
+                    // save the current state and re-apply it to the new store instance
+                    // as if it were applied from a stateful component
+                    state = bufferedStore.getState();
+                    bufferedStore.destroy();
+                    createStatefulStore(state);
+                });
+                
+                waitsFor(function () {
+                    return bufferedStore.isLoaded();
+                });
+                
+                runs(function () {
+                    expect(spy.callCount).toBe(2);
+                });
+            });
         });
     });
 });

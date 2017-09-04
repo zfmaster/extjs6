@@ -1,10 +1,10 @@
 /* global Ext, expect */
 
-describe("Ext.data.proxy.Memory", function() {
+topSuite("Ext.data.proxy.Memory", ['Ext.data.ArrayStore'], function() {
     var proxy, operation, records;
 
-    function createSmallProxy() {
-        proxy = new Ext.data.proxy.Memory({
+    function createSmallProxy(cfg) {
+        proxy = new Ext.data.proxy.Memory(Ext.apply({
             data: {
                 users: [{
                     id: 1,
@@ -21,7 +21,7 @@ describe("Ext.data.proxy.Memory", function() {
                 type: 'json',
                 rootProperty: 'users'
             }
-        });
+        }, cfg));
     }
     
     function createLargeProxy(page) {
@@ -243,6 +243,39 @@ describe("Ext.data.proxy.Memory", function() {
             store.clearFilter();
             expect(store.getCount()).toBe(75);
         });
-        
+
+        it('should be able to read the hardcoded data multiple times', function() {
+            createSmallProxy();
+            createStore({
+                proxy: proxy
+            });
+            store.load();
+            expect(store.getCount()).toBe(2);
+            expect(store.first().get('name')).toBe('Ed Spencer');
+            expect(store.last().get('name')).toBe('Abe Elias');
+
+            // Should read the same data again
+            store.load();
+            expect(store.getCount()).toBe(2);
+            expect(store.first().get('name')).toBe('Ed Spencer');
+            expect(store.last().get('name')).toBe('Abe Elias');
+        });
+
+        it('should be not able to read the hardcoded data multiple times if proxy is configured to clearOnRead', function() {
+            createSmallProxy({
+                clearOnRead: true
+            });
+            createStore({
+                proxy: proxy
+            });
+            store.load();
+            expect(store.getCount()).toBe(2);
+            expect(store.first().get('name')).toBe('Ed Spencer');
+            expect(store.last().get('name')).toBe('Abe Elias');
+
+            // data should be gone...
+            store.load();
+            expect(store.getCount()).toBe(0);
+        });
     });
 });

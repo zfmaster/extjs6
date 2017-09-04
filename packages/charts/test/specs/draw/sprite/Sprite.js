@@ -1,4 +1,104 @@
-describe('Ext.draw.sprite.Sprite', function () {
+topSuite("Ext.draw.sprite.Sprite", ['Ext.draw.*'], function() {
+    beforeEach(function() {
+        // Silence warnings regarding Sencha download server
+        spyOn(Ext.log, 'warn');
+    });
+
+    describe('setAttributes', function () {
+        var draw;
+
+        afterEach(function () {
+            Ext.destroy(draw);
+        });
+
+        it('should filter out attributes properly', function () {
+            // This actually tests many things: the setAttributes method of the sprite,
+            // the abstract and Animation modifiers and the Animator class.
+            var animationend;
+
+            draw = new Ext.draw.Container({
+                renderTo: document.body,
+                width: 200,
+                height: 200
+            });
+            var surface = draw.getSurface();
+            var circle = new Ext.draw.sprite.Circle({
+                r: 10,
+                cx: 100,
+                cy: 100,
+                fillStyle: 'red',
+                strokeStyle: 'none'
+            });
+
+            var animation = circle.getAnimation();
+            animation.setDuration(250);
+            animation.on('animationend', function () {
+                animationend = true;
+            });
+
+            surface.add(circle);
+
+            circle.setAttributes({
+                r: 90
+            });
+
+            surface.renderFrame();
+
+            waitsFor(function () {
+                return animationend;
+            });
+
+            runs(function () {
+                expect(circle.attr.r).toBe(90);
+                animationend = false;
+                circle.setAttributes({
+                    r: 50
+                });
+                // The call below should compare the value being set with the target value
+                // at the end of animation, not the current value, which is still 90.
+                // If this is buggy, the attribute won't be set and the animation to 50
+                // will be performed instead.
+                circle.setAttributes({
+                    r: 90
+                });
+                surface.renderFrame();
+            });
+
+            waitsFor(function () {
+                return animationend;
+            });
+
+            runs(function () {
+                expect(circle.attr.r).toBe(90);
+            });
+        });
+    });
+
+    describe('surface', function () {
+        var surface;
+
+        it('should remove itself from the old surface', function () {
+            surface = new Ext.draw.Surface({
+                items: {
+                    type: 'rect',
+                    id: 'rect',
+                    x: 50,
+                    y: 50,
+                    width: 100,
+                    height: 100,
+                    fillStyle: 'orange'
+                }
+            });
+            var sprite = surface.get('rect');
+            expect(surface.getItems().length).toBe(1);
+            sprite.setSurface(null);
+            expect(surface.getItems().length).toBe(0);
+        });
+
+        afterEach(function () {
+            Ext.destroy(surface);
+        });
+    });
 
     describe('transformation matrix calculation', function () {
         describe('default centers of scaling and rotation', function () {
@@ -528,7 +628,7 @@ describe('Ext.draw.sprite.Sprite', function () {
         it("should return the stored reference to the sprite's animation modifier", function () {
             var sprite = new Ext.draw.sprite.Rect();
 
-            expect(sprite.getAnimation()).toEqual(sprite.fx);
+            expect(sprite.getAnimation()).toEqual(sprite.modifiers.animation);
         });
     });
 
@@ -548,7 +648,7 @@ describe('Ext.draw.sprite.Sprite', function () {
 
             sprite.setAnimation(config);
 
-            var actualConfig = sprite.fx.getInitialConfig();
+            var actualConfig = sprite.modifiers.animation.getInitialConfig();
             expect(actualConfig.duration).toEqual(config.duration);
             expect(actualConfig.easing).toEqual(config.easing);
             expect(actualConfig.customEasings).toEqual(config.customEasings);

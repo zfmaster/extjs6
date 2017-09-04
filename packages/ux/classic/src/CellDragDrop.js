@@ -1,19 +1,20 @@
 /**
  * This plugin can enable a cell to cell drag and drop operation within the same grid view.
  *
- * Note that the plugin must be added to the grid view, not to the grid panel. For example, using {@link Ext.panel.Table viewConfig}:
+ * Note that the plugin must be added to the grid view, not to the grid panel. For example,
+ * using {@link Ext.panel.Table viewConfig}:
  *
  *      viewConfig: {
  *          plugins: {
- *              ptype: 'celldragdrop',
+ *              celldragdrop: {
+ *                  // Remove text from source cell and replace with value of emptyText.
+ *                  applyEmptyText: true,
  *
- *              // Remove text from source cell and replace with value of emptyText.
- *              applyEmptyText: true,
+ *                  //emptyText: Ext.String.htmlEncode('<<foo>>'),
  *
- *              //emptyText: Ext.String.htmlEncode('<<foo>>'),
- *
- *              // Will only allow drops of the same type.
- *              enforceType: true
+ *                  // Will only allow drops of the same type.
+ *                  enforceType: true
+ *              }
  *          }
  *      }
  */
@@ -41,7 +42,7 @@ Ext.define('Ext.ux.CellDragDrop', {
     applyEmptyText: false,
 
     /**
-     * @cfg {Boolean} emptyText
+     * @cfg {String} emptyText
      * If {@link #applyEmptyText} is `true`, then this value as the drag record's value after a node drop.
      *
      * Defaults to an empty string.
@@ -49,7 +50,7 @@ Ext.define('Ext.ux.CellDragDrop', {
     emptyText: '',
 
     /**
-     * @cfg {Boolean} dropBackgroundColor
+     * @cfg {String} dropBackgroundColor
      * The default background color for when a drop is allowed.
      *
      * Defaults to green.
@@ -57,14 +58,13 @@ Ext.define('Ext.ux.CellDragDrop', {
     dropBackgroundColor: 'green',
 
     /**
-     * @cfg {Boolean} noDropBackgroundColor
+     * @cfg {String} noDropBackgroundColor
      * The default background color for when a drop is not allowed.
      *
      * Defaults to red.
      */
     noDropBackgroundColor: 'red',
 
-    //<locale>
     /**
      * @cfg {String} dragText
      * The text to show while dragging.
@@ -73,9 +73,9 @@ Ext.define('Ext.ux.CellDragDrop', {
      *
      * - `{0}` The number of selected items.
      * - `{1}` 's' when more than 1 items (only useful for English).
+     * @locale
      */
     dragText: '{0} selected row{1}',
-    //</locale>
 
     /**
      * @cfg {String} ddGroup

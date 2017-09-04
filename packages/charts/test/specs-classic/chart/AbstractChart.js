@@ -1,4 +1,6 @@
-describe('Ext.chart.AbstractChart.classic', function () {
+topSuite("Ext.chart.AbstractChart.classic",
+    [false, 'Ext.chart.*', 'Ext.data.ArrayStore'],
+function() {
     var chart, store;
 
     var Model = Ext.define(null, {

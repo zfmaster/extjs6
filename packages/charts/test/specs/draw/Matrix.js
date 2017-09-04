@@ -1,4 +1,4 @@
-describe('Ext.draw.Matrix', function () {
+topSuite("Ext.draw.Matrix", function() {
 
     describe('split', function () {
         it("should extract transformation components properly", function () {

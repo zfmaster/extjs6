@@ -1,7 +1,8 @@
-/* global Ext, expect, jasmine */
+/* global Ext, expect, jasmine, xit */
 
-describe('Ext.grid.plugin.RowExpander', function () {
-    var dummyData = [
+topSuite("Ext.grid.plugin.RowExpander", ['Ext.grid.Panel'], function() {
+    var itNotIE8 = Ext.isIE8 ? xit : it,
+        dummyData = [
             ['3m Co',71.72,0.02,0.03,'9/1 12:00am', 'Manufacturing'],
             ['Alcoa Inc',29.01,0.42,1.47,'9/1 12:00am', 'Manufacturing'],
             ['Altria Group Inc',83.81,0.28,0.34,'9/1 12:00am', 'Manufacturing'],
@@ -124,7 +125,7 @@ describe('Ext.grid.plugin.RowExpander', function () {
  
     function getRowBodyTr (index, locked) {
         view = locked ? expander.lockedView : expander.view;
-        return view.all.item(index).down('.' + Ext.baseCSSPrefix + 'grid-rowbody-tr');
+        return Ext.fly(view.all.item(index).down('.' + Ext.baseCSSPrefix + 'grid-rowbody-tr', true));
     }
 
     afterEach(function () {
@@ -149,9 +150,11 @@ describe('Ext.grid.plugin.RowExpander', function () {
     it("should not expand in response to mousedown", function() {
         makeGrid();
 
-        jasmine.fireMouseEvent(grid.view.el.query('.x-grid-row-expander')[0], 'mousedown');
+        jasmine.fireMouseEvent(grid.view.el.dom.querySelector('.x-grid-row-expander'), 'mousedown');
 
         expect(getRowBodyTr(0).isVisible()).toBe(false);
+        
+        jasmine.fireMouseEvent(grid.view.el.dom.querySelector('.x-grid-row-expander'), 'mouseup');
     });
 
     it("should expand on click", function() {
@@ -159,7 +162,7 @@ describe('Ext.grid.plugin.RowExpander', function () {
         var yRange = scroller.getSize().y,
             layoutCounter = grid.view.componentLayoutCounter;
 
-        jasmine.fireMouseEvent(grid.view.el.query('.x-grid-row-expander')[0], 'click');
+        jasmine.fireMouseEvent(grid.view.el.dom.querySelector('.x-grid-row-expander'), 'click');
 
         expect(getRowBodyTr(0).isVisible()).toBe(true);
 
@@ -181,7 +184,7 @@ describe('Ext.grid.plugin.RowExpander', function () {
         var yRange = scroller.getSize().y,
             layoutCounter = grid.normalGrid.view.componentLayoutCounter;
 
-        jasmine.fireMouseEvent(grid.view.el.query('.x-grid-row-expander')[0], 'click');
+        jasmine.fireMouseEvent(grid.view.el.dom.querySelector('.x-grid-row-expander'), 'click');
 
         expect(getRowBodyTr(0).isVisible()).toBe(true);
 
@@ -200,7 +203,7 @@ describe('Ext.grid.plugin.RowExpander', function () {
         expander.toggleRow(0, store.getAt(0));
         var layoutCounter = grid.view.componentLayoutCounter;
 
-        jasmine.fireMouseEvent(grid.view.el.query('.x-grid-row-expander')[0], 'click');
+        jasmine.fireMouseEvent(grid.view.el.dom.querySelector('.x-grid-row-expander'), 'click');
 
         expect(getRowBodyTr(0).isVisible()).toBe(false);
 
@@ -310,13 +313,15 @@ describe('Ext.grid.plugin.RowExpander', function () {
         });
 
         it("should not expand in response to mousedown", function() {
-            jasmine.fireMouseEvent(grid.lockedGrid.view.el.query('.x-grid-row-expander')[0], 'mousedown');
+            jasmine.fireMouseEvent(grid.lockedGrid.view.el.dom.querySelector('.x-grid-row-expander'), 'mousedown');
 
             expect(getRowBodyTr(0, true).isVisible()).toBe(false);
+
+            jasmine.fireMouseEvent(grid.lockedGrid.view.el.dom.querySelector('.x-grid-row-expander'), 'mouseup');
         });
 
         it("should expand on click", function() {
-            jasmine.fireMouseEvent(grid.lockedGrid.view.el.query('.x-grid-row-expander')[0], 'click');
+            jasmine.fireMouseEvent(grid.lockedGrid.view.el.dom.querySelector('.x-grid-row-expander'), 'click');
 
             expect(getRowBodyTr(0, true).isVisible()).toBe(true);
             
@@ -328,7 +333,7 @@ describe('Ext.grid.plugin.RowExpander', function () {
             expander.toggleRow(0, store.getAt(0));
 
             // click to collapse
-            jasmine.fireMouseEvent(grid.lockedGrid.view.el.query('.x-grid-row-expander')[0], 'click');
+            jasmine.fireMouseEvent(grid.lockedGrid.view.el.dom.querySelector('.x-grid-row-expander'), 'click');
 
             // The rowbody row of item 0 should not be visible
             expect(getRowBodyTr(0, true).isVisible()).toBe(false);
@@ -437,14 +442,14 @@ describe('Ext.grid.plugin.RowExpander', function () {
                 });
 
                 // Get the expander elements to click on
-                var expanders = grid.view.el.query('.x-grid-row-expander'),
+                var expander = grid.view.el.dom.querySelector('.x-grid-row-expander'),
                     lockedView = grid.lockedGrid.view,
                     normalView = grid.normalGrid.view,
                     item0CollapsedHeight = lockedView.all.item(0, true).offsetHeight,
                     item0ExpandedHeight;
 
                 // Expand first row
-                jasmine.fireMouseEvent(expanders[0], 'click');
+                jasmine.fireMouseEvent(expander, 'click');
 
                 item0ExpandedHeight = lockedView.all.item(0, true).offsetHeight;
 
@@ -537,7 +542,7 @@ describe('Ext.grid.plugin.RowExpander', function () {
 
         runs(function() {
             // Get the expander elements to click on
-            var expanders = view.el.query('.x-grid-row-expander'),
+            var expanders = view.el.dom.querySelectorAll('.x-grid-row-expander'),
                 scroller = view.getScrollable(),
                 scrollHeight = scroller.getSize().y;
 
@@ -605,7 +610,7 @@ describe('Ext.grid.plugin.RowExpander', function () {
     });
 
     describe('mousedown in large expansion row', function() {
-        it('should not scroll', function() {
+        itNotIE8('should not scroll', function() {
             grid = new Ext.grid.Panel({
                 renderTo: Ext.getBody(),
                 width: 500,
@@ -636,20 +641,22 @@ describe('Ext.grid.plugin.RowExpander', function () {
                     }]
                 }
             });
+            var scrollable = grid.getView().getScrollable(),
+                scrollEndSpy = spyOnEvent(scrollable, 'scrollend');
 
             // Expand the expander
-            jasmine.fireMouseEvent(grid.view.el.query('.x-grid-row-expander')[0], 'click');
+            jasmine.fireMouseEvent(grid.view.el.dom.querySelector('.x-grid-row-expander'), 'click');
             
             grid.view.scrollTo(0, 100);
 
             // We must wait until the Scroller knows about the scroll position
             // at which point it fires a scrollend event
-            waitsForEvent(grid.getView().getScrollable(), 'scrollend', 'Grid scrollend');
+            waitsForSpy(scrollEndSpy, 'Grid scrollend');
 
             runs(function() {
                 // Must give a valid x coordinate, so that it can be matched below a column so that the navigation model
                 // can determin the closet column to navigate to.
-                jasmine.fireMouseEvent(grid.view.all.item(0).down(Ext.grid.feature.RowBody.prototype.innerSelector), 'mousedown', 100);
+                jasmine.fireMouseEvent(grid.view.all.item(0).down(Ext.grid.feature.RowBody.prototype.innerSelector, true), 'mousedown', 100);
             });
 
             // Nothing detectable should happen. Scroll position should remain stable
@@ -658,7 +665,22 @@ describe('Ext.grid.plugin.RowExpander', function () {
             runs(function() {
                 // Scroll position should be stable.
                 expect(grid.view.getScrollY()).toBe(100);
+                jasmine.fireMouseEvent(grid.view.all.item(0).down(Ext.grid.feature.RowBody.prototype.innerSelector, true), 'mouseup', 100);
             });
        });
+    });
+
+    describe("reconfigure", function() {
+        it("should not throw an exception when reconfiguring while not rendered", function() {
+            makeGrid({
+                renderTo: null
+            });
+
+            expect(function() {
+                grid.reconfigure(null, [{
+                    dataIndex: 'company'
+                }]);
+            }).not.toThrow();
+        });
     });
 });

@@ -114,17 +114,19 @@ Ext.define('Ext.draw.sprite.Instancing', {
      * @return {Object} The attributes of the instance.
      */
     add: function (config, bypassNormalization, avoidCopy) {
-        var template = this.getTemplate(),
+        var me = this,
+            template = me.getTemplate(),
             originalAttr = template.attr,
             attr = Ext.Object.chain(originalAttr);
 
-        template.topModifier.prepareAttributes(attr);
+        template.modifiers.target.prepareAttributes(attr);
         template.attr = attr;
         template.setAttributes(config, bypassNormalization, avoidCopy);
         attr.template = template;
-        this.instances.push(attr);
+        me.instances.push(attr);
         template.attr = originalAttr;
-        this.position++;
+        me.position++;
+
         return attr;
     },
 
@@ -210,6 +212,7 @@ Ext.define('Ext.draw.sprite.Instancing', {
         template.preRender(surface, ctx, rect);
         template.useAttributes(ctx, surfaceRect);
 
+        template.isSpriteInstance = true;
         for (i = 0; i < ln; i++) {
             if (instances[i].hidden) {
                 continue;
@@ -220,6 +223,7 @@ Ext.define('Ext.draw.sprite.Instancing', {
             template.render(surface, ctx, rect);
             ctx.restore();
         }
+        template.isSpriteInstance = false;
 
         template.attr = originalAttr;
     },
@@ -245,7 +249,7 @@ Ext.define('Ext.draw.sprite.Instancing', {
         } else {
             changes = template.self.def.normalize(changes);
         }
-        template.topModifier.pushDown(attr, changes);
+        template.modifiers.target.pushDown(attr, changes);
         template.attr = originalAttr;
     },
 

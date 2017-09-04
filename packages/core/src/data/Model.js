@@ -233,6 +233,9 @@ Ext.define('Ext.data.Model', {
 
     erasing: false,
 
+    loadOperation: null,
+    loadCount: 0,
+
     observableType: 'record',
 
     /**
@@ -289,7 +292,6 @@ Ext.define('Ext.data.Model', {
         // A similar issue can occur with the hasListeners property of Observable
         // (see the constructor of Ext.mixin.Observable)
         me.data = me.data = data || (data = {});
-        me.session = session || null;
         me.internalId = internalId = modelIdentifier.generate();
 
         //<debug>
@@ -316,28 +318,35 @@ Ext.define('Ext.data.Model', {
         }
 
         // Must do this after running the initializeFn due to converters on idField
-        if (!(me.id = id = data[idProperty]) && id !== 0) {
-            //<debug>
-            if (dataId) {
-                Ext.raise('The model ID configured in data ("' + dataId + '") has been rejected by the ' + me.fieldsMap[idProperty].type + ' field converter for the ' + idProperty + ' field');
+        if (!me.isSummaryModel) {
+            if (!(me.id = id = data[idProperty]) && id !== 0) {
+                //<debug>
+                if (dataId) {
+                    Ext.raise('The model ID configured in data ("' + dataId + '") has been rejected by the ' + me.fieldsMap[idProperty].type + ' field converter for the ' + idProperty + ' field');
+                }
+                //</debug>
+                if (session) {
+                    identifier = session.getIdentifier(cls);
+                    id = identifier.generate();
+                } else if (modelIdentifier === identifier) {
+                    id = internalId;
+                } else {
+                    id = identifier.generate();
+                }
+
+                data[idProperty] = me.id = id;
+                me.phantom = true;
+                me.crudState = 'C';
             }
-            //</debug>
+
             if (session) {
-                identifier = session.getIdentifier(cls);
-                id = identifier.generate();
-            } else if (modelIdentifier === identifier) {
-                id = internalId;
-            } else {
-                id = identifier.generate();
+                session.add(me);
             }
 
-            data[idProperty] = me.id = id;
-            me.phantom = true;
-            me.crudState = 'C';
-        }
-
-        if (session) {
-            session.add(me);
+            // Needs to be set after the add to the session
+            if (me.phantom) {
+                me.crudStateWas = 'C';
+            }
         }
 
         if (me.init && Ext.isFunction(me.init)) {
@@ -672,6 +681,37 @@ Ext.define('Ext.data.Model', {
     schema: 'default',
 
     /**
+     * @cfg {Object} summary
+     * Summary fields are a special kind of field that is used to assist in creating an
+     * aggregation for this model. A new model type that extends this model will be created,
+     * accessible via {@link #method-getSummaryModel}. This summary model will have these virtual
+     * aggregate fields in the fields collection like a normal model. Each key in the object is the
+     * field name. The value for each field should mirror the {@link #cfg-fields}, excluding the `name`
+     * option. The summary model generated will have 2 fields, 'rate', which will aggregate using an average
+     * and maxRate, which will aggregate using the maximum value.
+     *
+     * See {@link Ext.data.summary.Base} for more information.
+     *
+     *      Ext.define('User', {
+     *          extend: 'Ext.data.Model',
+     *          fields: [{
+     *              name: 'rate',
+     *              summary: 'avg'
+     *          }],
+     *
+     *          summary: {
+     *              maxRate: {
+     *                  field: 'rate', // calculated from rate field
+     *                  summary: 'max'
+     *              }
+     *          }
+     *      });
+     *
+     * @since 6.5.0
+     */
+    summary: null,
+
+    /**
      * @cfg {String} [versionProperty]
      * If specified, this is the name of the property that contains the entity "version".
      * The version property is used to manage a long-running transaction and allows the
@@ -806,11 +846,40 @@ Ext.define('Ext.data.Model', {
     },
 
     /**
+     * Calculate all summary fields on this record.
+     * @param {Ext.data.Model[]} records The records to use for calculation.
+     *
+     * @since 6.5.0
+     */
+    calculateSummary: function(records) {
+        var fields = this.getFields(),
+            len = fields.length,
+            recLen = records.length,
+            i, result, summary, prop, name, field;
+
+        for (i = 0; i < len; ++i) {
+            field = fields[i];
+            summary = field.getSummary();
+            if (summary) {
+                result = result || {};
+                name = field.name;
+                prop = field.summaryField || name;
+                result[name] = summary.calculate(records, prop, 'data', 0, recLen);
+            }
+        }
+
+        if (result) {
+            this.set(result, this._commitOptions);
+        }
+    },
+
+    /**
      * Cancels all changes made in the current edit operation.
      */
     cancelEdit: function () {
         var me = this,
-            editMemento = me.editMemento;
+            editMemento = me.editMemento,
+            validation = me.validation;
 
         if (editMemento) {
             me.editing = false;
@@ -818,6 +887,10 @@ Ext.define('Ext.data.Model', {
             // reset the modified state, nothing changed since the edit began
             Ext.apply(me, editMemento);
             me.editMemento = null;
+
+            if (validation && validation.syncGeneration !== me.generation) {
+                validation.syncGeneration = 0;
+            }
         }
     },
 
@@ -1300,23 +1373,24 @@ Ext.define('Ext.data.Model', {
 
     /**
      * Tells this model instance that an observer is looking at it.
-     * @param {Ext.data.Store} item The store to which this model has been added.
+     * @param {Ext.data.Store} owner The store or other owner object to which this model
+     * has been added.
      */
-    join: function (item) {
+    join: function (owner) {
         var me = this,
             joined = me.joined;
 
         // Optimize this, gets called a lot
         if (!joined) {
-            joined = me.joined = [item];
+            joined = me.joined = [owner];
         } else if (!joined.length) {
-            joined[0] = item;
+            joined[0] = owner;
         } else {
             // TODO: do we need joined here? Perhaps push will do.
-            Ext.Array.include(joined, item);
+            Ext.Array.include(joined, owner);
         }
 
-        if (item.isStore && !me.store) {
+        if (owner.isStore && !me.store) {
             /**
             * @property {Ext.data.Store} store
             * The {@link Ext.data.Store Store} to which this instance belongs.
@@ -1324,15 +1398,16 @@ Ext.define('Ext.data.Model', {
             * **Note:** If this instance is bound to multiple stores, this property
             * will reference only the first.
             */
-            me.store = item;
+            me.store = owner;
         }
     },
 
     /**
      * Tells this model instance that it has been removed from the store.
-     * @param {Ext.data.Store} store The store from which this model has been removed.
+     * @param {Ext.data.Store} owner The store or other owner object from which this
+     * model has been removed.
      */
-    unjoin: function (item) {
+    unjoin: function (owner) {
         var me = this,
             joined = me.joined,
             
@@ -1342,22 +1417,22 @@ Ext.define('Ext.data.Model', {
             store = me.store,
             i;
 
-        if (item === me.session) {
+        if (owner === me.session) {
             me.session = null;
         } else {
-            if (len === 1 && joined[0] === item) {
+            if (len === 1 && joined[0] === owner) {
                 joined.length = 0;
             } else if (len) {
-                Ext.Array.remove(joined, item);
+                Ext.Array.remove(joined, owner);
             }
 
-            if (store === item) {
+            if (store === owner) {
                 store = null;
                 if (joined) {
                     for (i = 0, len = joined.length; i < len; ++i) {
-                        item = joined[i];
-                        if (item.isStore) {
-                            store = item;
+                        owner = joined[i];
+                        if (owner.isStore) {
+                            store = owner;
                             break;
                         }
                     }
@@ -1545,7 +1620,8 @@ Ext.define('Ext.data.Model', {
         me.erasing = true;
 
         // Drop causes a removal from the backing Collection.
-        // The store's onCollectionRemove will respond to this by adding the record to its "to remove" stack and setting its needsSync
+        // The store's onCollectionRemove will respond to this by adding the record to
+        // its "to remove" stack and setting its needsSync
         // flag unless the above "erasing" flag is set.
         me.drop();
 
@@ -1644,7 +1720,7 @@ Ext.define('Ext.data.Model', {
         me.$gathering = 1;
 
         if (options) {
-            options = Ext.Object.chain(options);
+            options = Ext.apply({}, options);
         }
 
         for (roleName in associations) {
@@ -1713,11 +1789,34 @@ Ext.define('Ext.data.Model', {
      * properties describing the desired result. Passing `true` simply returns all fields
      * *and* all associated record data.
      *
+     * To selectively gather some associated data, the `options` object can be used as
+     * follows:
+     *
+     *      var data = order.getData({
+     *          associated: {
+     *              orderItems: true
+     *          }
+     *      });
+     *
+     * This will include all data fields as well as an "orderItems" array with the data
+     * for each `OrderItem`. To include the associated `Item` for each `OrderItem`, the
+     * call would look like:
+     *
+     *      var data = order.getData({
+     *          associated: {
+     *              orderItems: {
+     *                  item: true
+     *              }
+     *          }
+     *      });
+     *
      * @param {Boolean/Object} [options] An object containing options describing the data
      * desired. If `true` is passed it is treated as an object with `associated` set to
      * `true`.
-     * @param {Boolean} [options.associated=false] Pass `true` to include associated data.
-     * This is equivalent to pass `true` as the only argument. See `getAssociatedData`.
+     * @param {Boolean/Object} [options.associated=false] Pass `true` to recursively
+     * include all associated data. This is equivalent to pass `true` as the only argument.
+     * See `getAssociatedData`. If `associated` is an object, it describes the specific
+     * associations to gather.
      * @param {Boolean} [options.changes=false] Pass `true` to only include fields that
      * have been modified. Note that field modifications are only tracked for fields that
      * are not declared with `persist` set to `false`. In other words, only persistent
@@ -1786,10 +1885,67 @@ Ext.define('Ext.data.Model', {
         }
 
         if (associated) {
-            me.getAssociatedData(ret, opts); // pass ret so new data is added to our object
+            if (typeof associated === 'object') {
+                me.getNestedData(opts, ret);
+            }
+            else {
+                me.getAssociatedData(ret, opts);
+            }
         }
 
         return ret;
+    },
+
+    getNestedData: function (options, result) {
+        var me = this,
+            associations = me.associations,
+            graph = options.associated,
+            i, item, items, itemData, length, record, role, roleName, opts;
+
+        result = result || {};
+
+        // For example:
+        //
+        //      associated: {
+        //          orderItems: true
+        //      }
+        //
+        //      associated: {
+        //          orderItems: {
+        //              item: true
+        //          }
+        //      }
+        //
+        for (roleName in graph) {
+            role = associations[roleName];
+            opts = graph[roleName];
+            if (opts === true) {
+                delete options.associated;
+            }
+            else {
+                options.associated = opts;
+            }
+
+            item = role.getAssociatedItem(me);
+            if (item.isStore) {
+                items = item.getData().items; // get the records for the store
+                length = items.length;
+                itemData = [];
+
+                for (i = 0; i < length; ++i) {
+                    record = items[i];
+                    itemData.push(record.getData(options));
+                }
+            } else {
+                itemData = item.getData(options);
+            }
+
+            result[roleName] = itemData;
+        }
+
+        options.associated = graph; // restore the original value
+
+        return result;
     },
 
     /**
@@ -1818,7 +1974,7 @@ Ext.define('Ext.data.Model', {
     },
 
     /**
-     * Aborts a pending {@link #load} operation. If the record is not loading, this does nothing.
+     * Aborts a pending {@link #method!load} operation. If the record is not loading, this does nothing.
      */
     abort: function() {
         var operation = this.loadOperation;
@@ -1926,7 +2082,7 @@ Ext.define('Ext.data.Model', {
             if (readOptions) {
                 readOptions.recordCreator = session ? session.recordCreator : null;
             }
-            me.set(data, me._commitOptions);  
+            me.set(data, me._commitOptions);
             //<debug>
             // Do the id check after set since converters may have run
             if (doIdCheck && me.getId() !== id) {
@@ -1945,6 +2101,7 @@ Ext.define('Ext.data.Model', {
                 i, len;
 
             me.loadOperation = null;
+            ++me.loadCount;
 
             if (success) {
                 Ext.callback(options.success, scope, successFailArgs);
@@ -1975,6 +2132,25 @@ Ext.define('Ext.data.Model', {
         operation.execute();
 
         return operation;
+    },
+
+    /**
+     * Merge incoming data from the server when this record exists
+     * in an active session. This method is not called if this record is
+     * loaded directly via {@link #method!load}. The default behaviour is to use incoming
+     * data if the record is not {@link #dirty}, otherwise the data is
+     * discarded. This method should be overridden in subclasses to
+     * provide a different behavior.
+     * @param {Object} data The model data retrieved from the server.
+     *
+     * @protected
+     *
+     * @since 6.5.0
+     */
+    mergeData: function(data) {
+        if (!this.dirty) {
+            this.set(data, this._commitOptions);
+        }
     },
 
     /**
@@ -2158,7 +2334,88 @@ Ext.define('Ext.data.Model', {
     //-------------------------------------------------------------------------
     // Statics
 
+    statics: {
+        /**
+         * @property {String/Object}
+         * The default proxy to use for instances of this Model when no proxy is configured
+         * on the instance.  When specified, the model will use this proxy instead of
+         * requesting one from the {@link Ext.data.Session Session}.
+         *
+         * Can be a string "type", or a {@link Ext.data.proxy.Proxy Proxy} config object.
+         *
+         * This proxy is not inherited by subclasses.
+         * @static
+         * @protected
+         */
+        defaultProxy: 'memory'
+    },
+
     inheritableStatics: {
+        /**
+         * @property {Object} _associatedReadOptions
+         * The options for the proxy reader for loadData.
+         *
+         * @private
+         */
+        _associatedReadOptions: {
+            recordsOnly: true,
+            asRoot: true
+        },
+
+        /**
+         * Create a model while also parsing any data for associations.
+         * @param {Object} data The model data, including any associated data if required. The type of
+         * data should correspond to what the configured data reader would expect.
+         * @param {Ext.data.Session} [session] The session.
+         * @return {Ext.data.Model} The model.
+         *
+         * @static
+         * @inheritable
+         * @since 6.5.0
+         */
+        loadData: function(data, session) {
+            var rec;
+
+            if (data) {
+                rec = this.getProxy().getReader().readRecords([data], session ? {
+                     recordCreator: session.recordCreator
+                } : undefined, this._associatedReadOptions)[0];
+            } else {
+                rec = new this(data, session);
+            }
+
+            return rec;
+        },
+
+        /**
+         * Get the summary model type. If {@link #summary} is specified, it is
+         * a new type that extends from this type. If not, then it is the same
+         * model type.
+         * @return {Ext.Class} The summary model type.
+         *
+         * @static
+         * @inheritable
+         * @since 6.5.0
+         */
+        getSummaryModel: function() {
+            var me = this,
+                proto = me.prototype,
+                summaryModel = me.summaryModel;
+
+            if (!summaryModel) {
+                summaryModel = Ext.define(null, {
+                    extend: me,
+                    fields: proto.summaryFields || [],
+                    isSummaryModel: true
+                });
+
+                summaryModel.isSummaryModel = true;
+                me.summaryModel = proto.summaryModel = summaryModel;
+            }
+
+            return summaryModel || null;
+        },
+
         /**
          * This method adds the given set of fields to this model class.
          *
@@ -2200,12 +2457,13 @@ Ext.define('Ext.data.Model', {
                 fields = me.fields,
                 fieldsMap = me.fieldsMap,
                 ordinals = me.fieldOrdinals,
-                field, i, idField, len, name, ordinal;
+                field, i, idField, len, name, ordinal, cleared;
 
             if (removeFields === true) {
                 fields.length = 0;
                 me.fieldsMap = fieldsMap = {};
                 me.fieldOrdinals = ordinals = {};
+                cleared = true;
             } else if (removeFields) {
                 for (i = removeFields.length; i-- > 0; ) {
                     name = removeFields[i];
@@ -2241,6 +2499,14 @@ Ext.define('Ext.data.Model', {
                     fieldsMap[name] = field;
                     field.ordinal = ordinal;
                     field.definedBy = field.owner = this; // Ext.data.NodeInterface
+                }
+            }
+
+            // Reset all ranks if we didn't get cleared, since this could
+            // alter the dependencies
+            if (!cleared) {
+                for (i = 0, len = fields.length; i < len; ++i) {
+                    fields[i].rank = null;
                 }
             }
 
@@ -2472,8 +2738,14 @@ Ext.define('Ext.data.Model', {
             var data = {},
                 rec;
 
-            data[this.prototype.idProperty] = id;
-            rec = new this(data, session);
+            if (session) {
+                rec = session.peekRecord(this, id);
+            }
+
+            if (!rec) {
+                data[this.prototype.idProperty] = id;
+                rec = new this(data, session);
+            }
 
             rec.load(options);
             return rec;
@@ -2558,6 +2830,12 @@ Ext.define('Ext.data.Model', {
         },
         _getNotAssociatedOptions: {
             associated: false
+        },
+
+        _metaProperties: {
+            dirty: 'isDirty',
+            phantom: 'isPhantom',
+            valid: 'isValid'
         },
 
         /**
@@ -2647,6 +2925,11 @@ Ext.define('Ext.data.Model', {
                     args = [me];
                 }
 
+                fn = session && session[funcName];
+                if (fn) {
+                    fn.apply(session, args);
+                }
+
                 if (joined) {
                     for (i = 0, len = joined.length; i < len; ++i) {
                         item = joined[i];
@@ -2655,14 +2938,59 @@ Ext.define('Ext.data.Model', {
                         }
                     }
                 }
-
-                fn = session && session[funcName];
-                if (fn) {
-                    fn.apply(session, args);
-                }
             }
 
             me.crudStateWas = state;
+        },
+
+        /**
+         * Currently this only checks the loading state, this method exists for API
+         * parity with stores.
+         * @return {Boolean} `true` if the model is loading or has a pending load.
+         *
+         * @private
+         */
+        hasPendingLoad: function() {
+            return this.isLoading();
+        },
+
+        interpret: function (name) {
+            var me = this,
+                accessor = me._metaProperties[name];
+
+            if (!accessor) {
+                accessor = me.associations;
+                // e.g. "orderItems"
+                accessor = accessor && accessor[name] && accessor[name].getterName;
+            }
+
+            if (accessor) {
+                return me[accessor](); // e.g., me.isPhantom()
+            }
+
+            return me.data[name];
+        },
+
+        /**
+         * Gets the dirty state of this record.
+         * @return {Boolean} The dirty state.
+         *
+         * @private
+         */
+        isDirty: function() {
+            // Added as a method to be used by data binding
+            return this.dirty;
+        },
+
+        /**
+         * Gets the phantom state of this record.
+         * @return {Boolean} The phantom state.
+         *
+         * @private
+         */
+        isPhantom: function() {
+            // Added as a method to be used by data binding
+            return this.phantom;
         },
 
         /**
@@ -2677,6 +3005,7 @@ Ext.define('Ext.data.Model', {
         },
 
         /**
+         * @method
          * Called when the model id is changed.
          * @param {Object} id The new id.
          * @param {Object} oldId The old id.
@@ -2733,6 +3062,7 @@ Ext.define('Ext.data.Model', {
          * example dates.
          * @param {Object} lhs The first value.
          * @param {Object} rhs The second value.
+         * @param {String/Ext.data.Field} [field] The field name or instance.
          * @return {Boolean} True if the values are equal.
          * @private
          */
@@ -2760,8 +3090,9 @@ Ext.define('Ext.data.Model', {
              * @static
              * @private
              * @readonly
-             * @deprecated
-             * The update operation of type 'edit'. Used by {@link Ext.data.Store#event-update Store.update} event.
+             * @deprecated 5.0 Use the string `"edit"` directly.
+             * The update operation of type 'edit'. Used by the
+             * {@link Ext.data.Store#event-update Store.update} event.
              */
             EDIT   : 'edit',
             /**
@@ -2769,8 +3100,9 @@ Ext.define('Ext.data.Model', {
              * @static
              * @private
              * @readonly
-             * @deprecated
-             * The update operation of type 'reject'. Used by {@link Ext.data.Store#event-update Store.update} event.
+             * @deprecated 5.0 Use the string `"reject"` directly.
+             * The update operation of type 'reject'. Used by the
+             * {@link Ext.data.Store#event-update Store.update} event.
              */
             REJECT : 'reject',
             /**
@@ -2778,24 +3110,11 @@ Ext.define('Ext.data.Model', {
              * @static
              * @private
              * @readonly
-             * @deprecated
-             * The update operation of type 'commit'. Used by {@link Ext.data.Store#event-update Store.update} event.
+             * @deprecated 5.0 Use the string `"commit"` directly.
+             * The update operation of type 'commit'. Used by the
+             * {@link Ext.data.Store#event-update Store.update} event.
              */
             COMMIT : 'commit',
-
-            /**
-             * @property {String/Object}
-             * @static
-             * @protected
-             * The default proxy to use for instances of this Model when no proxy is configured
-             * on the instance.  When specified, the model will use this proxy instead of
-             * requesting one from the {@link Ext.data.Session Session}.
-             *
-             * Can be a string "type", or a {@link Ext.data.proxy.Proxy Proxy} config object.
-             *
-             * This proxy is not inherited by subclasses.
-             */
-            defaultProxy: 'memory',
 
             rankFields: function () {
                 var cls = this,
@@ -2943,8 +3262,8 @@ Ext.define('Ext.data.Model', {
                 }
 
                 // Merge in any fields from this class:
+                delete data.fields;
                 if (fieldDefs) {
-                    delete data.fields;
                     for (i = 0, length = fieldDefs.length; i < length; ++i) {
                         field = fieldDefs[i];
                         reference = field.reference;
@@ -3036,6 +3355,68 @@ Ext.define('Ext.data.Model', {
                 // point is Ext.data.NodeInterface.
             },
 
+            initSummaries: function(data, cls, proto) {
+                var summaryDefs = data.summary,
+                    superSummaries = proto.summaryFields,
+                    summaries, summaryMap, name, summary,
+                    len, i, index, field;
+
+                if (superSummaries) {
+                    summaries = [];
+                    summaryMap = {};
+                    for (i = 0, len = superSummaries.length; i < len; ++i) {
+                        summary = superSummaries[i];
+                        summaries.push(summary);
+                        summaries[summary.name] = i;
+                    }
+                }
+
+                if (summaryDefs) {
+                    delete data.summary;
+
+                    summaries = summaries || [];
+                    summaryMap = summaryMap || {};
+
+                    for (name in summaryDefs) {
+                        summary = summaryDefs[name];
+                        if (typeof summary === 'function') {
+                            summary = {
+                                summary: summary
+                            };
+                        }
+                        // If it's not in the summaries, it's new here. We've already
+                        // applied when copying down so this is safe to do
+                        index = summaryMap[name];
+                        summary = Ext.apply({
+                            name: name
+                        }, summary);
+                        field = summary.field;
+                        if (field) {
+                            delete summary.field;
+                            summary.summaryField = field;
+                        }
+                        if (index === undefined) {
+                            index = summaries.length;
+                            summaryMap[name] = summary;
+                        }
+                        summaries[index] = summary;
+                    }
+                }
+
+                if (summaries) {
+                    //<debug>
+                    for (i = 0, len = summaries.length; i < len; ++i) {
+                        if (summaries[i].name in proto.fieldsMap) {
+                            Ext.raise('Cannot redefine field, use the summary property on the field.');
+                        }
+                    }
+                    //</debug>
+
+                    // Store these in an array so we have a predictable order when subclassing
+                    proto.summaryFields = summaries;
+                }
+            },
+
             initValidators: function(data, cls, proto) {
                 var superValidators = proto.validators,
                     validators, field, copy, validatorDefs,
@@ -3084,7 +3465,7 @@ Ext.define('Ext.data.Model', {
                         }
 
                         validator = validators[name];
-                        if (validators[name]) {
+                        if (validator) {
                             // Declared in super
                             Ext.Array.push(validator, fieldValidator);
                         } else {
@@ -3428,6 +3809,9 @@ function () {
         Model.initIdentifier(data, cls, proto);
         Model.initFields(data, cls, proto);
         Model.initValidators(data, cls, proto);
+        if (!data.isSummaryModel) {
+            Model.initSummaries(data, cls, proto);
+        }
 
         // This is a compat hack to allow "rec.fields.items" to work as it used to when
         // fields was a MixedCollection

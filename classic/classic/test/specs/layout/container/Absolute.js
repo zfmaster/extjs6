@@ -1,4 +1,4 @@
-describe('Ext.layout.container.Absolute', function() {
+topSuite("Ext.layout.container.Absolute", 'Ext.Container', function() {
     var ct;
 
     afterEach(function() {

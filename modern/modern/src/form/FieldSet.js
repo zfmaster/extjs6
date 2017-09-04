@@ -36,17 +36,17 @@
  */
 Ext.define('Ext.form.FieldSet', {
     extend: 'Ext.Container',
-    alias: 'widget.fieldset',
-    requires: ['Ext.Title'],
-    mixins: ['Ext.form.FieldContainer'],
+    xtype: 'fieldset',
+
+    mixins: [
+        'Ext.form.Borders'
+    ],
+
+    requires: [
+        'Ext.Title'
+    ],
 
     config: {
-        /**
-         * @cfg
-         * @inheritdoc
-         */
-        baseCls: Ext.baseCSSPrefix + 'form-fieldset',
-
         /**
          * @cfg {String} title
          * Optional fieldset title, rendered just above the grouped fields.
@@ -90,9 +90,9 @@ Ext.define('Ext.form.FieldSet', {
         instructions: null
     },
 
-    layout: {
-        type: 'vbox'
-    },
+    autoSize: null,
+
+    baseCls: Ext.baseCSSPrefix + 'form-fieldset',
 
     /**
      * @private
@@ -104,7 +104,7 @@ Ext.define('Ext.form.FieldSet', {
 
         Ext.applyIf(title, {
             docked : 'top',
-            baseCls: this.getBaseCls() + '-title'
+            cls: this.baseCls + '-title'
         });
 
         return Ext.factory(title, Ext.Title, this._title);
@@ -145,7 +145,7 @@ Ext.define('Ext.form.FieldSet', {
 
         Ext.applyIf(instructions, {
             docked : 'bottom',
-            baseCls: this.getBaseCls() + '-instructions'
+            cls: this.baseCls + '-instructions'
         });
 
         return Ext.factory(instructions, Ext.Title, this._instructions);
@@ -181,30 +181,10 @@ Ext.define('Ext.form.FieldSet', {
      * @return {Ext.form.FieldSet} This FieldSet
      */
     updateDisabled: function(newDisabled) {
-        this.getFieldsAsArray().forEach(function(field) {
+        this.query('field').forEach(function(field) {
             field.setDisabled(newDisabled);
         });
 
         return this;
-    },
-
-    /**
-     * @private
-     */
-    getFieldsAsArray: function() {
-        var fields = [],
-            getFieldsFrom = function(item) {
-                if (item.isField) {
-                    fields.push(item);
-                }
-
-                if (item.isContainer) {
-                    item.getItems().each(getFieldsFrom);
-                }
-            };
-
-        this.getItems().each(getFieldsFrom);
-
-        return fields;
     }
 });

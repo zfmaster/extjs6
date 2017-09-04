@@ -1,4 +1,4 @@
-describe("Ext.form.action.DirectLoad", function() {
+topSuite("Ext.form.action.DirectLoad", ['Ext.direct.RemotingProvider', 'Ext.form.Basic'], function() {
     var provider, action, loadSpy, loadSpy2, submitSpy;
     
     function makeApi(cfg) {

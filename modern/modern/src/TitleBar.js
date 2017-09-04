@@ -9,7 +9,7 @@
  *
  * ## Examples
  *
- *     @example preview
+ *     @example
  *     Ext.Viewport.add({
  *         xtype: 'titlebar',
  *         docked: 'top',
@@ -26,12 +26,11 @@
  *         ]
  *     });
  *
- *     Ext.Viewport.setStyleHtmlContent(true);
  *     Ext.Viewport.setHtml('This shows the title being centered and buttons using align <i>left</i> and <i>right</i>.');
  *
  * <br />
  *
- *     @example preview
+ *     @example
  *     Ext.Viewport.add({
  *         xtype: 'titlebar',
  *         docked: 'top',
@@ -48,12 +47,11 @@
  *         ]
  *     });
  *
- *     Ext.Viewport.setStyleHtmlContent(true);
  *     Ext.Viewport.setHtml('This shows how the title is automatically moved to the right when one of the aligned buttons is very wide.');
  *
  * <br />
  *
- *     @example preview
+ *     @example
  *     Ext.Viewport.add({
  *         xtype: 'titlebar',
  *         docked: 'top',
@@ -70,7 +68,6 @@
  *         ]
  *     });
  *
- *     Ext.Viewport.setStyleHtmlContent(true);
  *     Ext.Viewport.setHtml('This shows how the title and buttons will automatically adjust their size when the width of the items are too wide..');
  *
  * The {@link #defaultType} of Toolbar's is {@link Ext.Button button}.
@@ -93,6 +90,8 @@ Ext.define('Ext.TitleBar', {
     isToolbar: true,
 
     classCls: Ext.baseCSSPrefix + 'titlebar',
+
+    inheritUi: true,
 
     config: {
         /**
@@ -129,7 +128,7 @@ Ext.define('Ext.TitleBar', {
         defaultButtonUI: null,
 
         /**
-         * @cfg {String} minHeight
+         * @cfg {Number/String} minHeight
          * The minimum height height of the Toolbar.
          * @accessor
          */
@@ -162,21 +161,24 @@ Ext.define('Ext.TitleBar', {
         maxButtonWidth: '40%'
     },
 
-    border: false,
+    autoSize: null,
 
-    hasCSSMinHeight: true,
+    border: false,
 
     beforeInitialize: function () {
         this.applyItems = this.applyInitialItems;
     },
 
     initialize: function () {
-        delete this.applyItems;
+        var me = this;
 
-        this.add(this.initialItems);
-        delete this.initialItems;
+        delete me.applyItems;
 
-        this.on({
+        me.add(me.initialItems);
+        delete me.initialItems;
+
+        me.on({
+            scope: me,
             painted: 'refreshTitlePosition',
             single: true
         });
@@ -193,6 +195,7 @@ Ext.define('Ext.TitleBar', {
             xtype: 'container',
             style: 'position: relative',
             cls: Ext.baseCSSPrefix + 'titlebar-left',
+            autoSize: null,
             layout: {
                 type: 'hbox',
                 align: 'center'
@@ -218,6 +221,7 @@ Ext.define('Ext.TitleBar', {
             xtype: 'container',
             style: 'position: relative',
             cls: Ext.baseCSSPrefix + 'titlebar-right',
+            autoSize: null,
             layout: {
                 type: 'hbox',
                 align: 'center'

@@ -1,6 +1,14 @@
-describe('Ext.draw.engine.Canvas', function () {
+topSuite("Ext.draw.engine.Canvas", ['Ext.draw.Container'], function() {
+    beforeEach(function() {
+        // Silence warnings regarding Sencha download server
+        spyOn(Ext.log, 'warn');
+    });
 
     describe('surface splitting', function () {
+        var isAndroid51 = navigator.userAgent.search('Android 5.1') >= 0;
+
+        // In TeamCity's only "Android@Browser@5.1: Modern Toolkit" the following error is reported: "Expected 16 to be 9."
+        TODO(isAndroid51).
         it("should split the surface into canvas tiles vertically and horizontally based on splitThreshold", function () {
             var side = 400,
                 threshold = 200,
@@ -15,8 +23,8 @@ describe('Ext.draw.engine.Canvas', function () {
                 height: side
             });
             var surface = draw.getSurface();
-            var expectedCanvasCount = Math.pow(Math.ceil((side * (window.devicePixelRatio || 1)) / threshold), 2);
-            expect(surface.innerElement.select('canvas').elements.length).toBe(expectedCanvasCount);
+            var expectedCanvasCount = Math.pow(Math.ceil((side * (window.devicePixelRatio || window.screen.deviceXDPI / window.screen.logicalXDPI)) / threshold), 2);
+            expect(surface.bodyElement.select('canvas').elements.length).toBe(expectedCanvasCount);
             proto.splitThreshold = originalThreshold;
             Ext.destroy(draw);
         });

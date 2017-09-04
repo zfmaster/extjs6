@@ -46,6 +46,19 @@ Ext.define('Ext.drag.proxy.None', {
      */
     cleanup: Ext.emptyFn,
 
+    dragRevert: function (info, revertCls, options, callback) {
+        var positionable = this.getPositionable(info),
+            initial = info.proxy.initial;
+
+        positionable.addCls(revertCls);
+        positionable.setXY([initial.x, initial.y], Ext.apply({
+            callback: function() {
+                positionable.removeCls(revertCls);
+                callback();
+            }
+        }, options));
+    },
+
     /**
      * Get the proxy element for the drag source. This is called as
      * the drag starts. This element may be cached on the instance and
@@ -62,6 +75,18 @@ Ext.define('Ext.drag.proxy.None', {
         return null;
     },
 
+    getPositionable: function (){
+        return this.element;
+    },
+
+    setXY: function (info, xy, animation) {
+        var positionable = this.getPositionable(info);
+
+        if (positionable) {
+            positionable.setXY(xy, animation);
+        }
+    },
+
     /**
      * @method
      * Called when the target changes for the active drag. This may
@@ -75,6 +100,10 @@ Ext.define('Ext.drag.proxy.None', {
     update: Ext.emptyFn,
 
     privates: {
+        setupElement: function(info) {
+            return (this.element = this.getElement(info));
+        },
+
         /**
          * Adjust the xy position based on any cursor offset.
          * @param {Ext.drag.Info} info The drag info.

@@ -7,7 +7,7 @@
  * these convenient shorthands:
  *
  * - {@link Ext#define Ext.define}
- * - {@link Ext#create Ext.create}
+ * - {@link Ext#method!create Ext.create}
  * - {@link Ext#widget Ext.widget}
  * - {@link Ext#getClass Ext.getClass}
  * - {@link Ext#getClassName Ext.getClassName}
@@ -17,7 +17,7 @@
  *     Ext.define(className, properties);
  *
  * in which `properties` is an object represent a collection of properties that apply to the class. See
- * {@link Ext.ClassManager#create} for more detailed instructions.
+ * {@link Ext.ClassManager#method!create} for more detailed instructions.
  *
  *     Ext.define('Person', {
  *          name: 'Unknown',
@@ -66,7 +66,7 @@
  *     jacky.code("JavaScript"); // alert("I'm coding in: JavaScript");
  *                               // alert("I'm eating: Bugs");
  *
- * See {@link Ext.Base#callParent} for more details on calling superclass' methods
+ * See {@link Ext.Base#method!callParent} for more details on calling superclass' methods
  *
  * # Mixins:
  *
@@ -233,6 +233,10 @@ var makeCtor = Ext.Class.makeCtor,
          * @private
          */
         classes: {},
+        
+        //<debug>
+        classCount: 0,
+        //</debug>
 
         classState: {
             /*
@@ -514,7 +518,7 @@ var makeCtor = Ext.Class.makeCtor,
          *
          *     alert(MyCompany.pkg.Example === someObject); // alerts true
          *
-         * @param {String} name
+         * @param {String} namespace
          * @param {Object} value
          */
         setNamespace: function (namespace, value) {
@@ -571,6 +575,10 @@ var makeCtor = Ext.Class.makeCtor,
             var targetName = Manager.getName(value);
 
             Manager.classes[name] = Manager.setNamespace(name, value);
+            
+            //<debug>
+            Manager.classCount++;
+            //</debug>
 
             if (targetName && targetName !== name) {
                 Manager.addAlternate(targetName, name);
@@ -653,7 +661,7 @@ var makeCtor = Ext.Class.makeCtor,
          * @param {Ext.Class/Object} object
          * @return {String} className
          */
-        getName: function(object) {
+        getName: function (object) {
             return object && object.$className || '';
         },
 
@@ -669,16 +677,16 @@ var makeCtor = Ext.Class.makeCtor,
          * @param {Object} object
          * @return {Ext.Class} class
          */
-        getClass: function(object) {
+        getClass: function (object) {
             return object && object.self || null;
         },
 
         /**
          * Defines a class.
-         * @deprecated Use {@link Ext#define} instead, as that also supports creating overrides.
+         * @deprecated 4.1 Use {@link Ext#define} instead.
          * @private
          */
-        create: function(className, data, createdFn) {
+        create: function (className, data, createdFn) {
             //<debug>
             if (className != null && typeof className !== 'string') {
                 throw new Error("[Ext.define] Invalid class name '" + className + "' specified, must be a non-empty string");
@@ -993,9 +1001,12 @@ var makeCtor = Ext.Class.makeCtor,
         /**
          * Register a post-processor function.
          *
-         * @private
          * @param {String} name
-         * @param {Function} postprocessor
+         * @param {Function} fn
+         * @param {String/String[]} properties
+         * @param {String} position
+         * @param {String} relativeTo
+         * @private
          */
         registerPostprocessor: function(name, fn, properties, position, relativeTo) {
             if (!position) {
@@ -1072,7 +1083,7 @@ var makeCtor = Ext.Class.makeCtor,
     });
 
     /**
-     * @cfg xtype
+     * @cfg {String} xtype
      * @member Ext.Class
      * @inheritdoc Ext.Component#cfg-xtype
      */
@@ -1087,13 +1098,87 @@ var makeCtor = Ext.Class.makeCtor,
      * 
      * Methods defined on the overriding class will not automatically call the methods of 
      * the same name in the ancestor class chain.  To call the parent's method of the 
-     * same name you must call {@link Ext.Base#callParent callParent}.  To skip the 
+     * same name you must call {@link Ext.Base#method!callParent callParent}.  To skip the
      * method of the overridden class and call its parent you will instead call 
-     * {@link Ext.Base#callSuper callSuper}.
+     * {@link Ext.Base#method!callSuper callSuper}.
      *
      * See {@link Ext#define Ext.define} for additional usage examples.
      */
-    
+
+    //<feature classSystem.platformConfig>
+    /**
+     * @cfg {Object} platformConfig
+     * Allows setting config values for a class based on specific platforms. The value
+     * of this config is an object whose properties are "rules" and whose values are
+     * objects containing config values.
+     *
+     * For example:
+     *
+     *      Ext.define('App.view.Foo', {
+     *          extend: 'Ext.panel.Panel',
+     *
+     *          platformConfig: {
+     *              desktop: {
+     *                  title: 'Some Rather Descriptive Title'
+     *              },
+     *
+     *              '!desktop': {
+     *                  title: 'Short Title'
+     *              }
+     *          }
+     *      });
+     *
+     * In the above, "desktop" and "!desktop" are (mutually exclusive) rules. Whichever
+     * evaluates to `true` will have its configs applied to the class. In this case, only
+     * the "title" property, but the object can contain any number of config properties.
+     * In this case, the `platformConfig` is evaluated as part of the class and there is
+     * no cost for each instance created.
+     *
+     * The rules are evaluated expressions in the context of the platform tags contained
+     * in `{@link Ext#platformTags Ext.platformTags}`. Any properties of that object are
+     * implicitly usable (as shown above).
+     *
+     * If a `platformConfig` specifies a config value, it will replace any values declared
+     * on the class itself.
+     *
+     * Use of `platformConfig` on instances is handled by the config system when classes
+     * call `{@link Ext.Base#initConfig initConfig}`. For example:
+     *
+     *      Ext.create({
+     *          xtype: 'panel',
+     *
+     *          platformConfig: {
+     *              desktop: {
+     *                  title: 'Some Rather Descriptive Title'
+     *              },
+     *
+     *              '!desktop': {
+     *                  title: 'Short Title'
+     *              }
+     *          }
+     *      });
+     *
+     * The following is equivalent to the above:
+     *
+     *      if (Ext.platformTags.desktop) {
+     *          Ext.create({
+     *              xtype: 'panel',
+     *              title: 'Some Rather Descriptive Title'
+     *          });
+     *      } else {
+     *          Ext.create({
+     *              xtype: 'panel',
+     *              title: 'Short Title'
+     *          });
+     *      }
+     *
+     * To adjust configs based on dynamic conditions, see `{@link Ext.mixin.Responsive}`.
+     */
+    Manager.registerPostprocessor('platformConfig', function (name, Class, data) {
+        Class.addPlatformConfig(data);
+    });
+    //</feature>
+
     //<feature classSystem.alias>
     /**
      * @cfg {String/String[]} alias
@@ -1844,24 +1929,41 @@ var makeCtor = Ext.Class.makeCtor,
         
             var classes = Manager.classes;
 
+            //<debug>
+            if (classes[className]) {
+                Manager.classCount--;
+            }
+            //</debug>
+
             delete classes[className];
             delete Manager.existCache[className];
             delete Manager.classState[className];
-
+            
             Manager.removeName(className);
+            // Indiscriminately clear all factory caches here. It might be slightly inefficient however undefine
+            // is typically only called during unit testing.
+            Ext.Factory.clearCaches();
 
             var entry = Manager.getNamespaceEntry(className),
-                scope = entry.parent ? Manager.lookupName(entry.parent, false) : Ext.global;
+                scope = entry.parent ? Manager.lookupName(entry.parent, false) : Ext.global,
+                entryName;
 
             if (scope) {
+                entryName = entry.name;
+                
                 // Old IE blows up on attempt to delete window property
                 try {
-                    delete scope[entry.name];
+                    delete scope[entryName];
                 }
                 catch (e) {
-                    scope[entry.name] = undefined;
+                    scope[entryName] = undefined;
                 }
             }
+            
+            // We need to know entry name in unit tests
+            //<debug>
+            return entryName;
+            //</debug>
         },
 
         /**
@@ -1969,7 +2071,7 @@ var makeCtor = Ext.Class.makeCtor,
 
     /**
      * Old name for {@link Ext#widget}.
-     * @deprecated Use {@link Ext#widget} instead.
+     * @deprecated 5.0 Use {@link Ext#widget} instead.
      * @method createWidget
      * @member Ext
      * @private

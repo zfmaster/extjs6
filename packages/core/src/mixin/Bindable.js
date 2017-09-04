@@ -9,7 +9,7 @@ Ext.define('Ext.mixin.Bindable', {
 
     config: {
         /**
-         * @cfg {Object} [bind]
+         * @cfg {Object/String} [bind]
          * Setting this config option adds or removes data bindings for other configs.
          * For example, to bind the `title` config:
          *
@@ -34,6 +34,9 @@ Ext.define('Ext.mixin.Bindable', {
          *
          * The bind expressions are presented to `{@link Ext.app.ViewModel#bind}`. The
          * `ViewModel` instance is determined by `lookupViewModel`.
+         *
+         * **Note:** If  bind is passed as a string, it will use the {@link Ext.Component#property-defaultBindProperty}
+         * for the binding.
          */
         bind: {
             $value: null,
@@ -186,19 +189,6 @@ Ext.define('Ext.mixin.Bindable', {
             }
         },
 
-        /**
-         * @cfg {String} reference
-         * Specifies a name for this component inside its component hierarchy. This name
-         * must be unique within its {@link Ext.container.Container#referenceHolder view}
-         * or its {@link Ext.app.ViewController ViewController}. See the documentation in
-         * {@link Ext.container.Container} for more information about references.
-         *
-         * **Note**: Valid identifiers start with a letter or underscore and are followed
-         * by zero or more additional letters, underscores or digits. References are case
-         * sensitive.
-         */
-        reference: null,
-
         // @cmd-auto-dependency { directRef: 'Ext.data.Session' }
         /**
          * @cfg {Boolean/Object/Ext.data.Session} [session=null]
@@ -239,7 +229,7 @@ Ext.define('Ext.mixin.Bindable', {
          * @cfg {String/String[]/Object} twoWayBindable
          * This object holds a map of `config` properties that will update their binding
          * as they are modified. For example, `value` is a key added by form fields. The
-         * form of this config is the same as `{@link #publishes}`.
+         * form of this config is the same as `{@link #cfg!publishes}`.
          *
          * This config is defined so that updaters are not created and added for all
          * bound properties since most cannot be modified by the end-user and hence are
@@ -297,11 +287,43 @@ Ext.define('Ext.mixin.Bindable', {
     defaultBindProperty: null,
 
     /**
+     * @cfg {Boolean} nameable
+     * Set to `true` for this component's `name` property to be tracked by its containing
+     * `nameHolder`.
+     */
+    nameable: false,
+
+    /**
+     * @cfg {Boolean} shareableName
+     * Set to `true` to allow this component's `name` to be shared by other items in the
+     * same `nameHolder`. Such items will be returned in an array from `lookupName`.
+     */
+    shareableName: false,
+
+    /**
+     * @cfg {String} reference
+     * Specifies a name for this component inside its component hierarchy. This name
+     * must be unique within its {@link Ext.container.Container#referenceHolder view}
+     * or its {@link Ext.app.ViewController ViewController}. See the documentation in
+     * {@link Ext.container.Container} for more information about references.
+     *
+     * **Note**: Valid identifiers start with a letter or underscore and are followed
+     * by zero or more additional letters, underscores or digits. References are case
+     * sensitive.
+     */
+    reference: null,
+
+    /**
      * @property {RegExp}
      * Regular expression used for validating `reference` values.
      * @private
      */
     validRefRe: /^[a-z_][a-z0-9_]*$/i,
+
+    getReference: function () {
+        // Maintained for compatibility with <7 where reference used the config system
+        return this.reference;
+    },
 
     /**
      * Called by `getInherited` to initialize the inheritedState the first time it is
@@ -310,7 +332,7 @@ Ext.define('Ext.mixin.Bindable', {
      */
     initInheritedState: function (inheritedState) {
         var me = this,
-            reference = me.getReference(),
+            reference = me.reference,
             controller = me.getController(),
             // Don't instantiate the view model here, we only need to know that
             // it exists
@@ -351,6 +373,18 @@ Ext.define('Ext.mixin.Bindable', {
             me.referenceKey = (inheritedState.referencePath || '') + reference;
             me.viewModelKey = (inheritedState.viewModelPath || '') + reference;
         }
+    },
+
+    /**
+     * Determines if the passed property name is bound to ViewModel data.
+     * @param {String} [name] The property name to test. Defaults to the {@link #defaultBindProperty}
+     * @returns {Boolean} `true` if the passed property receives data from a ViewModel.
+     * @since 6.5.0
+     */
+    isBound: function(name) {
+        var bind = this.getBind();
+
+        return !!(bind && (bind[name || this.defaultBindProperty]));
     },
 
     /**
@@ -432,6 +466,12 @@ Ext.define('Ext.mixin.Bindable', {
             count = 0,
             name, publishes, vm, path;
 
+        //<debug>
+        if (!(arguments.length === 0 || arguments.length === 2)) {
+            Ext.raise('publishState must either be called with no args, or with both name AND value passed');
+        }
+        //</debug>
+
         if (binding && !binding.syncing && !binding.isReadOnly()) {
             // If the binding has never fired & our value is either:
             // a) undefined
@@ -439,7 +479,7 @@ Ext.define('Ext.mixin.Bindable', {
             // c) The value we were initially configured with
             // Then we don't want to publish it back to the view model. If we do, we'll be
             // overwriting whatever is in the viewmodel and it will never have a chance to fire.
-            if (!(binding.calls === 0 && (value == null || value === me.getInitialConfig()[property]))) {
+            if (binding.calls || !(value == null || value === me.getInitialConfig()[property])) {
                 binding.setValue(value);
             }
         }
@@ -458,7 +498,8 @@ Ext.define('Ext.mixin.Bindable', {
             return;
         }
 
-        if (property && state) {
+        state = state || (me.publishedState = {});
+        if (property) {
             if (!publishes[property]) {
                 return;
             }
@@ -473,17 +514,9 @@ Ext.define('Ext.mixin.Bindable', {
             path += '.';
             path += property;
         } else {
-            state = state || (me.publishedState = {});
-
             for (name in publishes) {
                 ++count;
-                // If there are no properties to publish this loop will not run and the
-                // value = null above will remain.
-                if (name === property) {
-                    state[name] = value;
-                } else {
-                    state[name] = me[name];
-                }
+                state[name] = me.getConfig(name);
             }
 
             if (!count) { // if (no properties were put in "state")
@@ -565,7 +598,7 @@ Ext.define('Ext.mixin.Bindable', {
                 descriptor = binds[property];
                 b = currentBindings[property];
 
-                if (b && typeof b !== 'string') {
+                if (b && b.isBinding) {
                     b.destroy();
                     b = null;
                     destroy = true;
@@ -596,7 +629,7 @@ Ext.define('Ext.mixin.Bindable', {
                     } else if (!b.isReadOnly()) {
                         me.addBindableUpdater(property);
                     }
-                  }
+                }
             }
 
             return currentBindings;
@@ -607,29 +640,23 @@ Ext.define('Ext.mixin.Bindable', {
                 controller = Ext.Factory.controller(controller);
                 controller.setView(this);
             }
+            // In classic, this is a no-op, in modern it will
+            // save a local reference
+            this.controller = controller;
             return controller;
         },
 
-        applyPublishes: function (all) {
-            if (this.lookupViewModel()) {
+        updatePublishes: function (all) {
+            var me = this;
+
+            if (me.lookupViewModel()) {
                 for (var property in all) {
-                    this.addBindableUpdater(property);
+                    me.addBindableUpdater(property);
                 }
             }
 
             return all;
         },
-
-        //<debug>
-        applyReference: function (reference) {
-            var validIdRe = this.validRefRe || Ext.validIdRe;
-            if (reference && !validIdRe.test(reference)) {
-                Ext.raise('Invalid reference "' + reference + '" for ' + this.getId() +
-                                ' - not a valid identifier');
-            }
-            return reference;
-        },
-        //</debug>
 
         /**
          * Transforms a Session config to a proper instance.
@@ -751,22 +778,53 @@ Ext.define('Ext.mixin.Bindable', {
          * @since 5.0.0
          */
         initBindable: function () {
-            this.initBindable = Ext.emptyFn;
-            this.getBind();
-            this.getPublishes();
+            var me = this,
+                controller = me.controller;
+
+            me.initBindable = Ext.emptyFn;
+            me.getBind();
+            me.getPublishes();
 
             // If we have binds, the applyBind method will call getTwoWayBindable to ensure
             // we have the necessary updaters. If we have no binds then applyBind will not
             // be called and we will ignore our twoWayBindable config (which is fine).
             //
-            // If we have publishes or binds then the viewModel will be requested. If not
-            // this viewModel will be lazily requested by a descendant via inheritedState
-            // or not at all. If there is no descendant using bind or publishes, then the
-            // viewModel will sit and wait.
-            //
-            // As goes the fate of the viewModel so goes the fate of the session. If we
-            // have requested the viewModel then the session will also be spun up. If not,
-            // we wait for a descendant or the user to request them.
+            // If we have publishes or binds then the viewModel will be requested.
+            if (!me.viewModel) {
+                // Force VM creation now
+                me.getViewModel();
+            }
+
+            if (controller) {
+                controller.initBindings();
+            }
+
+            if (me.reference) {
+                // If we have no "reference" config then we do not publish our state to the
+                // viewmodel.
+                me.publishState();
+            }
+        },
+
+        /**
+         * Checks if a particular binding is synchronizing the value.
+         * @param {String} name The name of the property being bound to.
+         * @return {Boolean} `true` if the binding is syncing.
+         *
+         * @private
+         */
+        isSyncing: function(name) {
+            var bindings = this.getBind(),
+                ret = false,
+                binding;
+
+            if (bindings) {
+                binding = bindings[name];
+                if (binding) {
+                    ret = binding.syncing > 0;
+                }
+            }
+            return ret;
         },
 
         /**
@@ -787,33 +845,19 @@ Ext.define('Ext.mixin.Bindable', {
                     if (updater) {
                         updater.call(me, newValue, oldValue);
                     }
-                    me.publishState(cfg.name, newValue);
+                    // Regather the property value in case the updater mutated it
+                    me.publishState(cfg.name, me[cfg.getInternalName(me)]);
                 };
 
-                fn.$bindableUpdater = true;
-            
+            fn.$bindableUpdater = true;
             return fn;
         },
 
-        /**
-         * Checks if a particular binding is synchronizing the value.
-         * @param {String} name The name of the property being bound to.
-         * @return {Boolean} `true` if the binding is syncing.
-         *
-         * @protected
-         */
-        isSyncing: function(name) {
-            var bindings = this.getBind(),
-                ret = false,
-                binding;
-
-            if (bindings) {
-                binding = bindings[name];
-                if (binding) {
-                    ret = binding.syncing > 0;
-                }
+        notifyIf: function(skipThis) {
+            var vm = this.lookupViewModel(skipThis);
+            if (vm) {
+                vm.notify();
             }
-            return ret;
         },
 
         onBindNotify: function (value, oldValue, binding) {
@@ -860,19 +904,24 @@ Ext.define('Ext.mixin.Bindable', {
          * @param {Ext.app.ViewModel} oldViewModel
          * @private
          */
-        updateViewModel: function (viewModel) {
-            var state = this.getInherited(),
-                controller = this.getController();
+        updateViewModel: function (viewModel, oldViewModel) {
+            var me = this,
+                state = me.getInherited(),
+                controller = me.getController();
 
             if (viewModel) {
+                me.hasVM = true;
                 state.viewModel = viewModel;
-                viewModel.setView(this);
+                viewModel.setView(me);
                 if (controller) {
                     controller.initViewModel(viewModel);
                 }
             } else {
                 delete state.viewModel;
             }
+            // In classic, this is a no-op, in modern it will
+            // save a local reference
+            me.viewModel = viewModel;
         }
     } // private
 });

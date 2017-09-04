@@ -59,6 +59,11 @@ Ext.define('Ext.app.bind.TemplateBinding', {
         return null;
     },
 
+    isAvailable: function() {
+        var multi = this.multiBinding;
+        return multi ? multi.isAvailable() : false;
+    },
+
     isDescendantOf: function () {
         return false;
     },

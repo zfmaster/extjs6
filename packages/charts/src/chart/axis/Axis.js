@@ -66,7 +66,8 @@ Ext.define('Ext.chart.axis.Axis', {
     requires: [
         'Ext.chart.axis.sprite.Axis',
         'Ext.chart.axis.segmenter.*',
-        'Ext.chart.axis.layout.*'
+        'Ext.chart.axis.layout.*',
+        'Ext.chart.Util'
     ],
 
     isAxis: true,
@@ -76,6 +77,7 @@ Ext.define('Ext.chart.axis.Axis', {
      * Fires when the {@link Ext.chart.axis.Axis#range range} of the axis  changes.
      * @param {Ext.chart.axis.Axis} axis
      * @param {Array} range
+     * @param {Array} oldRange
      */
 
     /**
@@ -83,6 +85,11 @@ Ext.define('Ext.chart.axis.Axis', {
      * Fires when the {@link #visibleRange} of the axis changes.
      * @param {Ext.chart.axis.Axis} axis
      * @param {Array} visibleRange
+     */
+
+    /**
+     * @cfg {String} id
+     * The **unique** id of this axis instance.
      */
 
     config: {
@@ -155,6 +162,7 @@ Ext.define('Ext.chart.axis.Axis', {
          * of axis' ticks based on current layout, segmenter, axis length and configuration.
          * @param {String/Number/null} lastLabel The last label (if any).
          * @return {String} The label to display.
+         * @controllable
          */
         renderer: null,
 
@@ -281,12 +289,10 @@ Ext.define('Ext.chart.axis.Axis', {
         title: null,
 
         /**
-         * @cfg {Number} increment
-         * Given a minimum and maximum bound for the series to be rendered (that can be obtained
-         * automatically or by manually setting `minimum` and `maximum`) tick marks will be added
-         * on each `increment` from the minimum value to the maximum one.
+         * @private
+         * @cfg {Number} [expandRangeBy=0]
          */
-        increment: 0.5,
+        expandRangeBy: 0,
 
         /**
          * @private
@@ -320,16 +326,10 @@ Ext.define('Ext.chart.axis.Axis', {
         /**
          * @private
          * @cfg {Number} rotation
-         * Rotation of the polar axis.
+         * Rotation of the polar axis in radians.
          * WARNING: Meant to be set automatically by chart. Do not set it manually.
          */
         rotation: null,
-
-        /**
-         * @cfg {Boolean} [labelInSpan]
-         * Draws the labels in the middle of the spans.
-         */
-        labelInSpan: null,
 
         /**
          * @cfg {Array} visibleRange
@@ -391,10 +391,6 @@ Ext.define('Ext.chart.axis.Axis', {
 
     spriteAnimationCount: 0,
 
-    prevMin: 0,
-
-    prevMax: 1,
-
     boundSeries: [],
 
     sprites: null,
@@ -408,6 +404,9 @@ Ext.define('Ext.chart.axis.Axis', {
      * and use `getRange` to update.
      */
     range: null,
+
+    defaultRange: [0, 1],
+    rangePadding: 0.5,
 
     xValues: [],
 
@@ -544,33 +543,39 @@ Ext.define('Ext.chart.axis.Axis', {
 
         if (chart && !me.surface) {
             var surface = me.surface = chart.getSurface(me.getId(), 'axis'),
-                gridSurface = me.gridSurface = chart.getSurface('main'),
-                axisSprite = me.getSprites()[0],
-                gridAlignment = me.getGridAlignment();
+                gridSurface = me.gridSurface = chart.getSurface('main');
 
             gridSurface.waitFor(surface);
             me.getGrid();
 
-            if (me.getLimits() && gridAlignment) {
-                gridAlignment = gridAlignment.replace('3d', '');
-                me.limits = {
-                    surface: chart.getSurface('overlay'),
-                    lines: new Ext.chart.Markers(),
-                    titles: new Ext.draw.sprite.Instancing()
-                };
-                me.limits.lines.setTemplate({xclass: 'grid.' + gridAlignment});
-                me.limits.lines.getTemplate().setAttributes({strokeStyle: 'black'}, true);
-                me.limits.surface.add(me.limits.lines);
-                axisSprite.bindMarker(gridAlignment + '-limit-lines', me.limits.lines);
-
-                me.limitTitleTpl = new Ext.draw.sprite.Text();
-                me.limits.titles.setTemplate(me.limitTitleTpl);
-                me.limits.surface.add(me.limits.titles);
-
-                chart.on('redraw', me.renderLimits, me);
-            }
+            me.createLimits();
         }
         return me.surface;
+    },
+
+    createLimits: function () {
+        var me = this,
+            chart = me.getChart(),
+            axisSprite = me.getSprites()[0],
+            gridAlignment = me.getGridAlignment(),
+            limits;
+
+        if (me.getLimits() && gridAlignment) {
+            gridAlignment = gridAlignment.replace('3d', '');
+            me.limits = limits = {
+                surface: chart.getSurface('overlay'),
+                lines: new Ext.chart.Markers(),
+                titles: new Ext.draw.sprite.Instancing()
+            };
+            limits.lines.setTemplate({xclass: 'grid.' + gridAlignment});
+            limits.lines.getTemplate().setAttributes({strokeStyle: 'black'}, true);
+            limits.surface.add(limits.lines);
+            axisSprite.bindMarker(gridAlignment + '-limit-lines', me.limits.lines);
+
+            me.limitTitleTpl = new Ext.draw.sprite.Text();
+            limits.titles.setTemplate(me.limitTitleTpl);
+            limits.surface.add(limits.titles);
+        }
     },
 
     applyGrid: function (grid) {
@@ -648,13 +653,6 @@ Ext.define('Ext.chart.axis.Axis', {
     },
 
     /**
-     * @private
-     */
-    renderLimits: function () {
-        this.getSprites()[0].renderLimits();
-    },
-
-    /**
      *
      * Mapping data value into coordinate.
      *
@@ -676,15 +674,18 @@ Ext.define('Ext.chart.axis.Axis', {
         return length > 0 ? length : oldLength;
     },
 
-    applyLabel: function (newText, oldText) {
-        if (!oldText) {
-            oldText = new Ext.draw.sprite.Text({});
+    applyLabel: function (label, oldLabel) {
+        if (!oldLabel) {
+            oldLabel = new Ext.draw.sprite.Text({});
         }
-        if (this.limitTitleTpl) {
-            this.limitTitleTpl.setAttributes(newText);
+        if (label) {
+            if (this.limitTitleTpl) {
+                this.limitTitleTpl.setAttributes(label);
+            }
+            oldLabel.setAttributes(label);
         }
-        oldText.setAttributes(newText);
-        return oldText;
+
+        return oldLabel;
     },
 
     applyLayout: function (layout, oldLayout) {
@@ -725,11 +726,12 @@ Ext.define('Ext.chart.axis.Axis', {
     },
 
     updateChart: function (newChart, oldChart) {
-        var me = this, surface;
+        var me = this,
+            surface;
+
         if (oldChart) {
             oldChart.unregister(me);
             oldChart.un('serieschange', me.onSeriesChange, me);
-            oldChart.un('redraw', me.renderLimits, me);
             me.linkAxis();
             me.fireEvent('chartdetached', oldChart, me);
         }
@@ -808,13 +810,16 @@ Ext.define('Ext.chart.axis.Axis', {
     onSeriesChange: function (chart) {
         var me = this,
             series = chart.getSeries(),
-            getAxisMethod = 'get' + me.getDirection() + 'Axis',
-            boundSeries = [], i, ln = series.length,
-            linkedTo, masterAxis;
+            boundSeries = [],
+            linkedTo, masterAxis, getAxisMethod,
+            i, ln;
 
-        for (i = 0; i < ln; i++) {
-            if (this === series[i][getAxisMethod]()) {
-                boundSeries.push(series[i]);
+        if (series) {
+            getAxisMethod = 'get' + me.getDirection() + 'Axis';
+            for (i = 0, ln = series.length; i < ln; i++) {
+                if (this === series[i][getAxisMethod]()) {
+                    boundSeries.push(series[i]);
+                }
             }
         }
 
@@ -876,79 +881,124 @@ Ext.define('Ext.chart.axis.Axis', {
     },
 
     /**
-     * Get the range derived from all the bound series.
-     * @return {Array}
+     * @private
      */
-    getRange: function () {
-        var me = this;
+    setBoundSeriesRange: function (range) {
+        var boundSeries = this.boundSeries,
+            style = {},
+            series, i,
+            sprites, j,
+            ln;
 
-        if (me.range) {
-            return me.range;
-        } else if (me.masterAxis) {
-            return me.masterAxis.range;
+        style['range' + this.getDirection()] = range;
+
+        for (i = 0, ln = boundSeries.length; i < ln; i++) {
+            series = boundSeries[i];
+            if (series.getHidden() === true) {
+                continue;
+            }
+            sprites = series.getSprites();
+            for (j = 0; j < sprites.length; j++) {
+                sprites[j].setAttributes(style);
+            }
         }
-        if ( Ext.isNumber(me.getMinimum()) && Ext.isNumber(me.getMaximum()) ) {
-            return me.range = [me.getMinimum(), me.getMaximum()];
+    },
+
+    /**
+     * Get the range derived from all the bound series.
+     * The range value is cached and returned the next time this method is called.
+     * Set `recalculate` to `true` to recalculate the range, if changes to the
+     * chart, its components or data are expected to affect the range.
+     * @param {Boolean} [recalculate]
+     * @return {Number[]}
+     */
+    getRange: function (recalculate) {
+        var me = this,
+            range = recalculate ? null : me.range,
+            oldRange = me.oldRange,
+            minimum, maximum;
+
+        if (!range) {
+            if (me.masterAxis) {
+                range = me.masterAxis.range;
+            } else {
+                minimum = me.getMinimum();
+                maximum = me.getMaximum();
+
+                if ( Ext.isNumber(minimum) && Ext.isNumber(maximum) ) {
+                    range = [minimum, maximum];
+                } else {
+                    range = me.calculateRange();
+                }
+
+                me.range = range;
+            }
         }
-        var min = Infinity,
-            max = -Infinity,
+
+        if ( range && (!oldRange || range[0] !== oldRange[0] || range[1] !== oldRange[1]) ) {
+            me.fireEvent('rangechange', me, range, oldRange);
+            me.oldRange = range;
+        }
+
+        return range;
+    },
+
+    calculateRange: function () {
+        var me = this,
             boundSeries = me.boundSeries,
             layout = me.getLayout(),
             segmenter = me.getSegmenter(),
+            minimum = me.getMinimum(),
+            maximum = me.getMaximum(),
             visibleRange = me.getVisibleRange(),
             getRangeMethod = 'get' + me.getDirection() + 'Range',
+            expandRangeBy = me.getExpandRangeBy(),
             context, attr, majorTicks,
-            series, i, ln;
+            series, i, ln, seriesRange,
+            range = [NaN, NaN];
 
         // For each series bound to this axis, ask the series for its min/max values
         // and use them to find the overall min/max.
         for (i = 0, ln = boundSeries.length; i < ln; i++) {
             series = boundSeries[i];
-            var minMax = series[getRangeMethod]();
-
-            if (minMax) {
-                if (minMax[0] < min) {
-                    min = minMax[0];
-                }
-                if (minMax[1] > max) {
-                    max = minMax[1];
-                }
+            if (series.getHidden() === true) {
+                continue;
+            }
+            seriesRange = series[getRangeMethod]();
+            if (seriesRange) {
+                Ext.chart.Util.expandRange(range, seriesRange);
             }
         }
-        if (!isFinite(max)) {
-            max = me.prevMax;
+
+        range = Ext.chart.Util.validateRange(range, me.defaultRange, me.rangePadding);
+
+        // The second condition is there to account for a special case where we only have
+        // a single data point, so the effective range of coordinated data is 0 (whatever
+        // the actual value of that single data point is, it will be assigned an index of
+        // zero, as the first and only data point). Since zero range is invalid, the
+        // validateRange function above will expand the range by the value of the rangePadding,
+        // which makes further expansion by the value of expandRangeBy unnecessary.
+        if (expandRangeBy && (range[0] + me.rangePadding !== range[1] - me.rangePadding)) {
+            range[0] -= expandRangeBy;
+            range[1] += expandRangeBy;
         }
 
-        if (!isFinite(min)) {
-            min = me.prevMin;
+        if (isFinite(minimum)) {
+            range[0] = minimum;
         }
-
-        if (me.getLabelInSpan() || min === max) {
-            max += me.getIncrement();
-            min -= me.getIncrement();
-        }
-
-        if (Ext.isNumber(me.getMinimum())) {
-            min = me.getMinimum();
-        } else {
-            me.prevMin = min;
-        }
-
-        if (Ext.isNumber(me.getMaximum())) {
-            max = me.getMaximum();
-        } else {
-            me.prevMax = max;
+        if (isFinite(maximum)) {
+            range[1] = maximum;
         }
 
         // When series `fullStack` config is used, the values may add up to
         // slightly more than the value of the `fullStackTotal` config
         // because of a precision error.
-        me.range = [
-            Ext.Number.correctFloat(min),
-            Ext.Number.correctFloat(max)
-        ];
+        range[0] = Ext.Number.correctFloat(range[0]);
+        range[1] = Ext.Number.correctFloat(range[1]);
 
-        // It's important to call 'me.reconcileRange' after me.range
+        me.range = range;
+
+        // It's important to call 'me.reconcileRange' after the 'range'
         // has been assigned to avoid circular calls.
         if (me.getReconcileRange()) {
             me.reconcileRange();
@@ -968,10 +1018,10 @@ Ext.define('Ext.chart.axis.Axis', {
         // TODO: will round up the max to 36 based on that step, but when the range is 0..36,
         // TODO: the step becomes 5, so we have to reconcile the range once again where max
         // TODO: becomes 40.
-        if (me.getAdjustByMajorUnit() && segmenter.adjustByMajorUnit && !me.getMajorTickSteps()) {
+        if (range[0] !== range[1] && me.getAdjustByMajorUnit() && segmenter.adjustByMajorUnit && !me.getMajorTickSteps()) {
             attr = Ext.Object.chain(me.getSprites()[0].attr);
-            attr.min = me.range[0];
-            attr.max = me.range[1];
+            attr.min = range[0];
+            attr.max = range[1];
             attr.visibleMin = visibleRange[0];
             attr.visibleMax = visibleRange[1];
             context = {
@@ -981,14 +1031,14 @@ Ext.define('Ext.chart.axis.Axis', {
             layout.calculateLayout(context);
             majorTicks = context.majorTicks;
             if (majorTicks) {
-                segmenter.adjustByMajorUnit(majorTicks.step, majorTicks.unit.scale, me.range);
+                segmenter.adjustByMajorUnit(majorTicks.step, majorTicks.unit.scale, range);
 
-                attr.min = me.range[0];
-                attr.max = me.range[1];
+                attr.min = range[0];
+                attr.max = range[1];
                 context.majorTicks = null;
                 layout.calculateLayout(context);
                 majorTicks = context.majorTicks;
-                segmenter.adjustByMajorUnit(majorTicks.step, majorTicks.unit.scale, me.range);
+                segmenter.adjustByMajorUnit(majorTicks.step, majorTicks.unit.scale, range);
             } else if (!me.hasClearRangePending) {
                 // Axis hasn't been rendered yet.
                 me.hasClearRangePending = true;
@@ -996,11 +1046,7 @@ Ext.define('Ext.chart.axis.Axis', {
             }
         }
 
-        if (!Ext.Array.equals(me.range, me.oldRange || []) ) {
-            me.fireEvent('rangechange', me, me.range);
-            me.oldRange = me.range;
-        }
-        return me.range;
+        return range;
     },
 
     /**
@@ -1086,26 +1132,28 @@ Ext.define('Ext.chart.axis.Axis', {
     },
 
     updateCenter: function (center) {
-        var sprites = this.getSprites(),
+        var me = this,
+            sprites = me.getSprites(),
             axisSprite = sprites[0],
             centerX = center[0],
             centerY = center[1];
+
         if (axisSprite) {
             axisSprite.setAttributes({
                 centerX: centerX,
                 centerY: centerY
             });
         }
-        if (this.gridSpriteEven) {
-            this.gridSpriteEven.getTemplate().setAttributes({
+        if (me.gridSpriteEven) {
+            me.gridSpriteEven.getTemplate().setAttributes({
                 translationX: centerX,
                 translationY: centerY,
                 rotationCenterX: centerX,
                 rotationCenterY: centerY
             });
         }
-        if (this.gridSpriteOdd) {
-            this.gridSpriteOdd.getTemplate().setAttributes({
+        if (me.gridSpriteOdd) {
+            me.gridSpriteOdd.getTemplate().setAttributes({
                 translationX: centerX,
                 translationY: centerY,
                 rotationCenterX: centerX,
@@ -1123,9 +1171,10 @@ Ext.define('Ext.chart.axis.Axis', {
             position = me.getPosition(),
             chart = me.getChart(),
             animation = chart.getAnimation(),
-            baseSprite, style,
             length = me.getLength(),
-            axisClass = me.superclass;
+            axisClass = me.superclass,
+            mainSprite, style,
+            animationModifier;
 
         // If animation is false, then stop animation.
         if (animation === false) {
@@ -1133,47 +1182,50 @@ Ext.define('Ext.chart.axis.Axis', {
                 duration: 0
             };
         }
+
+        style = Ext.applyIf({
+            position: position,
+            axis: me,
+            length: length,
+            grid: me.getGrid(),
+            hidden: me.getHidden(),
+            titleOffset: me.titleOffset,
+            layout: me.getLayout(),
+            segmenter: me.getSegmenter(),
+            totalAngle: me.getTotalAngle(),
+            label: me.getLabel()
+        }, me.getStyle());
+
         if (range) {
-            style = Ext.applyIf({
-                position: position,
-                axis: me,
-                min: range[0],
-                max: range[1],
-                length: length,
-                grid: me.getGrid(),
-                hidden: me.getHidden(),
-                titleOffset: me.titleOffset,
-                layout: me.getLayout(),
-                segmenter: me.getSegmenter(),
-                totalAngle: me.getTotalAngle(),
-                label: me.getLabel()
-            }, me.getStyle());
+            style.min = range[0];
+            style.max = range[1];
+        }
 
-            // If the sprites are not created.
-            if (!me.sprites.length) {
-                while (!axisClass.xtype) {
-                    axisClass = axisClass.superclass;
-                }
-                baseSprite = Ext.create('sprite.' + axisClass.xtype, style);
-                baseSprite.fx.setCustomDurations({
-                    baseRotation: 0
-                });
-                baseSprite.fx.on('animationstart', 'onAnimationStart', me);
-                baseSprite.fx.on('animationend', 'onAnimationEnd', me);
-                baseSprite.setLayout(me.getLayout());
-                baseSprite.setSegmenter(me.getSegmenter());
-                baseSprite.setLabel(me.getLabel());
-                me.sprites.push(baseSprite);
-                me.updateTitleSprite();
-            } else {
-                baseSprite = me.sprites[0];
-                baseSprite.setAnimation(animation);
-                baseSprite.setAttributes(style);
+        // If the sprites are not created.
+        if (!me.sprites.length) {
+            while (!axisClass.xtype) {
+                axisClass = axisClass.superclass;
             }
+            mainSprite = Ext.create('sprite.' + axisClass.xtype, style);
+            animationModifier = mainSprite.getAnimation();
+            animationModifier.setCustomDurations({
+                baseRotation: 0
+            });
+            animationModifier.on('animationstart', 'onAnimationStart', me);
+            animationModifier.on('animationend', 'onAnimationEnd', me);
+            mainSprite.setLayout(me.getLayout());
+            mainSprite.setSegmenter(me.getSegmenter());
+            mainSprite.setLabel(me.getLabel());
+            me.sprites.push(mainSprite);
+            me.updateTitleSprite();
+        } else {
+            mainSprite = me.sprites[0];
+            mainSprite.setAnimation(animation);
+            mainSprite.setAttributes(style);
+        }
 
-            if (me.getRenderer()) {
-                baseSprite.setRenderer(me.getRenderer());
-            }
+        if (me.getRenderer()) {
+            mainSprite.setRenderer(me.getRenderer());
         }
 
         return me.sprites;
@@ -1190,7 +1242,7 @@ Ext.define('Ext.chart.axis.Axis', {
             sprites = me.getSprites(),
             surface = me.getSurface(),
             chart = me.getChart(),
-            sprite = sprites && sprites.length && sprites[0];
+            sprite = sprites && sprites[0];
 
         if (chart && surface && sprite) {
             sprite.callUpdater(null, 'layout'); // recalculate axis ticks

@@ -10,21 +10,40 @@ Ext.define('Ext.grid.property.HeaderContainer', {
 
     nameWidth: 115,
 
-    //<locale>
-    nameText : 'Name',
-    //</locale>
-    //<locale>
-    valueText : 'Value',
-    //</locale>
-    //<locale>
-    dateFormat : 'm/j/Y',
-    //</locale>
-    //<locale>
+    /**
+     * @cfg {String} nameText
+     * The column header text for the name column.
+     * @locale
+     */
+    nameText: 'Name',
+
+    /**
+     * @cfg {String} valueText
+     * The column header text for the value column.
+     * @locale
+     */
+    valueText: 'Value',
+
+    /**
+     * @cfg {String} dateFormat
+     * The {@link Ext.Date date format} to use for date values.
+     * @locale
+     */
+    dateFormat: 'm/j/Y',
+
+    /**
+     * @cfg {String} trueText
+     * The text to display for boolean `true` values.
+     * @locale
+     */
     trueText: 'true',
-    //</locale>
-    //<locale>
+
+    /**
+     * @cfg {String} falseText
+     * The text to display for boolean `false` values.
+     * @locale
+     */
     falseText: 'false',
-    //</locale>
 
     /**
      * @private
@@ -37,11 +56,11 @@ Ext.define('Ext.grid.property.HeaderContainer', {
      * @param {Ext.grid.property.Grid} grid The grid this store will be bound to
      * @param {Object} source The source data config object
      */
-    constructor : function(grid, store) {
+    constructor : function(grid, source) {
         var me = this;
 
         me.grid = grid;
-        me.store = store;
+        me.store = source;
         me.callParent([{
             isRootHeader: true,
             enableColumnResize: Ext.isDefined(grid.enableColumnResize) ? grid.enableColumnResize : me.enableColumnResize,
@@ -117,7 +136,8 @@ Ext.define('Ext.grid.property.HeaderContainer', {
 
     /**
      * @private
-     */    renderBool : function(bVal) {
+     */
+    renderBool : function(bVal) {
         return this[bVal ? 'trueText' : 'falseText'];
     },
 

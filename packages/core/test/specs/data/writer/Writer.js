@@ -1,4 +1,4 @@
-describe("Ext.data.writer.Writer", function(){
+topSuite("Ext.data.writer.Writer", ['Ext.data.ArrayStore'], function() {
     var writer, buildWriter, Article, article, operation;
     
     beforeEach(function(){

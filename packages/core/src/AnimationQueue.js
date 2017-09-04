@@ -14,15 +14,19 @@ Ext.define('Ext.AnimationQueue', {
         me.isRunning = false;
         me.isIdle = true;
 
-        me.run = Ext.Function.bind(me.run, me);
+        me.run = me.run.bind(me);
 
         // iOS has a nasty bug which causes pending requestAnimationFrame to not release
         // the callback when the WebView is switched back and forth from / to being background process
         // We use a watchdog timer to workaround this, and restore the pending state correctly if this happens
         // This timer has to be set as an interval from the very beginning and we have to keep it running for
-        // as long as the app lives, setting it later doesn't seem to work
+        // as long as the app lives, setting it later doesn't seem to work.
+        // The watchdog timer must be accessible for environments to cancel.
         if (Ext.os.is.iOS) {
-            Ext.interval(me.watch, 500, me);
+            //<debug>
+            me.watch.$skipTimerCheck = true;
+            //</debug>
+            me.watchdogTimer = Ext.interval(me.watch, 500, me);
         }
     },
 
@@ -39,12 +43,12 @@ Ext.define('Ext.AnimationQueue', {
 
         if (!me.isRunning) {
             if (me.hasOwnProperty('idleTimer')) {
-                clearTimeout(me.idleTimer);
+                Ext.undefer(me.idleTimer);
                 delete me.idleTimer;
             }
 
             if (me.hasOwnProperty('idleQueueTimer')) {
-                clearTimeout(me.idleQueueTimer);
+                Ext.undefer(me.idleQueueTimer);
                 delete me.idleQueueTimer;
             }
 
@@ -58,6 +62,25 @@ Ext.define('Ext.AnimationQueue', {
         }
     },
 
+    clear: function() {
+        var me = this;
+
+        Ext.undefer(me.idleTimer);
+        Ext.undefer(me.idleQueueTimer);
+        Ext.unraf(me.animationFrameId);
+
+        me.idleTimer = me.idleQueueTimer = me.animationFrameId = null;
+
+        me.queue.length = me.taskQueue.length = me.runningQueue.length = me.idleQueue.length = 0;
+        me.isRunning = false;
+        me.isIdle = true;
+
+        //<debug>
+        me.startCountTime = Ext.now();
+        me.count = 0;
+        //</debug>
+    },
+
     watch: function() {
         if (this.isRunning && Ext.now() - this.lastRunTime >= 500) {
             this.run();
@@ -65,7 +88,10 @@ Ext.define('Ext.AnimationQueue', {
     },
 
     run: function() {
-        var me = this;
+        var me = this, item, element;
+
+        // When asked to start or iterate, it will now create a new one
+        me.animationFrameId = null;
 
         if (!me.isRunning) {
             return;
@@ -77,6 +103,20 @@ Ext.define('Ext.AnimationQueue', {
 
         me.lastRunTime = now;
         me.frameStartTime = now;
+
+        // We are doing cleanup here for any destroyed elements
+        // this is temporary until we fix CssTransition to properly
+        // inform an element that it is being animated
+        // then the element, during destruction, will need to cleanup
+        // the animation (see Ext.fx.runner.CssTransition#run)
+        i = me.queue.length;
+        while (i--) {
+            item = me.queue[i];
+            element = item[1] && item[1].getElement && item[1].getElement();
+            if (element && element.destroyed) {
+                me.queue.splice(i, 1);
+            }
+        }
 
         queue.push.apply(queue, me.queue); // take a snapshot of the current queue and run it
 
@@ -97,7 +137,14 @@ Ext.define('Ext.AnimationQueue', {
         }
         //</debug>
 
-        me.doIterate();
+        if (!me.queue.length) {
+            me.stop();
+        }
+
+        // Could have been stopped while invoking handlers
+        if (me.isRunning) {
+            me.doIterate();
+        }
     },
 
     //<debug>
@@ -107,16 +154,24 @@ Ext.define('Ext.AnimationQueue', {
     //</debug>
 
     doStart: function() {
-        this.animationFrameId = Ext.Function.requestAnimationFrame(this.run);
+        if (!this.animationFrameId) {
+            this.animationFrameId = Ext.raf(this.run);
+        }
         this.lastRunTime = Ext.now();
     },
 
     doIterate: function() {
-        this.animationFrameId = Ext.Function.requestAnimationFrame(this.run);
+        if (!this.animationFrameId) {
+            this.animationFrameId = Ext.raf(this.run);
+        }
     },
 
     doStop: function() {
-        Ext.Function.cancelAnimationFrame(this.animationFrameId);
+        if (this.animationFrameId) {
+            Ext.unraf(this.animationFrameId);
+        }
+        
+        this.animationFrameId = null;
     },
 
     /**
@@ -152,12 +207,15 @@ Ext.define('Ext.AnimationQueue', {
             //</debug>
             me.isRunning = false;
 
-            me.idleTimer = Ext.defer(me.whenIdle, 100, me);
+            if (me.idleQueue.length && !me.idleTimer) {
+                me.idleTimer = Ext.defer(me.whenIdle, 100, me);
+            }
         }
     },
 
     onIdle: function(fn, scope, args) {
-        var listeners = this.idleQueue,
+        var me = this,
+            listeners = me.idleQueue,
             i, ln, listener;
 
         for (i = 0, ln = listeners.length; i < ln; i++) {
@@ -169,13 +227,17 @@ Ext.define('Ext.AnimationQueue', {
 
         listeners.push(arguments);
 
-        if (this.isIdle) {
-            this.processIdleQueue();
+        if (me.isIdle) {
+            me.processIdleQueue();
+        }
+        else if (!me.idleTimer) {
+            me.idleTimer = Ext.defer(me.whenIdle, 100, me);
         }
     },
 
     unIdle: function(fn, scope, args) {
-        var listeners = this.idleQueue,
+        var me = this,
+            listeners = me.idleQueue,
             i, ln, listener;
 
         for (i = 0, ln = listeners.length; i < ln; i++) {
@@ -184,6 +246,16 @@ Ext.define('Ext.AnimationQueue', {
                 listeners.splice(i, 1);
                 return true;
             }
+        }
+        
+        if (!listeners.length && me.idleTimer) {
+            Ext.undefer(me.idleTimer);
+            delete me.idleTimer;
+        }
+        
+        if (!listeners.length && me.idleQueueTimer) {
+            Ext.undefer(me.idleQueueTimer);
+            delete me.idleQueueTimer;
         }
 
         return false;
@@ -224,6 +296,7 @@ Ext.define('Ext.AnimationQueue', {
     },
 
     whenIdle: function() {
+        delete this.idleTimer;
         this.isIdle = true;
         this.processIdleQueue();
     },
@@ -438,7 +511,7 @@ Ext.define('Ext.AnimationQueue', {
         paramsArray = paramsString.split("&");
 
     if (Ext.Array.contains(paramsArray, "showfps")) {
-        Ext.onReady(Ext.Function.bind(this.showFps, this));
+        Ext.onReady(this.showFps.bind(this));
     }
 //</debug>
 });

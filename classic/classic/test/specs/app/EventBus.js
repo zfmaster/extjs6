@@ -1,4 +1,4 @@
-describe("Ext.app.EventBus", function() {
+topSuite("Ext.app.EventBus", function() {
     var eventbus = Ext.app.EventBus;
     
     it("should be a singleton", function() {

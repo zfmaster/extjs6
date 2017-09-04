@@ -156,6 +156,8 @@ Ext.define('Ext.draw.Surface', {
 
     dirtyPredecessorCount: 0,
 
+    emptyRect: [0, 0, 0, 0],
+
     constructor: function (config) {
         var me = this;
 
@@ -226,7 +228,7 @@ Ext.define('Ext.draw.Surface', {
 
     applyRect: function (rect, oldRect) {
         if (oldRect && rect[0] === oldRect[0] && rect[1] === oldRect[1] && rect[2] === oldRect[2] && rect[3] === oldRect[3]) {
-            return;
+            return oldRect;
         }
         if (Ext.isArray(rect)) {
             return [rect[0], rect[1], rect[2], rect[3]];
@@ -533,8 +535,6 @@ Ext.define('Ext.draw.Surface', {
         };
     },
 
-    emptyRect: [0, 0, 0, 0],
-
     /**
      * @private
      * @method getOwnerBody
@@ -545,8 +545,11 @@ Ext.define('Ext.draw.Surface', {
      * @return {Ext.dom.Element}
      */
 
-    // Converts event's page coordinates into surface coordinates.
-    // Note: surface's x-coordinates always go LTR, regardless of RTL mode.
+    /**
+     * @private
+     * Converts event's page coordinates into surface coordinates.
+     * Note: surface's x-coordinates always go LTR, regardless of RTL mode.
+     */
     getEventXY: function (e) {
         var me = this,
             isRtl = me.getInherited().rtl,
@@ -566,6 +569,7 @@ Ext.define('Ext.draw.Surface', {
             result[0] = pageXY[0] - xy[0] - rect[0];
         }
         result[1] = pageXY[1] - xy[1] - rect[1];
+
         return result;
     },
 

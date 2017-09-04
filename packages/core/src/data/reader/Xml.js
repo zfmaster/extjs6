@@ -126,12 +126,13 @@
  * otherwise.
  */
 Ext.define('Ext.data.reader.Xml', {
+    alternateClassName: 'Ext.data.XmlReader',
     extend: 'Ext.data.reader.Reader',
+    alias: 'reader.xml',
+    
     requires: [
         'Ext.dom.Query'
     ],
-    alternateClassName: 'Ext.data.XmlReader',
-    alias : 'reader.xml',
 
     config: {
         /**
@@ -172,13 +173,14 @@ Ext.define('Ext.data.reader.Xml', {
     },
 
     /**
-     * @private
-     * Creates a function to return some particular key of data from a response. The totalProperty and
-     * successProperty are treated as special cases for type casting, everything else is just a simple selector.
-     * @param {String} key
+     * Creates a function to return some particular key of data from a response. The
+     * `totalProperty` and `successProperty` are treated as special cases for type
+     * casting, everything else is just a simple selector.
+     * @param {String} expr
      * @return {Function}
+     * @private
      */
-    createAccessor: function(expr) {
+    createAccessor: function (expr) {
         if (Ext.isEmpty(expr)) {
             return Ext.emptyFn;
         }
@@ -236,17 +238,7 @@ Ext.define('Ext.data.reader.Xml', {
      * @return {XMLElement} The root node element
      */
     getRoot: function(data) {
-        var nodeName = data.nodeName,
-            root     = this.getRootProperty();
-
-        if (!root || (nodeName && nodeName == root)) {
-            return data;
-        } else if (Ext.DomQuery.isXml(data)) {
-            // This fix ensures we have XML data
-            // Related to TreeStore calling getRoot with the root node, which isn't XML
-            // Probably should be resolved in TreeStore at some point
-            return Ext.DomQuery.selectNode(root, data);
-        }
+        return this.getRootValue(data, this.getRootProperty());
     },
 
     /**
@@ -277,9 +269,10 @@ Ext.define('Ext.data.reader.Xml', {
      * Parses an XML document and returns a ResultSet containing the model instances.
      * @param {Object} doc Parsed XML document
      * @param {Object} [readOptions] See {@link #read} for details.
+     * @param {Object} [internalReadOptions] (private)
      * @return {Ext.data.ResultSet} The parsed result set
      */
-    readRecords: function(doc, readOptions, /* private */ internalReadOptions) {
+    readRecords: function(doc, readOptions, internalReadOptions) {
         // it's possible that we get passed an array here by associations.
         // Make sure we strip that out (see Ext.data.reader.Reader#readAssociated)
         if (Ext.isArray(doc)) {
@@ -296,22 +289,73 @@ Ext.define('Ext.data.reader.Xml', {
      * This is used by buildExtractors to create optimized on extractor function which converts raw data into model instances.
      */
     createFieldAccessor: function(field) {
-        var me = this,
-            namespace = me.getNamespace(),
-            selector, result;
+        var namespace = this.getNamespace(),
+            selector, autoMapping, result;
 
-        selector = field.mapping || ((namespace ? namespace + '|' : '') + field.name); 
+        if (field.mapping) {
+            selector = field.mapping;
+        }
+        else {
+            selector = (namespace ? namespace + '|' : '') + field.name;
+            autoMapping = true;
+        }
 
         if (typeof selector === 'function') {
-            result = function(raw) {
-                return field.mapping(raw, me);
-            };
-        } else {
-            result = function(raw) {
-                return me.getNodeValue(Ext.DomQuery.selectNode(selector, raw));
+            result = function(raw, self) {
+                return field.mapping(raw, self);
             };
         }
+        else {
+            // querySelector and getNodeValue break on namespaces
+            if (autoMapping && !namespace) {
+                // IE9m doesn't support querySelector on XML nodes, but it does support
+                // selectSingleNode() which is more or less the same for our purposes.
+                if (Ext.isIE9m) {
+                    result = function(raw, self) {
+                        return self.getNodeValue(raw.selectSingleNode(selector));
+                    };
+                }
+                // querySelector breaks on namespaces
+                else if (Ext.supports.XmlQuerySelector) {
+                    result = function(raw, self) {
+                        return self.getNodeValue(raw.querySelector(selector));
+                    };
+                }
+            }
+            
+            if (!result) {
+                result = function(raw, self) {
+                    return self.getNodeValue(Ext.DomQuery.selectNode(selector, raw));
+                };
+            }
+        }
+        
         return result;
+    },
+
+    privates: {
+        getGroupRoot: function(data) {
+            return this.getRootValue(data, this.getGroupRootProperty());
+        },
+
+        getRootValue: function(data, prop) {
+            var nodeName = data.nodeName;
+
+            if (!prop || (nodeName && nodeName == prop)) {
+                return data;
+            } else if (typeof prop === 'function') {
+                return prop(data);
+            } else if (Ext.DomQuery.isXml(data)) {
+                // This fix ensures we have XML data
+                // Related to TreeStore calling getRoot with the root node, which isn't XML
+                // Probably should be resolved in TreeStore at some point
+                return Ext.DomQuery.selectNode(prop, data);
+            }
+        },
+
+        getSummaryRoot: function(data) {
+            return this.getRootValue(data, this.getSummaryRootProperty());
+        }
     },
     
     deprecated: {

@@ -44,13 +44,6 @@ Ext.define('Ext.chart.PolarChart', {
         return position === 'radial' ? 'Y' : 'X';
     },
 
-    applyCenter: function (center, oldCenter) {
-        if (oldCenter && center[0] === oldCenter[0] && center[1] === oldCenter[1]) {
-            return;
-        }
-        return [+center[0], +center[1]];
-    },
-
     updateCenter: function (center) {
         var me = this,
             axes = me.getAxes(),
@@ -72,6 +65,12 @@ Ext.define('Ext.chart.PolarChart', {
         return Ext.isNumber(padding) ? padding : oldPadding;
     },
 
+    updateInnerPadding: function () {
+        if (!this.isConfiguring) {
+            this.performLayout();
+        }
+    },
+
     doSetSurfaceRect: function (surface, rect) {
         var mainRect = this.getMainRect();
         surface.setRect(rect);
@@ -84,7 +83,7 @@ Ext.define('Ext.chart.PolarChart', {
             firstSeries = Ext.Array.from(me.config.series)[0],
             i, ln, axis, foundAngular;
 
-        if (firstSeries.type === 'radar' && newAxes && newAxes.length) {
+        if (firstSeries && firstSeries.type === 'radar' && newAxes && newAxes.length) {
             // For compatibility with ExtJS: add a default angular axis if it's missing
             for (i = 0, ln = newAxes.length; i < ln; i++) {
                 axis = newAxes[i];
@@ -113,7 +112,8 @@ Ext.define('Ext.chart.PolarChart', {
             applyThickness = true;
 
         try {
-            me.animationSuspendCount++;
+            me.chartLayoutCount++;
+            me.suspendAnimation();
             if (this.callParent() === false) {
                 applyThickness = false;
                 // Animation will be decremented in finally block
@@ -128,7 +128,8 @@ Ext.define('Ext.chart.PolarChart', {
                 width = Math.max(1, chartRect[2] - chartRect[0] - inset.left - inset.right),
                 height = Math.max(1, chartRect[3] - chartRect[1] - inset.top - inset.bottom),
                 mainRect = [
-                    inset.left, inset.top,
+                    chartRect[0] + inset.left,
+                    chartRect[1] + inset.top,
                     width + chartRect[0],
                     height + chartRect[1]
                 ],
@@ -136,8 +137,8 @@ Ext.define('Ext.chart.PolarChart', {
                 innerWidth = width - inner * 2,
                 innerHeight = height - inner * 2,
                 center = [
-                    chartRect[0] + innerWidth * 0.5 + inner,
-                    chartRect[1] + innerHeight * 0.5 + inner
+                    (chartRect[0] + innerWidth) * 0.5 + inner,
+                    (chartRect[1] + innerHeight) * 0.5 + inner
                 ],
                 radius = Math.min(innerWidth, innerHeight) * 0.5,
                 axes = me.getAxes(),
@@ -145,9 +146,11 @@ Ext.define('Ext.chart.PolarChart', {
                 radialAxes = [],
                 seriesRadius = radius - inner,
                 grid = me.surfaceMap.grid,
+                captionList = me.captionList,
                 i, ln, shrinkRadius, floating, floatingValue,
                 gaugeSeries, gaugeRadius, side, series,
-                axis, thickness, halfLineWidth;
+                axis, thickness, halfLineWidth,
+                caption;
 
             me.setMainRect(mainRect);
 
@@ -229,12 +232,25 @@ Ext.define('Ext.chart.PolarChart', {
                 me.setRadius(radius);
                 me.setCenter(center);
             }
+
+            if (captionList) {
+                for (i = 0, ln = captionList.length; i < ln; i++) {
+                    caption = captionList[i];
+                    if (caption.getAlignTo() === 'series') {
+                        caption.alignRect(mainRect);
+                    }
+                    caption.performLayout();
+                }
+            }
+
             me.redraw();
         } finally {
-            me.animationSuspendCount--;
+            me.resumeAnimation();
             if (applyThickness) {
                 me.resumeThicknessChanged();
             }
+            me.chartLayoutCount--;
+            me.checkLayoutEnd();
         }
     },
 

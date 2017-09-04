@@ -1,4 +1,4 @@
-describe('Ext.TitleBar', function() {
+topSuite("Ext.TitleBar", function() {
     var toolbar,
         createToolbar = function(config) {
             config = Ext.apply(config, {
@@ -32,58 +32,3 @@ describe('Ext.TitleBar', function() {
     });
     // end configs
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

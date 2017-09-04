@@ -11,6 +11,12 @@ Ext.define('Ext.fx.runner.CssTransition', {
 
     constructor: function() {
         this.runningAnimationsData = {};
+        // if multiple animations run at the same time then we need to queue them
+        // to apply them in the same animation frame (see requestAnimationFrame in "run")
+        this.transitionQueue = {
+            toData: {},
+            transitionData: {}
+        };
 
         return this.callParent(arguments);
     },
@@ -86,6 +92,7 @@ Ext.define('Ext.fx.runner.CssTransition', {
 
     onAllAnimationsEnd: function(element) {
         var id = this.getElementId(element),
+            transitionQueue = this.transitionQueue,
             endRules = {};
 
         delete this.runningAnimationsData[id];
@@ -96,6 +103,9 @@ Ext.define('Ext.fx.runner.CssTransition', {
             'transition-timing-function': null,
             'transition-delay': null
         };
+
+        delete transitionQueue.toData[id];
+        delete transitionQueue.transitionData[id];
 
         this.applyStyles(endRules);
         this.fireEvent('animationallend', this, element);
@@ -209,7 +219,8 @@ Ext.define('Ext.fx.runner.CssTransition', {
             // Forward navigation in Chrome 50 navigates iframes, and orphans
             // the testElement in a detached document. Reconnect it if this has happened.
             if (testElement.ownerDocument.defaultView !== iframe.contentWindow) {
-                iframe.contentDocument.body.appendChild(testElement);
+                iframeDocument = iframe.contentDocument;
+                iframeDocument.body.appendChild(testElement);
                 me.testElementComputedStyle = iframeDocument.defaultView.getComputedStyle(testElement);
             }
         } else {
@@ -264,12 +275,12 @@ Ext.define('Ext.fx.runner.CssTransition', {
 
     run: function(animations) {
         var me = this,
-            Function = Ext.Function,
+            ret = [],
             isLengthPropertyMap = me.lengthProperties,
             fromData = {},
-            toData = {},
+            toData = me.transitionQueue.toData,
             data = {},
-            transitionData = {},
+            transitionData = me.transitionQueue.transitionData,
             element, elementId, from, to, before,
             fromPropertyNames, toPropertyNames,
             doApplyTo, message,
@@ -277,7 +288,8 @@ Ext.define('Ext.fx.runner.CssTransition', {
             i, j, ln, animation, propertiesLength, sessionNameMap,
             computedStyle, formattedName, name, toFormattedValue,
             computedValue, fromFormattedValue, isLengthProperty,
-            runningNameMap, runningNameList, runningSessions, runningSession;
+            runningNameMap, runningNameList, runningSessions, runningSession,
+            messageTimerFn, onBeforeStart;
 
         if (!me.listenersAttached) {
             me.attachListeners();
@@ -288,6 +300,7 @@ Ext.define('Ext.fx.runner.CssTransition', {
         for (i = 0, ln = animations.length; i < ln; i++) {
             animation = animations[i];
             animation = Ext.factory(animation, Ext.fx.Animation);
+            ret.push(animation);
             me.activeElement = element = animation.getElement();
 
             // Empty function to prevent idleTasks from running while we animate.
@@ -299,8 +312,9 @@ Ext.define('Ext.fx.runner.CssTransition', {
 
             data[elementId] = data = Ext.merge({}, animation.getData());
 
-            if (animation.onBeforeStart) {
-                animation.onBeforeStart.call(animation.scope || me, element);
+            onBeforeStart = animation.getOnBeforeStart();
+            if (onBeforeStart) {
+                onBeforeStart.call(animation.scope || me, element);
             }
 
             // Allow listeners to mutate animation data
@@ -421,51 +435,101 @@ Ext.define('Ext.fx.runner.CssTransition', {
         doApplyTo = function(e) {
             if (e.data === message && e.source === window) {
                 window.removeEventListener('message', doApplyTo, false);
-                me.applyStyles(toData);
+                me.applyStyles(me.transitionQueue.toData);
             }
         };
 
-
-        Function.requestAnimationFrame(function() {
-            if (Ext.isIE) {
-                // https://sencha.jira.com/browse/EXTJS-22362
-                // In some cases IE will fail to animate if the "to" and "transition" styles are added
-                // simultaneously.  That is the reason for the multi-delay below.  The first one
-                // defines the transition parameters ('transition-property', 'transition-delay' etc)
-                // and the second delay sets the values of the animating properties, or, the "to"
-                // properties.  The second delay is what actually starts the animation.
-                me.applyStyles(transitionData);
-
-                Function.requestAnimationFrame(function () {
+        if (!me.messageTimerId) {
+            messageTimerFn = function() {
+                var messageFollowupFn;
+                
+                me.messageTimerId = null;
+                
+                if (Ext.isIE) {
+                    // https://sencha.jira.com/browse/EXTJS-22362
+                    // In some cases IE will fail to animate if the "to" and "transition" styles are added
+                    // simultaneously.  That is the reason for the multi-delay below.  The first one
+                    // defines the transition parameters ('transition-property', 'transition-delay' etc)
+                    // and the second delay sets the values of the animating properties, or, the "to"
+                    // properties.  The second delay is what actually starts the animation.
+                    me.applyStyles(me.transitionQueue.transitionData);
+                    
+                    if (!me.messageFollowupId) {
+                        messageFollowupFn = function() {
+                            me.messageFollowupId = null;
+                            window.addEventListener('message', doApplyTo, false);
+                            window.postMessage(message, '*');
+                        };
+                        
+                        //<debug>
+                        messageFollowupFn.$skipTimerCheck = true;
+                        //</debug>
+                        
+                        me.messageFollowupId = Ext.raf(messageFollowupFn);
+                    }
+                 }
+                 else {
+                    // In non-IE browsers the above approach can cause a flicker,
+                    // so in these browsers we apply all the styles at the same time.
+                    Ext.merge(me.transitionQueue.toData, me.transitionQueue.transitionData);
                     window.addEventListener('message', doApplyTo, false);
                     window.postMessage(message, '*');
-                });
-             } else {
-                // In non-IE browsers the above approach can cause a flicker,
-                // so in these browsers we apply all the styles at the same time.
-                Ext.merge(toData, transitionData);
-                window.addEventListener('message', doApplyTo, false);
-                window.postMessage(message, '*');
-             }
-        });
+                 }
+            };
+            
+            //<debug>
+            messageTimerFn.$skipTimerCheck = true;
+            //</debug>
+            
+            me.messageTimerId = Ext.raf(messageTimerFn);
+        }
+
+        // TODO: This method needs to attach something to the element it is animating
+        // we then need to monitor for destruction of that element
+        // and clean up any animations that remain.
+        return ret;
     },
 
     onAnimationStop: function(animation) {
-        var runningAnimationsData = this.runningAnimationsData,
+        var me = this,
+            runningAnimationsData = me.runningAnimationsData,
+            activeAnimations = 0,
+            stoppedAnimations = 0,
             id, runningData, sessions, i, ln, session;
 
         for (id in runningAnimationsData) {
             if (runningAnimationsData.hasOwnProperty(id)) {
                 runningData = runningAnimationsData[id];
                 sessions = runningData.sessions;
+                activeAnimations++;
 
-                for (i = 0,ln = sessions.length; i < ln; i++) {
+                for (i = 0, ln = sessions.length; i < ln; i++) {
                     session = sessions[i];
+                    
                     if (session.animation === animation) {
-                        this.refreshRunningAnimationsData(session.element, session.list.slice(), false);
+                        me.refreshRunningAnimationsData(session.element, session.list.slice(), false);
+                        if (animation.destroying) {
+                            stoppedAnimations++;
+                        }
                     }
                 }
             }
+        }
+        
+        if (activeAnimations === stoppedAnimations) {
+            if (me.messageFollowupId) {
+                Ext.unraf(me.messageFollowupId);
+                me.messageFollowupId = null;
+            }
+            
+            if (me.messageTimerId) {
+                Ext.unraf(me.messageTimerId);
+                me.messageTimerId = null;
+            }
+            Ext.apply(me.transitionQueue, {
+                toData: {},
+                transitionData: {}
+            });
         }
     }
 });

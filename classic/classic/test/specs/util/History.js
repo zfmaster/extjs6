@@ -1,4 +1,4 @@
-xdescribe('Ext.util.History', function() {
+xtopSuite('Ext.util.History', function() {
     var fooLink, barLink, bletchLink;
 
     beforeEach(function() {

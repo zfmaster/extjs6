@@ -2,16 +2,13 @@
  * A core util class to bring Draggable behavior to a Component. This class is specifically designed only for
  * absolutely positioned elements starting from top: 0, left: 0. The initialOffset can then be set via configuration
  * to have the elements in a different position.
+ * @deprecated 6.5.0 This class has been replaced by `Ext.drag.Source`.
  */
 Ext.define('Ext.util.Draggable', {
     isDraggable: true,
 
     mixins: [
         'Ext.mixin.Observable'
-    ],
-
-    requires: [
-        'Ext.util.Translatable'
     ],
 
     /**
@@ -70,7 +67,12 @@ Ext.define('Ext.util.Draggable', {
             y: 0
         },
 
-        translatable: {}
+        translatable: {},
+
+        /**
+         * @cfg {Ext.Component} The component being dragged.
+         */
+        component: null
     },
 
     DIRECTION_BOTH: 'both',
@@ -141,16 +143,23 @@ Ext.define('Ext.util.Draggable', {
 
     updateElement: function(element) {
         element.on(this.elementListeners);
+        element.setTouchAction({
+            panX: false,
+            panY: false
+        });
 
         this.mixins.observable.constructor.call(this, this.initialConfig);
     },
 
-    updateInitialOffset: function(initialOffset) {
-        if (typeof initialOffset == 'number') {
+    updateInitialOffset: function (initialOffset) {
+        if (typeof initialOffset === 'number') {
             initialOffset = {
                 x: initialOffset,
                 y: initialOffset
             };
+        }
+        else if (!initialOffset) {
+            return;
         }
 
         var offset = this.offset,
@@ -167,7 +176,7 @@ Ext.define('Ext.util.Draggable', {
     },
 
     applyTranslatable: function(translatable, currentInstance) {
-        translatable = Ext.factory(translatable, Ext.util.Translatable, currentInstance);
+        translatable = Ext.factory(translatable, Ext.util.translatable.CssTransform, currentInstance, 'translatable');
         if (translatable) {
             translatable.setElement(this.getElement());
         }
@@ -254,8 +263,7 @@ Ext.define('Ext.util.Draggable', {
     onElementResize: function(element, info) {
         this.width = info.width;
         this.height = info.height;
-
-        this.refresh();
+        this.refreshContainerSize();
     },
 
     onContainerResize: function(container, info) {
@@ -365,14 +373,14 @@ Ext.define('Ext.util.Draggable', {
             min = Math.min,
             max = Math.max;
 
-        if (this.isAxisEnabled('x') && typeof x == 'number') {
+        if (this.isAxisEnabled('x') && typeof x === 'number') {
             x = min(max(x, minOffset.x), maxOffset.x);
         }
         else {
             x = currentOffset.x;
         }
 
-        if (this.isAxisEnabled('y') && typeof y == 'number') {
+        if (this.isAxisEnabled('y') && typeof y === 'number') {
             y = min(max(y, minOffset.y), maxOffset.y);
         }
         else {
@@ -390,6 +398,7 @@ Ext.define('Ext.util.Draggable', {
     },
 
     refreshConstraint: function() {
+        this.setOffset.apply(this, this.getTranslatable().syncPosition());
         this.setConstraint(this.currentConstraint);
     },
 
@@ -429,6 +438,7 @@ Ext.define('Ext.util.Draggable', {
         if (element && !element.destroyed) {
             element.removeCls(me.getCls());
         }
+        me.setComponent(null);
 
         me.detachListeners();
 

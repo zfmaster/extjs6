@@ -300,8 +300,10 @@ Ext.define('Ext.data.PageMap', {
 
     getRange: function(start, end) {
         // Store's backing Collection now uses EXCLUSIVE endIndex
-        // So store will always pass the endIndex+1
-        end--;
+        // So store will always pass the endIndex+1 unless it's 0
+        if (end) {
+            end--;
+        }
 
         if (!this.hasRange(start, end)) {
             Ext.raise('PageMap asked for range which it does not have');

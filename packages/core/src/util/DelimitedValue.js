@@ -117,7 +117,6 @@ Ext.define('Ext.util.DelimitedValue', {
             quote = me.quote,
             quoteREs = me.quoteREs,
             parseREs = me.parseREs,
-            input = input.replace(me.lastLineBreakRe, ''),
 
             // Create a regular expression to parse the CSV values unless we already have
             // one for this delimiter.
@@ -139,9 +138,11 @@ Ext.define('Ext.util.DelimitedValue', {
 
             arrMatches, strMatchedDelimiter, strMatchedValue;
 
+        input = input.replace(me.lastLineBreakRe, '');
+
         // Keep looping over the regular expression matches
         // until we can no longer find a match.
-        while (arrMatches = parseRE.exec(input)) {
+        while ((arrMatches = parseRE.exec(input))) {
             strMatchedDelimiter = arrMatches[1];
 
             // Check to see if the given delimiter has a length
@@ -154,6 +155,10 @@ Ext.define('Ext.util.DelimitedValue', {
                 result.push(row = []);
             }
 
+            // we need to account for the first value being empty
+            if (!arrMatches.index && arrMatches[0].charAt(0) === delim) {
+                row.push('');
+            }
             // Now that we have our delimiter out of the way,
             // let's check to see which kind of value we
             // captured (quoted or unquoted).

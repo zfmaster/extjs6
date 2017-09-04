@@ -39,7 +39,7 @@ Ext.define('Ext.sparkline.Pie', {
     applyValues: function(newValues) {
         newValues = Ext.Array.map(Ext.Array.from(newValues), Number);
         this.disabled = !(newValues && newValues.length);
-        this.applyConfigChange();
+        this.updateConfigChange();
         return newValues;
     },
 
@@ -142,7 +142,7 @@ Ext.define('Ext.sparkline.Pie', {
         }
 
         // If mouse is over, re-apply the highlight
-        if (me.currentPageXY && me.el.getRegion().contains(me.currentPageXY)) {
+        if (me.currentPageXY && me.canvasRegion.contains(me.currentPageXY)) {
             me.currentRegion = null;
             me.updateDisplay();
         }

@@ -1,4 +1,4 @@
-describe("Ext.util.Format", function() {
+topSuite("Ext.util.Format", function() {
     var savedFormatLocale = {
             thousandSeparator: Ext.util.Format.thousandSeparator,
             decimalSeparator: Ext.util.Format.decimalSeparator,

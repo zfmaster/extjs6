@@ -2,7 +2,7 @@
  *
  */
 Ext.define('Ext.field.DatePickerNative', {
-    extend: 'Ext.field.DatePicker',
+    extend: 'Ext.field.Date',
     alternateClassName: 'Ext.form.DatePickerNative',
     xtype: 'datepickernativefield',
 

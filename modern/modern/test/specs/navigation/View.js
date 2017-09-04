@@ -1,11 +1,13 @@
-describe('Ext.navigation.View', function() {
+/* global jasmine, Ext, expect */
+
+topSuite("Ext.navigation.View", ['Ext.layout.Card'], function() {
     var view,
         createView = function(config) {
-            config = Ext.apply(config, {
+            config = Ext.apply({
                 renderTo: Ext.getBody(),
                 width: 300,
                 height: 400
-            });
+            }, config);
 
             view = Ext.create('Ext.navigation.View', config);
         },
@@ -42,12 +44,12 @@ describe('Ext.navigation.View', function() {
                 }
             });
             // in EXTJS-21865 this throws an error
-            view.setActiveItem(1);
+            view.setActiveItem(0);
             waitsFor(function(){
                 return !!spy.callCount;
             });
             runs(function(){
-                expect(view.getActiveItem().getHtml()).toEqual('item 2');
+                expect(view.getActiveItem().getHtml()).toEqual('item 1');
             });
         });
 

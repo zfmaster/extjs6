@@ -236,6 +236,12 @@ Ext.define('Ext.data.schema.Association', {
     isManyToMany: false,
 
     /**
+     * @cfg {String} associationKey
+     * The name of the property in the data to read the association from. Defaults to the
+     * name of the associated model.
+     */
+
+    /**
      * @method storeGetter
      * ** This is not a real method, it is placeholder documentation for a generated method on a `Ext.data.Model`. **
      *

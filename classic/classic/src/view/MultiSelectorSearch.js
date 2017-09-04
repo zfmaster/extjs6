@@ -100,7 +100,7 @@ Ext.define('Ext.view.MultiSelectorSearch', {
      */
 
     /**
-     * @cfg store
+     * @cfg {Ext.data.Store/String/Object} store
      * @inheritdoc Ext.panel.Table#store
      */
 
@@ -207,6 +207,7 @@ Ext.define('Ext.view.MultiSelectorSearch', {
             dock: 'top',
             hideFieldLabel: true,
             emptyText: this.searchText,
+            cls: Ext.baseCSSPrefix + 'multiselector-search-input',
             triggers: {
                 clear: {
                     cls: Ext.baseCSSPrefix + 'form-clear-trigger',
@@ -228,7 +229,7 @@ Ext.define('Ext.view.MultiSelectorSearch', {
         if (event.getKey() === event.TAB && event.shiftKey) {
             event.preventDefault();
             this.owner.searchTool.focus();
-        };
+        }
     },
 
     makeItems: function () {

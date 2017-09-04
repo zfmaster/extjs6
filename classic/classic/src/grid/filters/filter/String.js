@@ -25,7 +25,9 @@
  *         height: 250,
  *         width: 250,
  *         store: shows,
- *         plugins: 'gridfilters',
+ *         plugins: {
+ *             gridfilters: true
+ *         },
  *         columns: [{
  *             dataIndex: 'id',
  *             text: 'ID',
@@ -54,13 +56,12 @@ Ext.define('Ext.grid.filters.filter.String', {
 
     operator: 'like',
 
-    //<locale>
     /**
      * @cfg {String} emptyText
      * The empty text to show for each field.
+     * @locale
      */
     emptyText: 'Enter Filter Text...',
-    //</locale>
 
     itemDefaults: {
         xtype: 'textfield',

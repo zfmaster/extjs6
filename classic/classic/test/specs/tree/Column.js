@@ -1,5 +1,4 @@
-describe("Ext.tree.Column", function() {
-
+topSuite("Ext.tree.Column", ['Ext.tree.Panel'], function() {
     var tree, colRef;
 
     function makeTree(columns) {

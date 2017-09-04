@@ -18,7 +18,7 @@ Ext.define('Ext.util.paintmonitor.Abstract', {
     monitorClass: '',
 
     constructor: function(config) {
-        this.onElementPainted = Ext.Function.bind(this.onElementPainted, this);
+        this.onElementPainted = this.onElementPainted.bind(this);
 
         this.initConfig(config);
     },
@@ -38,7 +38,7 @@ Ext.define('Ext.util.paintmonitor.Abstract', {
             classList: [Ext.baseCSSPrefix + 'paint-monitor', this.monitorClass]
         }, true);
 
-        element.appendChild(this.monitorElement);
+        element.appendChild(this.monitorElement, true);
         element.addCls(Ext.baseCSSPrefix + 'paint-monitored');
         this.bindListeners(true);
     },

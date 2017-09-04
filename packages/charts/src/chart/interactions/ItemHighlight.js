@@ -36,9 +36,9 @@ Ext.define('Ext.chart.interactions.ItemHighlight', {
 
     onMouseMoveGesture: function (e) {
         var me = this,
-            tipItem = me.tipItem,
+            oldItem = me.oldItem,
             isMousePointer = e.pointerType === 'mouse',
-            item, tooltip, chart;
+            item, tooltip;
 
         if (me.getSticky()) {
             return true;
@@ -50,28 +50,43 @@ Ext.define('Ext.chart.interactions.ItemHighlight', {
         }
 
         if (me.isDragging) {
-            if (tipItem && isMousePointer) {
-                tipItem.series.hideTooltip(tipItem);
-                me.tipItem = null;
+            if (oldItem && isMousePointer) {
+                oldItem.series.hideTooltip(oldItem);
+                me.oldItem = null;
             }
         } else if (!me.stickyHighlightItem) {
             item = me.getItemForEvent(e);
-            chart = me.getChart();
-            if (item !== chart.getHighlightItem()) {
+            if (item !== me.getChart().getHighlightItem()) {
                 me.highlight(item);
                 me.sync();
             }
 
             if (isMousePointer) {
-                if ( tipItem && (!item || tipItem.field !== item.field || tipItem.record !== item.record) ) {
-                    tipItem.series.hideTooltip(tipItem);
-                    me.tipItem = tipItem = null;
-                }
-                if (item && (tooltip = item.series.getTooltip())) {
-                    if (tooltip.trackMouse || !tipItem) {
-                        item.series.showTooltip(item, e);
+                // If we detected a mouse hit, show/refresh the tooltip
+                if (item) {
+                    tooltip = item.series.getTooltip();
+
+                    if (tooltip) {
+                        // If there was a different previously active item, ask it to hide its tooltip.
+                        // Unless it's the same tooltip instance that we are about to show.
+                        // In which case, we are just going to reposition it.
+                        if (oldItem && oldItem !== item && oldItem.series.getTooltip() !== tooltip) {
+                            oldItem.series.hideTooltip(oldItem, true);
+                        }
+
+                        if (tooltip.getTrackMouse()) {
+                            item.series.showTooltip(item, e);
+                        } else {
+                            me.showUntracked(item);
+                        }
+                        me.oldItem = item;
                     }
-                    me.tipItem = item;
+                }
+                // No mouse hit - schedule a hide for hideDelay ms.
+                // If pointer enters another item within that time,
+                // there will be no flickery reshow.
+                else if (oldItem) {
+                    oldItem.series.hideTooltip(oldItem);
                 }
             }
             return false;
@@ -87,7 +102,37 @@ Ext.define('Ext.chart.interactions.ItemHighlight', {
 
     showTooltip: function (e, item) {
         item.series.showTooltip(item, e);
-        this.tipItem = item;
+        this.oldItem = item;
+    },
+
+    showUntracked: function (item) {
+        var marker = item.sprite.getMarker(item.category),
+            surface, surfaceXY, isInverseY,
+            itemBBox;
+
+        if (marker) {
+            surface = marker.getSurface();
+            isInverseY = surface.matrix.elements[3] < 0;
+            surfaceXY = surface.element.getXY();
+            itemBBox = Ext.clone(marker.getBBoxFor(item.index));
+            if (isInverseY) {
+                // The item.category for bar series will be 'items'.
+                // The item.category for line series will be 'markers'.
+                // 'items' are in the 'series' surface, which is flipped vertically
+                // for cartesian series.
+                // 'markers' are in the 'overlay' surface, which isn't flipped.
+                // So for 'markers' we already have the bbox in a coordinate system
+                // with the origin at the top-left of the surface, but for 'items'
+                // we need to do a conversion.
+                itemBBox = surface.inverseMatrix.transformBBox(itemBBox);
+            }
+            itemBBox.x += surfaceXY[0];
+            itemBBox.y += surfaceXY[1];
+            item.series.showTooltipAt(item,
+                itemBBox.x + itemBBox.width * .5,
+                itemBBox.y + itemBBox.height * .5
+            );
+        }
     },
 
     onMouseDownGesture: function () {
@@ -96,6 +141,10 @@ Ext.define('Ext.chart.interactions.ItemHighlight', {
 
     onMouseUpGesture: function () {
         this.isDragging = false;
+    },
+
+    isSameItem: function (a, b) {
+        return a && b && a.series === b.series && a.field === b.field && a.index === b.index;
     },
 
     onTapGesture: function (e) {
@@ -109,8 +158,8 @@ Ext.define('Ext.chart.interactions.ItemHighlight', {
 
         var item = me.getItemForEvent(e);
 
-        if (me.stickyHighlightItem && item && (me.stickyHighlightItem.index === item.index)) {
-            item = null;
+        if (me.isSameItem(me.stickyHighlightItem, item)) {
+            item = null; // toggle
         }
         me.stickyHighlightItem = item;
         me.highlight(item);

@@ -34,8 +34,20 @@ Ext.define('Ext.app.bind.LinkStub', {
     },
 
     getDataObject: function () {
-        var binding = this.binding;
-        return binding && binding.getDataObject();
+        var binding = this.binding,
+            root = this.parent,
+            name = this.name,
+            rootData, ret;
+
+        if (root.isRootStub && !root.shouldClimb(name)) {
+            rootData = root.owner.getData();
+            if (!rootData.hasOwnProperty(name)) {
+                rootData[name] = ret = {};
+            }
+        } else {
+            ret = binding && binding.getDataObject();
+        }
+        return ret;
     },
 
     getRawValue: function () {
@@ -52,6 +64,12 @@ Ext.define('Ext.app.bind.LinkStub', {
     getTargetStub: function () {
         var binding = this.binding;
         return binding && binding.stub;
+    },
+
+    isAvailable: function () {
+        var binding = this.binding;
+
+        return binding ? binding.isAvailable() : false;
     },
 
     isLoading: function () {

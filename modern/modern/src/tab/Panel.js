@@ -8,14 +8,10 @@
  * to toggle between code mode and live preview mode (you can also edit the code and see your changes in the live
  * preview):
  *
- *     @example miniphone preview
+ *     @example
  *     Ext.create('Ext.TabPanel', {
  *         fullscreen: true,
  *         tabBarPosition: 'bottom',
- *
- *         defaults: {
- *             styleHtmlContent: true
- *         },
  *
  *         items: [
  *             {
@@ -34,13 +30,9 @@
  * the title and icon defined on the item configuration, and switches to that item when tapped on. We can also position
  * the tab bar at the top, which makes our Tab Panel look like this:
  *
- *     @example miniphone preview
+ *     @example
  *     Ext.create('Ext.TabPanel', {
  *         fullscreen: true,
- *
- *         defaults: {
- *             styleHtmlContent: true
- *         },
  *
  *         items: [
  *             {
@@ -57,10 +49,15 @@
  */
 Ext.define('Ext.tab.Panel', {
     extend: 'Ext.Container',
-    xtype : 'tabpanel',
+    xtype: 'tabpanel',
     alternateClassName: 'Ext.TabPanel',
+    isTabPanel: true,
 
-    requires: ['Ext.tab.Bar'],
+    requires: [
+        'Ext.layout.Card',
+        'Ext.tab.Bar',
+        'Ext.tab.Tab'
+    ],
 
     config: {
         /**
@@ -85,8 +82,7 @@ Ext.define('Ext.tab.Panel', {
         layout: {
             type: 'card',
             animation: {
-                type: 'slide',
-                direction: 'left'
+                type: 'slide'
             }
         },
 
@@ -107,19 +103,24 @@ Ext.define('Ext.tab.Panel', {
          */
     },
 
-    initialize: function() {
-        this.callParent();
+    defaults: {
+        allowHeader: false
+    },
 
-        this.on({
+    initialize: function() {
+        var me = this;
+        me.callParent();
+
+        me.on({
             beforeactivetabchange: 'doTabChange',
             delegate: '> tabbar',
-            scope   : this
+            scope   : me
         });
 
-        this.on({
+        me.on({
             disabledchange: 'onItemDisabledChange',
             delegate: '> component',
-            scope   : this
+            scope   : me
         });
     },
 
@@ -142,7 +143,7 @@ Ext.define('Ext.tab.Panel', {
 
         bar = this.getTabBar();
         if (this.initialized && bar) {
-            bar.setUi(newUi);
+            bar.setUi(ui);
         }
     },
 
@@ -154,15 +155,9 @@ Ext.define('Ext.tab.Panel', {
             var items = this.getInnerItems(),
                 oldIndex = items.indexOf(oldActiveItem),
                 newIndex = items.indexOf(newActiveItem),
-                reverse = oldIndex > newIndex,
-                animation = this.getLayout().getAnimation(),
                 tabBar = this.getTabBar(),
                 oldTab = tabBar.parseActiveTab(oldIndex),
                 newTab = tabBar.parseActiveTab(newIndex);
-
-            if (animation && animation.setReverse) {
-                animation.setReverse(reverse);
-            }
 
             this.callParent(arguments);
 
@@ -204,6 +199,16 @@ Ext.define('Ext.tab.Panel', {
      * @private
      */
     applyTabBar: function(config) {
+        var innerItems,
+            activeItem;
+
+        if (this.isConfiguring) {
+            activeItem = this.initialConfig.activeItem || 0;
+        } else {
+            innerItems = this.getInnerItems();
+            activeItem = innerItems.indexOf(this._activeItem);
+        }
+
         if (config === true) {
             config = {};
         }
@@ -211,11 +216,13 @@ Ext.define('Ext.tab.Panel', {
         if (config) {
             Ext.applyIf(config, {
                 ui: this.getUi(),
-                docked: this.getTabBarPosition()
+                docked: this.getTabBarPosition(),
+                activeItem: activeItem
             });
-        }
 
-        return Ext.factory(config, Ext.tab.Bar, this.getTabBar());
+            return Ext.factory(config, Ext.tab.Bar, this.getTabBar());
+        }
+        return null;
     },
 
     /**
@@ -257,7 +264,10 @@ Ext.define('Ext.tab.Panel', {
             initialConfig = card.getInitialConfig(),
             tabConfig = initialConfig.tab || {},
             tabTitle = (card.getTitle) ? card.getTitle() : initialConfig.title,
+            tabClosable = (card.getClosable) ? card.getClosable() : initialConfig.closable,
+            tabIconAlign = (card.getIconAlign) ? card.getIconAlign() : initialConfig.iconAlign,
             tabIconCls = (card.getIconCls) ? card.getIconCls() : initialConfig.iconCls,
+            tabIcon = (card.getIcon) ? card.getIcon() : initialConfig.icon,
             tabHidden = (card.getHidden) ? card.getHidden() : initialConfig.hidden,
             tabDisabled = (card.getDisabled) ? card.getDisabled() : initialConfig.disabled,
             tabBadgeText = (card.getBadgeText) ? card.getBadgeText() : initialConfig.badgeText,
@@ -266,15 +276,27 @@ Ext.define('Ext.tab.Panel', {
             tabs = tabBar.getItems(),
             activeTab = tabBar.getActiveTab(),
             currentTabInstance = (tabs.length >= innerItems.length) && tabs.getAt(index),
-            header = card.isPanel && card.getHeader(),
+            header = card.getConfig('header', false, true),
             tabInstance;
 
         if (tabTitle && !tabConfig.title) {
             tabConfig.title = tabTitle;
         }
 
+        if (tabClosable && !tabConfig.closable) {
+            tabConfig.closable = tabClosable;
+        }
+
+        if (tabIconAlign && !tabConfig.iconAlign) {
+            tabConfig.iconAlign = tabIconAlign;
+        }
+
         if (tabIconCls && !tabConfig.iconCls) {
             tabConfig.iconCls = tabIconCls;
+        }
+
+        if (tabIcon && !tabConfig.icon) {
+            tabConfig.icon = tabIcon;
         }
 
         if (tabHidden && !tabConfig.hidden) {
@@ -304,6 +326,10 @@ Ext.define('Ext.tab.Panel', {
         }
 
         card.tab = tabInstance;
+        tabInstance.card = card;
+
+        // If there is an instantiated header, then hide it.
+        // Otherwise, ensure there won't be a header.
         if (header) {
             header.setHidden(true);
         }
@@ -328,13 +354,16 @@ Ext.define('Ext.tab.Panel', {
     // @private
     onItemRemove: function(item, index, destroying) {
         var me = this,
-            tabBar = me.getTabBar(),
-            clearBar;
+            meDestroying = me.meDestroying,
+            clearBar, tabBar;
 
-        if (item === tabBar) {
-            clearBar = me.removingTabBar === undefined;
-        } else if (tabBar) {
-            tabBar.remove(item.tab, true);
+        if (!meDestroying) {
+            tabBar = me.getTabBar();
+            if (item === tabBar) {
+                clearBar = me.removingTabBar === undefined;
+            } else if (tabBar) {
+                tabBar.remove(item.tab, true);
+            }
         }
 
         me.callParent([item, index, destroying]);

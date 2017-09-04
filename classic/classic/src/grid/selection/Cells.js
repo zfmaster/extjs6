@@ -141,15 +141,18 @@ Ext.define('Ext.grid.selection.Cells', {
             var me = this,
                 view = me.view;
 
-            me.eachCell(function(cellContext) {
-                view.onCellDeselect(cellContext);
-            });
+            if (view.getVisibleColumnManager().getColumns().length) {
+                me.eachCell(function(cellContext) {
+                    view.onCellDeselect(cellContext);
+                });
+            }
             me.startCell = me.endCell = null;
         },
 
         /**
          * Used during drag/shift+downarrow range selection on start.
          * @param {Ext.grid.CellContext} startCell The start cell of the cell drag selection.
+         * @param {Ext.grid.CellContext} endCell The end cell of the cell drag selection.
          * @private
          */
         setRangeStart: function (startCell, endCell) {

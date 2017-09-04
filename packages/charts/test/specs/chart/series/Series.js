@@ -1,5 +1,9 @@
-describe('Ext.chart.series.Series', function() {
+/* global Ext, expect */
 
+topSuite("Ext.chart.series.Series",
+    ['Ext.chart.*', 'Ext.data.ArrayStore', 'Ext.app.ViewController',
+     'Ext.Container', 'Ext.layout.Fit'],
+function() {
     var proto = Ext.chart.series.Series.prototype,
         synchronousLoad = true,
         proxyStoreLoad = Ext.data.ProxyStore.prototype.load,
@@ -14,6 +18,9 @@ describe('Ext.chart.series.Series', function() {
             }
             return this;
         };
+        
+        // Silence warnings regarding Sencha download server
+        spyOn(Ext.log, 'warn');
     });
 
     afterEach(function() {
@@ -22,8 +29,17 @@ describe('Ext.chart.series.Series', function() {
     });
 
     describe('label', function () {
+        var chart;
+
+        afterEach(function() {
+            Ext.destroy(chart);
+        });
+
+        // Safari 7 times out here in Modern for unknown reason in TeamCity only.
+        // Works fine locally (tested in Safari 7.0 (9537.71).
+        TODO(Ext.isSafari7).
         it('should allow for dynamic updates of the "field" config', function () {
-            var chart;
+            var layoutDone;
 
             runs(function () {
                 chart = Ext.create({
@@ -55,18 +71,22 @@ describe('Ext.chart.series.Series', function() {
                             display: 'rotate'
                         },
                         donut: 30
+                    },
+                    listeners: {
+                        layout: function () {
+                            layoutDone = true;
+                        }
                     }
                 });
             });
 
             waitsFor(function () {
-                // wait till sprites have rendered
-                return !chart.getSeries()[0].getSprites()[0].getDirty();
+                return layoutDone;
             });
 
             runs(function () {
-                var series = chart.get('mySeries');
-                var label = series.getLabel();
+                var series = chart.get('mySeries'),
+                    label = series.getLabel();
 
                 expect(label.get(0).text).toBe('metric one');
                 expect(label.get(1).text).toBe('metric two');
@@ -77,8 +97,6 @@ describe('Ext.chart.series.Series', function() {
 
                 expect(label.get(0).text).toBe('metric 1');
                 expect(label.get(1).text).toBe('metric 2');
-
-                Ext.destroy(chart);
             });
         });
     });
@@ -989,6 +1007,109 @@ describe('Ext.chart.series.Series', function() {
 
     });
 
+    describe('coordinate', function () {
+        var chart;
+
+        afterEach(function () {
+            Ext.destroy(chart);
+        });
+        
+        TODO(Ext.isSafari7).
+        it('should update series range as more related series get coordinated', function () {
+            // The issue with this was that when multiple series bound to the same
+            // axis were coordinated in the axis direction, the range of each series
+            // was set consecutively, without accounting for the fact that sebsequent
+            // series might affect that range.
+            // For example, if the first series has a range of data of [1, 10],
+            // and the second has a range of data of [8, 20]. The first will
+            // receive [1, 10] as its range (from the axis.getRange()) and the second
+            // [8, 20]. While both should receive [1, 20], as this is what the actual
+            // final range of the axis will be. But the final range is simly not known
+            // at the time when just the first series has been coordinated. So the range
+            // of all series bound to an axis should be updated every time we recalculate
+            // the axis' range.
+
+            chart = new Ext.chart.PolarChart({
+                animation: false,
+                renderTo: document.body,
+                width: 400,
+                height: 400,
+                store: {
+                    data: [
+                        {cat: 'A', inner: 1,  outer: 8},
+                        {cat: 'B', inner: 3,  outer: 10},
+                        {cat: 'C', inner: 10, outer: 20}
+                    ]
+                },
+                legend: {
+                    position: 'right'
+                },
+                insetPadding: '40 40 60 40',
+                interactions: ['rotate'],
+                axes: [{
+                    type: 'numeric',
+                    position: 'radial',
+                    grid: true,
+                    label: {
+                        display: true
+                    }
+                }, {
+                    type: 'category',
+                    position: 'angular',
+                    grid: true
+                }],
+                series: [
+                    {
+                        type: 'radar',
+                        angleField: 'cat',
+                        radiusField: 'inner'
+                    },
+                    {
+                        type: 'radar',
+                        angleField: 'cat',
+                        radiusField: 'outer'
+                    }
+                ]
+            });
+
+            var layoutDone;
+            var originalLayout = chart.performLayout;
+            chart.performLayout = function () {
+                originalLayout.call(this);
+                layoutDone = true;
+            };
+
+            // waitsForSpy fails here for whatever reason, so spying manually
+            waitsFor(function () {
+                return layoutDone;
+            });
+
+            runs(function () {
+                var series = chart.getSeries(),
+                    inner = series[0],
+                    outer = series[1],
+                    sprites, i, ln,
+                    expectedYRange = [1, 20],
+                    yRange;
+
+                sprites = inner.getSprites();
+                for (i = 0, ln = sprites.length; i < ln; i++) {
+                    yRange = sprites[i].attr.rangeY;
+                    expect(yRange[0]).toBe(expectedYRange[0]);
+                    expect(yRange[1]).toBe(expectedYRange[1]);
+                }
+
+                sprites = outer.getSprites();
+                for (i = 0, ln = sprites.length; i < ln; i++) {
+                    yRange = sprites[i].attr.rangeY;
+                    expect(yRange[0]).toBe(expectedYRange[0]);
+                    expect(yRange[1]).toBe(expectedYRange[1]);
+                }
+            });
+        });
+
+    });
+
     describe('coordinateData', function () {
         it("should handle empty strings as valid discrete axis values", function () {
             var originalMethod = proto.coordinateData,
@@ -1194,6 +1315,90 @@ describe('Ext.chart.series.Series', function() {
             expect(template.attr.hidden).toBe(false);
         });
 
+    });
+
+    describe("renderer", function () {
+        var chart,
+            layoutDone,
+            fieldMap;
+
+        afterEach(function () {
+            chart = Ext.destroy(chart);
+        });
+
+        it("sprite field names should be set correctly", function () {
+            runs(function () {
+                chart = Ext.create({
+                    xtype: 'cartesian',
+
+                    renderTo: Ext.getBody(),
+                    width: 400,
+                    height: 400,
+
+                    store: {
+                        data: [
+                            { x: 1, y1: 1, y2: 4 },
+                            { x: 2, y1: 2, y2: 5 },
+                            { x: 3, y1: 3, y2: 6 }
+                        ]
+                    },
+                    series: [{
+                        type: 'bar',
+                        xField: 'x',
+                        yField: ['y1', 'y2'],
+
+                        renderer: function (sprite, config, data, index) {
+                            var seriesFields = fieldMap['series'] || (fieldMap.series = []);
+                            seriesFields.push(sprite.getField());
+                        },
+
+                        label: {
+                            field: 'y2',
+                            renderer: function (text, sprite, config, data, index) {
+                                var labelFields = fieldMap['labels'] || (fieldMap.labels = []);
+                                labelFields.push(sprite.getTemplate().getField());
+
+                                expect(!!sprite.get(index)).toBe(true);
+                            }
+                        }
+                    }],
+
+                    axes: [
+                        {
+                            type: 'category',
+                            position: 'bottom'
+                        },
+                        {
+                            type: 'numeric',
+                            position: 'left'
+                        }
+                    ],
+
+                    listeners: {
+                        beforelayout: function () {
+                            fieldMap = {};
+                        },
+                        layout: function () {
+                            layoutDone = true;
+                        }
+                    }
+                });
+            });
+
+            waitsFor(function () {
+                return layoutDone;
+            });
+
+            runs(function () {
+                var uniqueSeriesFields = Ext.Array.unique(fieldMap.series);
+                var uniqueLabelFields = Ext.Array.unique(fieldMap.labels);
+
+                expect(uniqueLabelFields.length).toBe(1);
+                expect(uniqueLabelFields[0]).toBe('y2');
+
+                expect(uniqueSeriesFields.length).toBe(2);
+            });
+        });
     });
 
 });

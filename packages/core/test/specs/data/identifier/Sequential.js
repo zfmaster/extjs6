@@ -1,4 +1,4 @@
-describe("Ext.data.identifier.Sequential", function() {
+topSuite("Ext.data.identifier.Sequential", function() {
     var idgen;
     
     function make(cfg) {

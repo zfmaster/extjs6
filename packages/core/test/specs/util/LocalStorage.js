@@ -1,4 +1,4 @@
-describe("Ext.util.LocalStorage", function() {
+topSuite("Ext.util.LocalStorage", function() {
     var store;
 
     function createStore () {

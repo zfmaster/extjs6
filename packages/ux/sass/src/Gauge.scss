@@ -1,3 +1,8 @@
+.#{$prefix}gauge svg {
+    // A gauge may progressively increase in size without this.
+    display: block;
+}
+
 .#{$prefix}gauge-text {
     position: absolute;
     text-align: center;

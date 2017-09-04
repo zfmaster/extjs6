@@ -1,4 +1,6 @@
-describe("Ext.layout.container.CheckboxGroup", function() {
+topSuite("Ext.layout.container.CheckboxGroup",
+    ['Ext.form.CheckboxGroup', 'Ext.form.field.Checkbox'],
+function() {
     var checkboxGroup;
     
     function makeGroup(config) {

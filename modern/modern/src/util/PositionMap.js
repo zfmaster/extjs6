@@ -46,7 +46,7 @@ Ext.define('Ext.util.PositionMap', {
         me.offset = 0;
         for (i = 1, ln = count - 1; i <= ln; i++) {
             previousIndex = i - 1;
-            this.offset += map[i] - map[previousIndex] - minimumHeight;
+            me.offset += map[i] - map[previousIndex] - minimumHeight;
         }
     },
 
@@ -60,12 +60,13 @@ Ext.define('Ext.util.PositionMap', {
     },
 
     update: function() {
-        var adjustments = this.adjustments,
+        var me = this,
+            adjustments = me.adjustments,
             indices = adjustments.indices,
             heights = adjustments.heights,
-            map = this.map,
+            map = me.map,
             ln = indices && indices.length,
-            minimumHeight = this.getMinimumHeight(),
+            minimumHeight = me.getMinimumHeight(),
             difference = 0,
             i, j, height, index, nextIndex, currentHeight;
 
@@ -91,8 +92,8 @@ Ext.define('Ext.util.PositionMap', {
             }
         }
 
-        this.offset += difference;
-        this.adjustments = {
+        me.offset += difference;
+        me.adjustments = {
             indices: [],
             heights: {}
         };

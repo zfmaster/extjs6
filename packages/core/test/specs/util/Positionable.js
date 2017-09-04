@@ -1,4 +1,4 @@
-describe("Ext.util.Positionable", function() {
+topSuite("Ext.util.Positionable", 'Ext.Component', function() {
     var wrap, positionable;
 
     function createElement(cfg) {

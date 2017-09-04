@@ -1,4 +1,4 @@
-describe("Ext.Template", function() {
+topSuite("Ext.Template", ["Ext.dom.Element"], function() {
 
     describe("instantiation", function() {
         var tpl;

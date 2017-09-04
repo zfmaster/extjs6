@@ -21,12 +21,6 @@ Ext.define('Ext.navigation.Bar', {
          * @cfg
          * @inheritdoc
          */
-        baseCls: Ext.baseCSSPrefix + 'toolbar',
-
-        /**
-         * @cfg
-         * @inheritdoc
-         */
         cls: Ext.baseCSSPrefix + 'navigation-bar',
 
         /**
@@ -126,6 +120,8 @@ Ext.define('Ext.navigation.Bar', {
             hidden: true
         }
     },
+
+    baseCls: Ext.baseCSSPrefix + 'toolbar',
 
     /**
      * @event back

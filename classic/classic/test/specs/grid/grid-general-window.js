@@ -1,6 +1,8 @@
 /* global Ext, expect, spyOn, jasmine, xit, MockAjaxManager */
 
-describe("grid-general-window", function() {
+topSuite("grid-general-window",
+    [false, 'Ext.grid.Panel', 'Ext.data.ArrayStore', 'Ext.window.Window'],
+function() {
     var grid, store,
         synchronousLoad = true,
         proxyStoreLoad = Ext.data.ProxyStore.prototype.load,

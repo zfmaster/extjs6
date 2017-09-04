@@ -61,8 +61,9 @@
  *         }],
  *         viewConfig: {
  *             plugins: {
- *                 ptype: 'gridviewdragdrop',
- *                 dragText: 'Drag and drop to reorganize'
+ *                 gridviewdragdrop: {
+ *                     dragText: 'Drag and drop to reorganize'
+ *                 }
  *             }
  *         },
  *         height: 200,
@@ -201,19 +202,18 @@ Ext.define('Ext.grid.plugin.DragDrop', {
      * 
      * See {@link #copy} to enable the copying of all dragged records.
      */
-    //<locale>
 
     /**
-     * @cfg
+     * @cfg {String} dragText
      * The text to show while dragging.
      *
      * Two placeholders can be used in the text:
      *
      * - `{0}` The number of selected items.
      * - `{1}` 's' when more than 1 items (only useful for English).
+     * @locale
      */
     dragText : '{0} selected row{1}',
-    //</locale>
 
     /**
      * @cfg {String} [ddGroup=gridDD]
@@ -286,6 +286,7 @@ Ext.define('Ext.grid.plugin.DragDrop', {
             copy: this.copy,
             allowCopy: this.allowCopy
         });
+
         view.on('render', this.onViewRender, this, {single: true});
     },
 
@@ -322,25 +323,24 @@ Ext.define('Ext.grid.plugin.DragDrop', {
         me.callParent();
     },
 
-    onViewRender : function(view) {
+    onViewRender: function(view) {
         var me = this,
             ownerGrid = view.ownerCt.ownerGrid || view.ownerCt,
-            scrollEl;
+            dragZone = me.dragZone || {};
 
         ownerGrid.relayEvents(view, ['beforedrop', 'drop']);
         
         if (me.enableDrag) {
             if (me.containerScroll) {
-                scrollEl = view.getEl();
+                dragZone.scrollEl = view.getEl();
+                dragZone.containerScroll = true;
             }
 
             me.dragZone = new Ext.view.DragZone(Ext.apply({
                 view: view,
                 ddGroup: me.dragGroup || me.ddGroup,
-                dragText: me.dragText,
-                containerScroll: me.containerScroll,
-                scrollEl: scrollEl
-            }, me.dragZone));
+                dragText: me.dragText
+            }, dragZone));
         }
 
         if (me.enableDrop) {

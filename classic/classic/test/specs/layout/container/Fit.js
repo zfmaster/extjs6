@@ -1,8 +1,7 @@
-describe('Ext.layout.container.Fit', function(){
-
+topSuite("Ext.layout.container.Fit", ['Ext.Panel'], function() {
     var ct;
 
-    afterEach(function(){
+    afterEach(function() {
         Ext.destroy(ct);
         ct = null;
     });
@@ -25,7 +24,7 @@ describe('Ext.layout.container.Fit', function(){
     }
 
     describe('should handle minWidth and/or minHeight', function () {
-        it('should stretch the configured size child', function(){
+        it('should stretch the configured size child', function() {
             makeCt({
                     width: undefined,
                     height: undefined,
@@ -49,8 +48,8 @@ describe('Ext.layout.container.Fit', function(){
         });
     });
 
-    describe('Fixed dimensions', function(){
-        it('should size the child item to the parent', function(){
+    describe('Fixed dimensions', function() {
+        it('should size the child item to the parent', function() {
             makeCt({
                     items: {}
                 });
@@ -63,7 +62,7 @@ describe('Ext.layout.container.Fit', function(){
             });
         });
 
-        it('should account for padding on the owner', function(){
+        it('should account for padding on the owner', function() {
             makeCt({
                     padding: 10,
                     items: {}
@@ -77,7 +76,7 @@ describe('Ext.layout.container.Fit', function(){
             });
         });
 
-        it('should account for top padding on the owner', function(){
+        it('should account for top padding on the owner', function() {
             makeCt({
                     padding: '10 0 0 0',
                     items: {}
@@ -91,7 +90,7 @@ describe('Ext.layout.container.Fit', function(){
             });
         });
 
-        it('should account for right padding on the owner', function(){
+        it('should account for right padding on the owner', function() {
             makeCt({
                     padding: '0 10 0 0',
                     items: {}
@@ -105,7 +104,7 @@ describe('Ext.layout.container.Fit', function(){
             });
         });
 
-        it('should account for bottom padding on the owner', function(){
+        it('should account for bottom padding on the owner', function() {
             makeCt({
                     padding: '0 0 10 0',
                     items: {}
@@ -119,7 +118,7 @@ describe('Ext.layout.container.Fit', function(){
             });
         });
 
-        it('should account for left padding on the owner', function(){
+        it('should account for left padding on the owner', function() {
             makeCt({
                     padding: '0 0 0 10',
                     items: {}
@@ -133,7 +132,7 @@ describe('Ext.layout.container.Fit', function(){
             });
         });
 
-        it('should account for margin on the child', function(){
+        it('should account for margin on the child', function() {
             makeCt({
                     items: {
                         margin: 10
@@ -148,7 +147,7 @@ describe('Ext.layout.container.Fit', function(){
             });
         });
 
-        it('should account for a top margin on the child', function(){
+        it('should account for a top margin on the child', function() {
             makeCt({
                     items: {
                         margin: '10 0 0 0'
@@ -163,7 +162,7 @@ describe('Ext.layout.container.Fit', function(){
             });
         });
 
-        it('should account for a right margin on the child', function(){
+        it('should account for a right margin on the child', function() {
             makeCt({
                     items: {
                         margin: '0 10 0 0'
@@ -178,7 +177,7 @@ describe('Ext.layout.container.Fit', function(){
             });
         });
 
-        it('should account for a bottom margin on the child', function(){
+        it('should account for a bottom margin on the child', function() {
             makeCt({
                     items: {
                         margin: '0 0 10'
@@ -193,7 +192,7 @@ describe('Ext.layout.container.Fit', function(){
             });
         });
 
-        it('should account for a left margin on the child', function(){
+        it('should account for a left margin on the child', function() {
             makeCt({
                     items: {
                         margin: '0 0 0 10'
@@ -208,7 +207,7 @@ describe('Ext.layout.container.Fit', function(){
             });
         });
 
-        it('should account for both padding & margin', function(){
+        it('should account for both padding & margin', function() {
             makeCt({
                     padding: 10,
                     items: {
@@ -242,7 +241,7 @@ describe('Ext.layout.container.Fit', function(){
             });
         });
 
-        it('should support margin and a style margin', function(){
+        it('should support margin and a style margin', function() {
             makeCt({
                     items: {
                         style: {margin: '10px'}, // Will be ignored
@@ -258,7 +257,7 @@ describe('Ext.layout.container.Fit', function(){
             });
         });
 
-        it('should support multiple items', function(){
+        it('should support multiple items', function() {
             makeCt({
                     style: 'position: relative',
                     items: [{}, {
@@ -277,7 +276,7 @@ describe('Ext.layout.container.Fit', function(){
             });
         });
 
-        it('should support multiple items with margin & padding', function(){
+        it('should support multiple items with margin & padding', function() {
             makeCt({
                     style: 'position: relative',
                     padding: 10,
@@ -301,7 +300,7 @@ describe('Ext.layout.container.Fit', function(){
             });
         });
 
-        it('should prioritize fitting the child over a configured size', function(){
+        it('should prioritize fitting the child over a configured size', function() {
             makeCt({
                     items: {
                         height: 50, // should be ignored
@@ -319,8 +318,8 @@ describe('Ext.layout.container.Fit', function(){
         });
     });
 
-    describe('Shrink-wrapping', function(){
-        it('should force the parent to the child size', function(){
+    describe('Shrink-wrapping', function() {
+        it('should force the parent to the child size', function() {
             makeCt({
                     floating: true, // avoid stretching to full body width
                     items: {
@@ -337,7 +336,7 @@ describe('Ext.layout.container.Fit', function(){
             });
         });
 
-        it('should take into account owner padding', function(){
+        it('should take into account owner padding', function() {
             makeCt({
                     floating: true, // avoid stretching to full body width
                     padding: 10,
@@ -355,7 +354,7 @@ describe('Ext.layout.container.Fit', function(){
             });
         });
 
-        it('should take into account child margin', function(){
+        it('should take into account child margin', function() {
             makeCt({
                     floating: true, // avoid stretching to full body width
                     items: {
@@ -373,7 +372,7 @@ describe('Ext.layout.container.Fit', function(){
             });
         });
 
-        it('should account for both padding/margin', function(){
+        it('should account for both padding/margin', function() {
             makeCt({
                     floating: true, // avoid stretching to full body width
                     padding: 10,
@@ -392,7 +391,7 @@ describe('Ext.layout.container.Fit', function(){
             });
         });
 
-        it('should account for left padding & a top margin', function(){
+        it('should account for left padding & a top margin', function() {
             makeCt({
                     floating: true, // avoid stretching to full body width
                     padding: '0 0 0 10',

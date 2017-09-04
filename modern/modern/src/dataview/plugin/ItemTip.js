@@ -22,21 +22,11 @@ Ext.define('Ext.dataview.plugin.ItemTip', {
 
     listeners: {
         beforeshow: 'onBeforeShow',
+        show: 'onShow',
         scope: 'this'
     },
 
-    init: function(dataview) {
-        this.dataview = dataview;
-
-        dataview.on({
-            initialize: this.onDataViewInitialized,
-            scope: this
-        });
-        dataview.getScrollable().on({
-            scroll: this.onDataViewScroll,
-            scope: this
-        });
-    },
+    init: Ext.emptyFn,
 
     destroy: function() {
         // We need to null out the parent very early, otherwise
@@ -54,60 +44,69 @@ Ext.define('Ext.dataview.plugin.ItemTip', {
     },
 
     updateCmp: function(dataview) {
-        this.dataview = this.parent = dataview;
+        var me = this;
+
+        me.dataview = me.parent = dataview;
+        dataview.on('initialize', 'onDataViewInitialized', me);
+        dataview.getScrollable().on('scroll', 'onDataViewScroll', me);
     },
 
     onDataViewInitialized: function(dataview) {
-        this.setTarget(dataview.container.el);
-        this.itemSelector = '#' + dataview.container.el.id + '>*';
+        var me = this;
 
-        if (!this.getDelegate()) {
-            this.setDelegate(this.itemSelector);
-        }
-    },
+        me.setTarget(dataview.bodyElement);
+        me.itemSelector = dataview.itemSelector;
 
-    onDataViewScroll: function() {
-        var me = this,
-            isInView;
-
-        if (me.currentTarget) {
-            isInView = me.dataview.getScrollable().isInView(me.currentTarget);
-            if (!isInView.x && isInView.y) {
-                me.hide();
-            }
-            if (me.isVisible()) {
-                me.showByTarget(me.currentTarget);
-            }
+        if (!me.getDelegate()) {
+            me.setDelegate(me.itemSelector);
         }
     },
 
     onBeforeShow: function() {
         var me = this,
             viewModel = me.getViewModel(),
-            dataview = me.dataview,
-            itemEl = me.currentTarget;
-
-        if (!itemEl.is(me.itemSelector)) {
-            itemEl = itemEl.up(me.itemSelector);
-        }
-        
-        me.recordIndex = dataview.container.getViewItems().indexOf(itemEl.dom);
-        me.record = dataview.getStore().getAt(me.recordIndex);
+            location = me.getCmp().getNavigationModel().createLocation(me.currentTarget);
 
         if (me.getBind()) {
-            viewModel.set('record', me.record);
-            viewModel.set('recordIndex', me.recordIndex);
+            viewModel.set('record', location.record);
+            viewModel.set('recordIndex', me.location.recordIndex);
 
             // Flush the data now so that the alignment is correct
             viewModel.notify();
         } else {
-            me.setData(me.record.data);
+            me.setData(location.record.data);
         }
     },
 
+    onShow: function() {
+        // If we are outside the scrolling viewport, then we cannot be anchored
+        // to a visible target, so we must not show.
+        this.checkScrollVisibility();
+    },
+
+    onDataViewScroll: function() {
+        // If we are outside the scrolling viewport, then we cannot be anchored
+        // to a visible target, so we must hide.
+        this.checkScrollVisibility();
+    },
+
     privates: {
-        getConstrainRegion: function() {
-            return this.dataview.getScrollable().getElement().getConstrainRegion();
+        checkScrollVisibility: function() {
+            var me = this,
+                isInView, testEl;
+
+            if (me.isVisible()) {
+                // Ensure alignment is correct due to this possibly being called in a scroll handler.
+                me.realignToTarget();
+                testEl = me.getAnchor() || me.el;
+
+                isInView = me.dataview.getScrollable().isInView(testEl);
+
+                // If we are not in view, then hide
+                if (!(isInView.x && isInView.y)) {
+                    me.hide();
+                }
+            }
         },
 
         applyBind: function(binds, currentBindings) {

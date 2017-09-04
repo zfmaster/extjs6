@@ -1,5 +1,4 @@
-describe("Ext.tip.QuickTip", function() {
-
+topSuite("Ext.tip.QuickTip", function() {
     var target, tip;
 
     function createTargetEl(attrString) {
@@ -7,14 +6,27 @@ describe("Ext.tip.QuickTip", function() {
     }
 
     function mouseoverTarget() {
-        jasmine.fireMouseEvent(target, 'mouseover', target.getX(), target.getY());
+        if (jasmine.supportsTouch && !Ext.os.is.Desktop) {
+            jasmine.fireMouseEvent(target, 'click');
+        } else {
+            jasmine.fireMouseEvent(target, 'mouseover');
+        }
     }
 
     function createTip(cfg) {
-        tip = new Ext.tip.QuickTip(Ext.apply({}, cfg, {showDelay: 1}));
+        tip = new Ext.tip.QuickTip(Ext.apply({
+            showOnTap: jasmine.supportsTouch
+        }, cfg, {showDelay: 1}));
     }
+    
+    beforeEach(function() {
+        // We test a private instance.
+        // Do not disturb the system QuickTip
+        Ext.QuickTips.disable();
+    });
 
     afterEach(function() {
+        Ext.QuickTips.enable();
         if (target) {
             target.destroy();
         }

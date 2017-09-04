@@ -161,17 +161,21 @@ Ext.define('Ext.grid.feature.RowBody', {
             },
 
             syncContent: function(destRow, sourceRow, columnsToUpdate) {
-                var owner = this.owner,
-                    destRowBody = Ext.fly(destRow).down(owner.eventSelector, true),
-                    sourceRowBody;
+                var rowBody = this.rowBody,
+                    destRowBody, sourceRowBody;
 
-                // Sync the heights of row body elements in each row if they need it.
-                if (destRowBody && (sourceRowBody = Ext.fly(sourceRow).down(owner.eventSelector, true))) {
-                    Ext.fly(destRowBody).syncContent(sourceRowBody);
+                if (rowBody.doSync) {
+                    destRowBody = Ext.fly(destRow).down(rowBody.eventSelector, true);
+                    // Sync the heights of row body elements in each row if they need it.
+                    if (destRowBody && (sourceRowBody = Ext.fly(sourceRow).down(rowBody.eventSelector, true))) {
+                        Ext.fly(destRowBody).syncContent(sourceRowBody);
+                    }
                 }
             }
         }
     ],
+
+    doSync: true,
 
     init: function(grid) {
         var me = this,
@@ -206,10 +210,16 @@ Ext.define('Ext.grid.feature.RowBody', {
 
     // When columns added/removed, keep row body colspan in sync with number of columns.
     onColumnsChanged: function(headerCt) {
-        var items = this.view.el.query(this.rowBodyTdSelector),
-            colspan = headerCt.getVisibleGridColumns().length,
-            len = items.length,
-            i;
+        var view = this.view,
+            items, colspan, len, i;
+
+        if (!view.rendered) {
+            return;
+        }
+
+        items = view.el.query(this.rowBodyTdSelector);
+        colspan = headerCt.getVisibleGridColumns().length;
+        len = items.length;
 
         for (i = 0; i < len; ++i) {
             items[i].setAttribute('colSpan', colspan);

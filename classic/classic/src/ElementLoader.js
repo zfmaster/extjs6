@@ -28,7 +28,7 @@ Ext.define('Ext.ElementLoader', {
     statics: {
         Renderer: {
             Html: function(loader, response, active){
-                loader.getTarget().setHtml(response.responseText, active.scripts === true, active.rendererScope);
+                loader.getTarget().setHtml(response.responseText, active.scripts === true, active.callback, active.rendererScope);
                 return true;
             }
         }
@@ -389,7 +389,7 @@ Ext.define('Ext.ElementLoader', {
      * Clears any auto refresh. See {@link #startAutoRefresh}.
      */
     stopAutoRefresh: function() {
-        clearInterval(this.autoRefresh);
+        Ext.uninterval(this.autoRefresh);
         this.autoRefresh = null;
     },
 

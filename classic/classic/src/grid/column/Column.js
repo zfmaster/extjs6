@@ -140,7 +140,7 @@ Ext.define('Ext.grid.column.Column', {
 
     ariaRole: 'columnheader',
 
-    enableFocusableContainer: false,
+    focusableContainer: false,
 
     sortState: null,
 
@@ -157,11 +157,11 @@ Ext.define('Ext.grid.column.Column', {
     ],
 
     /**
-     * @private
      * @cfg {Boolean} [headerWrap=false]
      * The default setting indicates that external CSS rules dictate that the title is `white-space: nowrap` and
      * therefore, width cannot affect the measured height by causing text wrapping. This is what the Sencha-supplied
      * styles set. If you change those styles to allow text wrapping, you must set this to `true`.
+     * @private
      */
     headerWrap: false,
 
@@ -219,7 +219,6 @@ Ext.define('Ext.grid.column.Column', {
     /**
      * @cfg {String} text
      * The header text to be used as innerHTML (html tags are accepted) to display in the Grid.
-     * **Note**: to have a clickable header with no text displayed you can use the default of `&#160;` aka `&nbsp;`.
      */
     text: '\u00a0',
 
@@ -563,8 +562,9 @@ Ext.define('Ext.grid.column.Column', {
      *             }
      *         }],
      *         plugins: {
-     *             ptype: 'rowediting',
-     *             clicksToEdit: 1
+     *             rowediting: {
+     *                 clicksToEdit: 1
+     *             }
      *         },
      *         height: 200,
      *         width: 400,
@@ -670,14 +670,13 @@ Ext.define('Ext.grid.column.Column', {
      * supported editor field type.
      */
     
-    //<locale>
     /**
      * @cfg {String} [dirtyText="Cell value has been edited"]
      * This text will be announced by Assistive Technologies such as screen readers when
      * a cell with changed ("dirty") value is focused.
+     * @locale
      */
     dirtyText: "Cell value has been edited",
-    //</locale>
 
     /**
      * @cfg {Object/String} field
@@ -731,8 +730,8 @@ Ext.define('Ext.grid.column.Column', {
      *          }
      *      }
      *
-     * You could also define it as an array of objects, each object having a `type` that specifies by
-     * which exporter will be used:
+     * You could also define it as an array of objects, each object having a `type`
+     * that specifies by which exporter will be used:
      *
      *      {
      *          xtype: 'numbercolumn',
@@ -782,6 +781,69 @@ Ext.define('Ext.grid.column.Column', {
     exportStyle: null,
 
     /**
+     * @cfg {Boolean/Function/String} exportRenderer
+     *
+     * During data export via the {@link Ext.grid.plugin.Exporter} plugin the data for
+     * this column could be formatted in multiple ways:
+     *
+     * - using the `exportStyle.format`
+     * - using the `formatter` if no `exportStyle` is defined
+     * - using the `exportRenderer`
+     *
+     * If you want to use the `renderer` defined on this column then set `exportRenderer`
+     * to `true`. Beware that this should only happen if the `renderer` deals only with
+     * data on the record or value and it does NOT style the cell or returns an html
+     * string.
+     *
+     *      {
+     *          xtype: 'numbercolumn',
+     *          dataIndex: 'price',
+     *          text: 'Price',
+     *          renderer: function (value, metaData, record, rowIndex, colIndex, store, view) {
+     *              return Ext.util.Format.currency(value);
+     *          },
+     *          exportRenderer: true
+     *      }
+     *
+     * If you don't want to use the `renderer` during export but you still want to format
+     * the value in a special way then you can provide a function to `exportRenderer` or
+     * a string (which is a function name on the ViewController).
+     * The provided function has the same signature as the renderer.
+     *
+     *      {
+     *          xtype: 'numbercolumn',
+     *          dataIndex: 'price',
+     *          text: 'Price',
+     *          exportRenderer: function (value, metaData, record, rowIndex, colIndex, store, view) {
+     *              return Ext.util.Format.currency(value);
+     *          }
+     *      }
+     *
+     *
+     *      {
+     *          xtype: 'numbercolumn',
+     *          dataIndex: 'price',
+     *          text: 'Price',
+     *          exportRenderer: 'exportAsCurrency' // this is a function on the ViewController
+     *      }
+     *
+     *
+     * If `exportStyle.format`, `formatter` and `exportRenderer` are all defined on the
+     * column then the `exportStyle` wins and will be used to format the data for this
+     * column.
+     */
+    exportRenderer: false,
+
+    /**
+     * @cfg {Boolean/Function/String} exportSummaryRenderer
+     *
+     * This config is similar to {@link #exportRenderer} but is applied to summary
+     * records.
+     *
+     */
+    exportSummaryRenderer: false,
+
+    /**
      * @property {Ext.dom.Element} triggerEl
      * Element that acts as button for column header dropdown menu.
      */
@@ -802,7 +864,7 @@ Ext.define('Ext.grid.column.Column', {
 
     /**
      * @property {Boolean} isHeader
-     * @deprecated see isColumn
+     * @deprecated 6.5.0 see isColumn
      * Set in this class to identify, at runtime, instances which are not instances of the
      * HeaderContainer base class, but are in fact, the subclass: Header.
      */
@@ -912,33 +974,44 @@ Ext.define('Ext.grid.column.Column', {
     },
     
     beforeLayout: function() {
-        var items = this.items,
-            len,
-            i,
-            hasFlexedChildren;
+        var me = this,
+            items = me.items,
+            colCount = 0,
+            flex = me.flex,
+            len, i, item, hasFlexedChildren;
 
-        if (!Ext.isArray(items)) {
-            items = items.items;
-        }
-        len = items.length;
+        if (flex && me.isGroupHeader) {
+            if (!Ext.isArray(items)) {
+                items = items.items;
+            }
+            len = items.length;
 
-        if (len) {
             for (i = 0; !hasFlexedChildren && i < len; i++) {
-                hasFlexedChildren = items[i].flex;
+                item = items[i];
+                if (item.isColumn && !item.hidden) {
+                    ++colCount;
+                    hasFlexedChildren = item.flex;
+                }
             }
 
-            // If all children have been given a width, we must fall back to shrinkwrapping them.
-            if (!hasFlexedChildren) {
-                this.flex = null;
+            // If all child columns have been given a width, we must fall back to shrinkwrapping them.
+            // Save any current flex state and restore it once the layout finishes so this column isn't
+            // permanently flexed
+            if (!hasFlexedChildren && colCount) {
+                me.savedFlex = flex;
+                me.flex = null;
             }
         }
-        this.callParent();
+        me.callParent();
     },
 
     onAdded: function(container, pos, instanced) {
         var me = this;
 
         me.callParent([container, pos, instanced]);
+
+        // Invalidate references, so that when asked for, they have to be regathered
+        me.view = me.rootHeaderCt = me.cellSelector = me.visibleIndex = null;
 
         if (!me.headerId) {
             me.calculateHeaderId();
@@ -1006,7 +1079,11 @@ Ext.define('Ext.grid.column.Column', {
     updateAlign: function(align) {
         // Translate according to the locale.
         // This property is read by Ext.view.Table#renderCell
-        this.textAlign = this._alignMap[align] || align;
+        // Defer this until after render so we're not invoking the inherited
+        // state too early. calculateTextAlign is called in beforeRender.
+        if (this.rendered) {
+            this.calculateTextAlign(align);
+        }
     },
 
     bindFormatter: function (format) {
@@ -1095,11 +1172,16 @@ Ext.define('Ext.grid.column.Column', {
     },
 
     getView: function() {
-        var rootHeaderCt = this.getRootHeaderCt();
+        var rootHeaderCt;
 
-        if (rootHeaderCt) {
-            return rootHeaderCt.view;
+        // Only traverse to get our view once.
+        if (!this.view) {
+            rootHeaderCt = this.getRootHeaderCt();
+            if (rootHeaderCt) {
+                this.view = rootHeaderCt.view;
+            }
         }
+        return this.view;
     },
 
     onFocusLeave: function(e) {
@@ -1316,6 +1398,8 @@ Ext.define('Ext.grid.column.Column', {
             labels = [],
             ariaAttr;
 
+        me.calculateTextAlign(me.getAlign());
+
         me.callParent();
 
         // Disable the menu if there's nothing to show in the menu, ie:
@@ -1374,12 +1458,18 @@ Ext.define('Ext.grid.column.Column', {
 
     afterComponentLayout: function(width, height, oldWidth, oldHeight) {
         var me = this,
-            rootHeaderCt = me.getRootHeaderCt();
+            rootHeaderCt = me.getRootHeaderCt(),
+            savedFlex = me.savedFlex;
 
-        me.callParent(arguments);
+        me.callParent([width, height, oldWidth, oldHeight]);
 
         if (rootHeaderCt && (oldWidth != null || me.flex) && width !== oldWidth) {
             rootHeaderCt.onHeaderResize(me, width);
+        }
+
+        if (savedFlex) {
+            me.flex = savedFlex;
+            delete me.savedFlex;
         }
     },
 
@@ -1437,7 +1527,7 @@ Ext.define('Ext.grid.column.Column', {
             // Click on right but in child container - auto-size last leaf column
             if (me.isGroupHeader && e.getPoint().isContainedBy(me.layout.innerCt)) {
                 leafColumns = me.query('gridcolumn:not([hidden]):not([isGroupHeader])');
-                me.getRootHeaderCt().autoSizeColumn(leafColumns[leafColumns.length - 1]);
+                leafColumns[leafColumns.length - 1].autoSize();
                 return;
             } else {
                 headerCt = me.getRootHeaderCt();
@@ -1462,32 +1552,37 @@ Ext.define('Ext.grid.column.Column', {
             numLeaves, i,
             headerCt;
 
-        // Group headers are shrinkwrap width, so auto-sizing one means auto-sizing leaf
-        // descendants.
-        if (me.isGroupHeader) {
-            leafColumns = me.query('gridcolumn:not([hidden]):not([isGroupHeader])');
-            numLeaves = leafColumns.length;
-            headerCt = me.getRootHeaderCt();
-            Ext.suspendLayouts();
-            for (i = 0; i < numLeaves; i++) {
-                headerCt.autoSizeColumn(leafColumns[i]);
+        if (me.resizable) {
+            // Group headers are shrinkwrap width, so auto-sizing one means auto-sizing leaf
+            // descendants.
+            if (me.isGroupHeader) {
+                leafColumns = me.query('gridcolumn:not([hidden]):not([isGroupHeader])');
+                numLeaves = leafColumns.length;
+                headerCt = me.getRootHeaderCt();
+                Ext.suspendLayouts();
+                for (i = 0; i < numLeaves; i++) {
+                    headerCt.autoSizeColumn(leafColumns[i]);
+                }
+                Ext.resumeLayouts(true);
+                return;
             }
-            Ext.resumeLayouts(true);
 
-            // If we are a isolated layout due to being one half of a locking asembly
-            // where one is collapsed, the top level Ext.grid.locking.Lockable#afterLayout
-            // will NOT have been called, so we have to explicitly run it here.
-            if (grid.ownerGrid.lockable && grid.isLayoutRoot()) {
-                grid.ownerGrid.syncLockableLayout();
-            }
-            return;
+            me.getRootHeaderCt().autoSizeColumn(me);
         }
-
-        me.getRootHeaderCt().autoSizeColumn(me);
     },
 
-    isEmptyText: function(text) {
-        return text == null || text === '&#160;' || text === ' ' || text === '';
+    isEmptyText: function(text, visual) {
+        // visual means if there's no visual information, so even &npsb; and other hard spaces are
+        // reported as empty. This is used to determine whether we should hideHeaders.
+        if (visual) {
+            return Ext.String.trim(text).length === 0; 
+        }
+        // Non visual means there's really nothing there to shape the container.
+        // So null and empty string is empty, but "hard" spaces like '\u00a0' are content.
+        // This is to determine whether the "text is empty" CSS class should be applied.
+        else {
+            return text == null || text === '';
+        }
     },
 
     onTitleElClick: function(e, t, sortOnClick) {
@@ -1582,13 +1677,6 @@ Ext.define('Ext.grid.column.Column', {
             store.sort(me.getSortParam(), direction, grid.multiColumnSort ? 'multi' : 'replace');
         }
         Ext.resumeLayouts(true);
-
-        // If we are a isolated layout due to being one half of a locking asembly
-        // where one is collapsed, the top level Ext.grid.locking.Lockable#afterLayout
-        // will NOT have been called, so we have to explicitly run it here.
-        if (grid.ownerGrid.lockable && grid.isLayoutRoot()) {
-            grid.ownerGrid.syncLockableLayout();
-        }
     },
 
     /**
@@ -1725,7 +1813,10 @@ Ext.define('Ext.grid.column.Column', {
      * and as such will *not* have the {@link #locked} flag set.
      */
     isLocked: function() {
-        return this.locked || !!this.up('[isColumn][locked]', '[isRootHeader]');
+        if (this.locked == null) {
+            this.locked = this.getInherited().inLockedGrid;
+        }
+        return this.locked;
     },
 
     hasMultipleVisibleChildren: function(result) {
@@ -1793,12 +1884,6 @@ Ext.define('Ext.grid.column.Column', {
 
         Ext.resumeLayouts(true);
 
-        // If we are a isolated layout due to being one half of a locking asembly
-        // where one is collapsed, the top level Ext.grid.locking.Lockable#afterLayout
-        // will NOT have been called, so we have to explicitly run it here.
-        if (rootHeaderCt.grid.ownerGrid.lockable && rootHeaderCt.grid.isLayoutRoot()) {
-            rootHeaderCt.grid.ownerGrid.syncLockableLayout();
-        }
         return me;
     },
 
@@ -1844,12 +1929,6 @@ Ext.define('Ext.grid.column.Column', {
 
         Ext.resumeLayouts(true);
 
-        // If we are a isolated layout due to being one half of a locking asembly
-        // where one is collapsed, the top level Ext.grid.locking.Lockable#afterLayout
-        // will NOT have been called, so we have to explicitly run it here.
-        if (rootHeaderCt.grid.ownerGrid.lockable && rootHeaderCt.grid.isLayoutRoot()) {
-            rootHeaderCt.grid.ownerGrid.syncLockableLayout();
-        }
         return me;
 
     },
@@ -1920,12 +1999,15 @@ Ext.define('Ext.grid.column.Column', {
     },
 
     getCellSelector: function() {
-        var view = this.getView();
+        if (!this.cellSelector) {
+            var view = this.getView();
 
-        // We must explicitly access the view's cell selector as well as this column's own ID class because
-        // <col> elements are given this column's ID class.
-        // If we are still atached to a view. If not, the identifying class will do.
-        return (view ? view.getCellSelector() : '') + '.' + this.getCellId();
+            // We must explicitly access the view's cell selector as well as this column's own ID class because
+            // <col> elements are given this column's ID class.
+            // If we are still atached to a view. If not, the identifying class will do.
+            this.cellSelector = (view ? view.getCellSelector() : '') + '.' + this.getCellId();
+        }
+        return this.cellSelector;
     },
 
     getCellInnerSelector: function() {
@@ -2015,6 +2097,10 @@ Ext.define('Ext.grid.column.Column', {
             me.configureStateInfo();
         },
 
+        calculateTextAlign: function(align) {
+            this.textAlign = this._alignMap[align] || align;
+        },
+
         configureStateInfo: function () {
             var me = this,
                 sorter;
@@ -2034,6 +2120,32 @@ Ext.define('Ext.grid.column.Column', {
                 if (me.dataIndex || me.stateId) {
                     sorter.setId((me.dataIndex || me.stateId) + '-sorter');
                     me.hasSetSorter = true;
+                }
+            }
+        },
+
+        onLock: function(header) {
+            var items = this.items.items,
+                len = items.length,
+                i, item;
+
+            for (i = 0; i < len; ++i) {
+                item = items[i];
+                if (item.isColumn) {
+                    item.onLock(header);
+                }
+            }
+        },
+
+        onUnlock: function(header) {
+            var items = this.items.items,
+                len = items.length,
+                i, item;
+
+            for (i = 0; i < len; ++i) {
+                item = items[i];
+                if (item.isColumn) {
+                    item.onUnlock(header);
                 }
             }
         }

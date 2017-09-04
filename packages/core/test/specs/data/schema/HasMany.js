@@ -1,7 +1,8 @@
 // HasMany is not a real class, but is an alternate way of declaring ManyToOne
 // The purpose of these tests is to check that they set everything up correctly,
 // functionality tested in ManyToOne.
-describe("Ext.data.schema.HasMany", function() {
+// false in dependencies means don't attempt to load "Ext.data.schema.HasMany"
+topSuite("Ext.data.schema.HasMany", [false, 'Ext.data.ArrayStore'], function() {
 
     var Thread, Post, Vote;
 
@@ -300,6 +301,62 @@ describe("Ext.data.schema.HasMany", function() {
                 thread.drop();
                 expect(post.dropped).toBe(true);
             }); 
+        });
+    });
+
+    describe("references", function() {
+        var thread;
+
+        afterEach(function() {
+            thread = null;
+        });
+
+        beforeEach(function() {
+            definePost();
+            defineThread({
+                hasMany: 'Post'
+            });
+
+            thread = Thread.load(1);
+            Ext.Ajax.mockCompleteWithData({
+                id: 1,
+                posts: [{
+                    id: 101
+                }, {
+                    id: 102
+                }]
+            });
+        });
+
+        it("should have a reference to the parent record on load", function() {
+            var posts = thread.posts();
+            expect(posts.getAt(0).getThread()).toBe(thread);
+            expect(posts.getAt(1).getThread()).toBe(thread);
+        });
+
+        it("should have a reference to the parent record on add", function() {
+            var posts = thread.posts();
+            posts.add({
+                id: 103
+            });
+            expect(posts.getAt(2).getThread()).toBe(thread);
+        });
+
+        it("should clear the reference to the parent on remove", function() {
+            var posts = thread.posts(),
+                post = posts.getAt(0);
+
+            posts.remove(post);
+            expect(post.getThread()).toBeNull();
+        });
+
+        it("should clear the reference to the parent on removeAll", function() {
+            var posts = thread.posts(),
+                all = posts.getRange();
+
+            posts.removeAll();
+            expect(all[0].getThread()).toBeNull();
+            expect(all[1].getThread()).toBeNull();
         });
     });
 

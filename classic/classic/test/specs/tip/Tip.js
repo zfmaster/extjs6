@@ -1,5 +1,4 @@
-describe("Ext.tip.Tip", function() {
-
+topSuite("Ext.tip.Tip", function() {
     var tip;
 
     function createTip(config) {

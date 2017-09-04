@@ -9,10 +9,6 @@
  *     Ext.create('Ext.Carousel', {
  *         fullscreen: true,
  *
- *         defaults: {
- *             styleHtmlContent: true
- *         },
- *
  *         items: [
  *             {
  *                 html : 'Item 1',
@@ -30,14 +26,10 @@
  *
  * We can also make Carousels orient themselves vertically:
  *
- *     @example preview
+ *     @example
  *     Ext.create('Ext.Carousel', {
  *         fullscreen: true,
  *         direction: 'vertical',
- *
- *         defaults: {
- *             styleHtmlContent: true
- *         },
  *
  *         items: [
  *             {
@@ -71,7 +63,7 @@ Ext.define('Ext.carousel.Carousel', {
     requires: [
         'Ext.fx.easing.EaseOut',
         'Ext.carousel.Item',
-        'Ext.carousel.Indicator',
+        'Ext.Indicator',
         'Ext.util.TranslatableGroup'
     ],
 
@@ -84,19 +76,11 @@ Ext.define('Ext.carousel.Carousel', {
          */
 
         /**
-         * @cfg
-         * @inheritdoc
-         */
-        baseCls: 'x-carousel',
-
-        /**
          * @cfg {String} direction
          * The direction of the Carousel, either 'horizontal' or 'vertical'.
          * @accessor
          */
         direction: 'horizontal',
-
-        directionLock: false,
 
         animation: {
             duration: 250,
@@ -111,7 +95,7 @@ Ext.define('Ext.carousel.Carousel', {
          */
 
         /**
-         * @cfg {Boolean} indicator
+         * @cfg {Boolean/Ext.carousel.Indicator} indicator
          * Provides an indicator while toggling between child items to let the user
          * know where they are in the card stack.
          * @accessor
@@ -125,12 +109,18 @@ Ext.define('Ext.carousel.Carousel', {
          */
         ui: 'dark',
 
-        itemConfig: {},
+        itemConfig: {
+            translatable: {
+                type: 'csstransform'
+            }
+        },
 
         bufferSize: 1,
 
         itemLength: null
     },
+
+    baseCls: Ext.baseCSSPrefix + 'carousel',
 
     itemLength: 0,
 
@@ -148,13 +138,6 @@ Ext.define('Ext.carousel.Carousel', {
 
     activeIndex: -1,
 
-    touchAction: {
-        // This pevents the touchstart from being captured
-        // by the platform for scrolling.
-        panX: false,
-        panY: false
-    },
-
     beforeInitialize: function() {
         var me = this;
 
@@ -163,6 +146,7 @@ Ext.define('Ext.carousel.Carousel', {
             dragstart: 'onDragStart',
             drag: 'onDrag',
             dragend: 'onDragEnd',
+            dragcancel: 'onDragEnd',
             scope: me
         });
 
@@ -179,10 +163,12 @@ Ext.define('Ext.carousel.Carousel', {
         var ItemClass = Ext.carousel.Item,
             total = size * 2 + 1,
             isRendered = this.isRendered(),
-            innerElement = this.innerElement,
+            bodyElement = this.bodyElement,
             items = this.carouselItems,
             ln = items.length,
-            itemConfig = this.getItemConfig(),
+            itemConfig = Ext.apply({
+                ownerCmp: this
+            }, this.getItemConfig()),
             itemLength = this.getItemLength(),
             direction = this.getDirection(),
             setterName = direction === 'horizontal' ? 'setWidth' : 'setHeight',
@@ -194,9 +180,8 @@ Ext.define('Ext.carousel.Carousel', {
             if (itemLength) {
                 item[setterName].call(item, itemLength);
             }
-            item.setLayoutSizeFlags(this.LAYOUT_BOTH);
             items.push(item);
-            innerElement.append(item.renderElement);
+            bodyElement.append(item.renderElement);
 
             if (isRendered && item.setRendered(true)) {
                 item.fireEvent('renderedchange', this, item, true);
@@ -206,32 +191,22 @@ Ext.define('Ext.carousel.Carousel', {
         this.getTranslatable().setActiveIndex(size);
     },
 
-    setRendered: function(rendered) {
-        var wasRendered = this.rendered;
+    getRefItems: function (deep) {
+        var ret = this.callParent([deep]),
+            carouselItems = this.carouselItems,
+            n = carouselItems.length,
+            i, item;
 
-        if (rendered !== wasRendered) {
-            this.rendered = rendered;
+        for (i = 0; i < n; ++i) {
+            item = carouselItems[i];
+            ret.push(item);
 
-            var items = this.items.items,
-                carouselItems = this.carouselItems,
-                i, ln, item;
-
-            for (i = 0,ln = items.length; i < ln; i++) {
-                item = items[i];
-
-                if (!item.isInnerItem()) {
-                    item.setRendered(rendered);
-                }
+            if (deep && item.getRefItems) {
+                ret.push.apply(ret, item.getRefItems(deep));
             }
-
-            for (i = 0,ln = carouselItems.length; i < ln; i++) {
-                carouselItems[i].setRendered(rendered);
-            }
-
-            return true;
         }
 
-        return false;
+        return ret;
     },
 
     onSizeChange: function() {
@@ -241,13 +216,13 @@ Ext.define('Ext.carousel.Carousel', {
     },
 
     onItemAdd: function(item, index) {
-        this.callParent(arguments);
+        this.callParent([item, index]);
 
         var innerIndex = this.getInnerItems().indexOf(item),
             indicator = this.getIndicator();
 
         if (indicator && item.isInnerItem()) {
-            indicator.addIndicator();
+            indicator.add();
         }
 
         if (innerIndex <= this.getActiveIndex()) {
@@ -259,7 +234,7 @@ Ext.define('Ext.carousel.Carousel', {
         }
     },
 
-    doItemLayoutAdd: function(item) {
+    doItemLayoutAdd: function(item, index, destroying) {
         if (item.isInnerItem()) {
             return;
         }
@@ -267,7 +242,7 @@ Ext.define('Ext.carousel.Carousel', {
         this.callParent(arguments);
     },
 
-    onItemRemove: function(item, index) {
+    onItemRemove: function(item, index, destroying) {
         this.callParent(arguments);
 
         var innerIndex = this.getInnerItems().indexOf(item),
@@ -276,7 +251,7 @@ Ext.define('Ext.carousel.Carousel', {
             i, ln, carouselItem;
 
         if (item.isInnerItem() && indicator) {
-            indicator.removeIndicator();
+            indicator.remove();
         }
 
         if (innerIndex <= this.getActiveIndex()) {
@@ -289,6 +264,7 @@ Ext.define('Ext.carousel.Carousel', {
 
                 if (carouselItem.getComponent() === item) {
                     carouselItem.setComponent(null);
+                    break;
                 }
             }
 
@@ -341,20 +317,16 @@ Ext.define('Ext.carousel.Carousel', {
     onDragStart: function(e) {
         var direction = this.getDirection(),
             absDeltaX = e.absDeltaX,
-            absDeltaY = e.absDeltaY,
-            directionLock = this.getDirectionLock();
+            absDeltaY = e.absDeltaY;
 
         this.isDragging = true;
 
-        if (directionLock) {
-            if ((direction === 'horizontal' && absDeltaX > absDeltaY) ||
-                (direction === 'vertical' && absDeltaY > absDeltaX)) {
-                e.stopPropagation();
-            }
-            else {
-                this.isDragging = false;
-                return;
-            }
+        if ((direction === 'horizontal' && absDeltaX > absDeltaY) ||
+            (direction === 'vertical' && absDeltaY > absDeltaX)) {
+            e.stopPropagation();
+        } else {
+            this.isDragging = false;
+            return;
         }
 
         this.getTranslatable().stopAnimation();
@@ -455,6 +427,11 @@ Ext.define('Ext.carousel.Carousel', {
         this.setOffsetAnimated(animationDirection * itemLength);
     },
 
+    onRender: function() {
+        this.callParent();
+        this.refresh();
+    },
+
     applyAnimation: function(animation) {
         animation.easing = Ext.factory(animation.easing, Ext.fx.easing.EaseOut);
 
@@ -462,9 +439,12 @@ Ext.define('Ext.carousel.Carousel', {
     },
 
     updateDirection: function(direction) {
-        var indicator = this.getIndicator();
+        var indicator = this.getIndicator(),
+            vertical = (direction === 'vertical');
 
-        this.currentAxis = (direction === 'horizontal') ? 'x' : 'y';
+        this.currentAxis = vertical ? 'y' : 'x';
+
+        this.setTouchAction(vertical ? { panY: false } : { panX: false });
 
         if (indicator) {
             indicator.setDirection(direction);
@@ -505,6 +485,10 @@ Ext.define('Ext.carousel.Carousel', {
     },
 
     onAnimationEnd: function(translatable) {
+        if (this.destroyed) {
+            return;
+        }
+
         var currentActiveIndex = this.getActiveIndex(),
             animationDirection = this.animationDirection,
             axis = this.currentAxis,
@@ -636,9 +620,10 @@ Ext.define('Ext.carousel.Carousel', {
      * @private
      * @return {Object}
      */
-    applyActiveItem: function() {
-        var activeItem = this.callParent(arguments),
-            activeIndex;
+    applyActiveItem: function(activeItem, oldActiveItem) {
+        var activeIndex;
+
+        activeItem = this.callParent([activeItem, oldActiveItem]);
 
         if (activeItem) {
             activeIndex = this.getInnerItemIndex(activeItem);
@@ -650,12 +635,13 @@ Ext.define('Ext.carousel.Carousel', {
         }
     },
 
-    updateActiveItem: function(activeItem) {
-        var activeIndex = this.getActiveIndex(),
-            maxIndex = this.getMaxItemIndex(),
-            indicator = this.getIndicator(),
-            bufferSize = this.getBufferSize(),
-            carouselItems = this.carouselItems.slice(),
+    updateActiveItem: function(activeItem, oldActiveItem) {
+        var me = this,
+            activeIndex = me.getActiveIndex(),
+            maxIndex = me.getMaxItemIndex(),
+            indicator = me.getIndicator(),
+            bufferSize = me.getBufferSize(),
+            carouselItems = me.carouselItems.slice(),
             orderedCarouselItems = this.orderedCarouselItems,
             visibleIndexes = {},
             visibleItems = {},
@@ -665,7 +651,7 @@ Ext.define('Ext.carousel.Carousel', {
             return;
         }
 
-        this.callParent(arguments);
+        me.callParent([activeItem, oldActiveItem]);
 
         orderedCarouselItems.length = 0;
 
@@ -678,7 +664,7 @@ Ext.define('Ext.carousel.Carousel', {
                 for (i = 1; i <= bufferSize; i++) {
                     index = activeIndex - i;
                     if (index >= 0) {
-                        visibleItem = this.getInnerItemAt(index);
+                        visibleItem = me.getInnerItemAt(index);
                         id = visibleItem.getId();
                         visibleItems[id] = visibleItem;
                         visibleIndexes[id] = bufferSize - i;
@@ -693,7 +679,7 @@ Ext.define('Ext.carousel.Carousel', {
                 for (i = 1; i <= bufferSize; i++) {
                     index = activeIndex + i;
                     if (index <= maxIndex) {
-                        visibleItem = this.getInnerItemAt(index);
+                        visibleItem = me.getInnerItemAt(index);
                         id = visibleItem.getId();
                         visibleItems[id] = visibleItem;
                         visibleIndexes[id] = bufferSize + i;
@@ -731,13 +717,13 @@ Ext.define('Ext.carousel.Carousel', {
             }
         }
 
-        this.inactiveCarouselItems.length = 0;
-        this.inactiveCarouselItems = carouselItems;
-        this.refreshOffset();
-        this.refreshInactiveCarouselItems();
+        me.inactiveCarouselItems.length = 0;
+        me.inactiveCarouselItems = carouselItems;
+        me.refreshOffset();
+        me.refreshInactiveCarouselItems();
 
-        if (indicator) {
-            indicator.setActiveIndex(activeIndex);
+        if (indicator && !indicator.isDestroying && activeIndex !== -1) {
+            indicator.sync(me.getInnerItems().length, activeIndex);
         }
     },
 
@@ -779,23 +765,43 @@ Ext.define('Ext.carousel.Carousel', {
      * @private
      */
     applyIndicator: function(indicator, currentIndicator) {
-        return Ext.factory(indicator, Ext.carousel.Indicator, currentIndicator);
+        return Ext.factory(indicator, Ext.Indicator, currentIndicator);
     },
 
     /**
      * @private
      */
     updateIndicator: function(indicator) {
-        if (indicator) {
-            this.insertFirst(indicator);
+        var me = this,
+            bottom, right;
 
-            indicator.setUi(this.getUi());
-            indicator.on({
-                next: 'next',
-                previous: 'previous',
-                scope: this
-            });
+        if (indicator) {
+            if (me.getDirection() === 'horizontal') {
+                bottom = 0;
+                right = null;
+            } else {
+                bottom = null;
+                right = 0;
+            }
+
+            indicator
+                //force the indicator to be floating
+                .setRight(right)
+                .setBottom(bottom)
+                .setUi(me.getUi())
+                .on({
+                    indicatortap: 'onIndicatorTap',
+                    next: 'next',
+                    previous: 'previous',
+                    scope: me
+                });
+
+            me.insertFirst(indicator);
         }
+    },
+
+    onIndicatorTap: function (indicator, index) {
+        this.setActiveItem(index);
     },
 
     doDestroy: function() {

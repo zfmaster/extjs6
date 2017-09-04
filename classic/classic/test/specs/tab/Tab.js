@@ -1,4 +1,4 @@
-describe("Ext.tab.Tab", function() {
+topSuite("Ext.tab.Tab", function() {
     var tab, card;
     
     function createTab(config) {

@@ -1,10 +1,57 @@
 /**
- * A lightweight component to display data in a simple tree structure.
+ * A lightweight component to display data in a simple tree structure using a
+ * {@link Ext.data.TreeStore}.
+ *
+ * Simple Treelist using inline data:
+ *
+ *     @example
+ *     Ext.create({
+ *         xtype: 'treelist',
+ *         store: {
+ *             root: {
+ *             expanded: true,
+ *                 children: [{
+ *                     text: 'detention',
+ *                     leaf: true,
+ *                     iconCls: 'x-fa fa-frown-o'
+ *                 }, {
+ *                     text: 'homework',
+ *                     expanded: true,
+ *                     iconCls: 'x-fa fa-folder',
+ *                     children: [{
+ *                         text: 'book report',
+ *                         leaf: true,
+ *                         iconCls: 'x-fa fa-book'
+ *                     }, {
+ *                         text: 'algebra',
+ *                         leaf: true,
+ *                         iconCls: 'x-fa fa-graduation-cap'
+ *                     }]
+ *                 }, {
+ *                     text: 'buy lottery tickets',
+ *                     leaf: true,
+ *                     iconCls: 'x-fa fa-usd'
+ *                 }]
+ *             }
+ *         },
+ *         renderTo: Ext.getBody()
+ *     });
+ *
+ * To collapse the Treelist for use in a smaller navigation view see {@link #micro}.
+ * Parent Treelist node expansion may be refined using the {@link #singleExpand} and
+ * {@link #expanderOnly} config options.  Treelist nodes will be selected when clicked /
+ * tapped excluding clicks on the expander unless {@link #selectOnExpander} is set to
+ * `true`.
+ *
  * @since 6.0.0
  */
 Ext.define('Ext.list.Tree', {
-    extend: 'Ext.Widget',
+    extend: 'Ext.Gadget',
     xtype: 'treelist',
+
+    mixins: [
+        'Ext.mixin.ItemRippler'
+    ],
 
     requires: [
         'Ext.list.RootTreeItem'
@@ -22,6 +69,8 @@ Ext.define('Ext.list.Tree', {
         cls: Ext.baseCSSPrefix + 'treelist ' + Ext.baseCSSPrefix + 'unselectable',
         listeners: {
             click: 'onClick',
+            touchstart: 'onTouchStart',
+            touchend: 'onTouchEnd',
             mouseenter: 'onMouseEnter',
             mouseleave: 'onMouseLeave',
             mouseover: 'onMouseOver'
@@ -42,6 +91,11 @@ Ext.define('Ext.list.Tree', {
             easing: 'ease'
         },
 
+        /**
+         * @cfg {Boolean} expanderFirst
+         * `true` to display the expander to the left of the item text.  
+         * `false` to display the expander to the right of the item text.
+         */
         expanderFirst: true,
 
         /**
@@ -53,6 +107,14 @@ Ext.define('Ext.list.Tree', {
     },
 
     config: {
+        /**
+         * @cfg {Boolean} floatLeafItems
+         * `true` to allow the popout to show on leaf items on click/tap. This is the same popout (menu)
+         * non-leaf items show their child items in. `false` to prevent the popout from showing
+         * for leaf items.
+         */
+        floatLeafItems: false,
+
         /**
          * @cfg {Object} [defaults]
          * The default configuration for the widgets created for tree items.
@@ -66,22 +128,35 @@ Ext.define('Ext.list.Tree', {
             xtype: 'treelistitem'
         },
 
+        /**
+         * @cfg {Boolean}
+         * Set as `true` to highlight all items on the path to the currently selected
+         * node.
+         */
         highlightPath: null,
 
         iconSize: null,
 
         indent: null,
 
+        /**
+         * @cfg {Boolean}
+         *
+         * Set to `true` to collapse the Treelist UI to display only the
+         * {@link Ext.data.NodeInterface#cfg-iconCls icons} of the root nodes.  Hovering
+         * the cursor (or tapping on a touch-enabled device) shows the child nodes beside
+         * the icon.
+         */
         micro: false,
 
         overItem: null,
 
         /**
-         * @cfg {Ext.data.TreeModel} selection
-         * 
-         * The current selected node.
+         * @cfg {Ext.data.TreeModel/Number/String} selection
+         *
+         * The current selected node or its ID.
          */
-        selection: null, 
+        selection: null,
 
         /**
          * @cfg {Boolean} selectOnExpander
@@ -96,7 +171,7 @@ Ext.define('Ext.list.Tree', {
         singleExpand: null,
 
         /**
-         * @cfg {String/Object/Ext.data.TreeStore}
+         * @cfg {String/Object/Ext.data.TreeStore} store
          * The data source to which this component is bound.
          */
         store: null,
@@ -104,10 +179,21 @@ Ext.define('Ext.list.Tree', {
         ui: null
     },
 
+    /**
+     * @event selectionchange
+     * This event fires when {@link Ext.list.Tree#selection} changes
+     * @param {Ext.list.Tree} treelist The component firing this event.
+     * @param {Ext.data.TreeModel} record The currently selected node.
+     */
+
     twoWayBindable: {
         selection: 1
     },
 
+    /**
+     * @cfg
+     * @inheritdoc
+     */
     publishes: {
         selection: 1
     },
@@ -115,44 +201,23 @@ Ext.define('Ext.list.Tree', {
     defaultBindProperty: 'store',
 
     constructor: function(config) {
-        var me = this;
-
-        me.callParent([config]);
+        this.callParent([config]);
         // Important to publish the value here, so the vm can
         // will know our intial state.
-        me.publishState('selection', me.getSelection());
-
-        // Track size so that we can track the expanded size
-        // for use by the floated state of items when in micro mode.
-        // Browsers where this event is not supported, fall back to a width
-        // of 200px for floated tree items.
-        if (!Ext.isIE8) {
-            me.el.on({
-                resize: me.onElResize,
-                buffer: 300,
-                scope: me
-            });
-        }
+        this.publishState('selection', this.getSelection());
     },
 
-    beforeLayout: function () {
-        // Only called in classic, ignored in modern
-        this.syncIconSize();
-    },
-
-    destroy: function () {
+    destroy: function() {
         var me = this;
 
-        me.destroying = true;  // normally set in callParent
-
-        me.unfloatAll(); 
+        me.unfloatAll();
         me.activeFloater = null;
         me.setSelection(null);
         me.setStore(null);
         me.callParent();
     },
 
-    updateOverItem: function (over, wasOver) {
+    updateOverItem: function(over, wasOver) {
         var map = {},
             state = 2,
             c, node;
@@ -169,7 +234,10 @@ Ext.define('Ext.list.Tree', {
             state = 1;
         }
 
-        if (wasOver) {
+        // There are some cases, like tree filtering where it's possible that the whole tree
+        // gets refreshed on expand, so wasOver may be destroyed. In that case, we have nothing to
+        // do since the nodes are in a new state
+        if (wasOver && !wasOver.destroyed) {
             // If we wasOver something else previously, walk up that node hierarchy and
             // set their "over" to 0... until we encounter some node that we are still
             // "over" (as determined in previous loop).
@@ -194,6 +262,11 @@ Ext.define('Ext.list.Tree', {
         if (!store) {
             selection = null;
         }
+
+        if (store && selection !== null && !(selection instanceof Ext.data.Model)) {
+            selection = store.getNodeById(selection);
+        }
+
         if (selection && selection.get('selectable') === false) {
             selection = oldSelection;
         }
@@ -202,7 +275,8 @@ Ext.define('Ext.list.Tree', {
 
     updateSelection: function(selection, oldSelection) {
         var me = this,
-            item;
+            item,
+            parent;
 
         if (!me.destroying) {
             // getItem has guards around null, so we don't
@@ -215,16 +289,21 @@ Ext.define('Ext.list.Tree', {
             item = me.getItem(selection);
             if (item) {
                 item.setSelected(true);
+
+                while (parent = item.getParentItem()) {
+                    parent.setExpanded(true);
+                    item = parent;
+                }
             }
             me.fireEvent('selectionchange', me, selection);
         }
     },
 
-    applyStore: function (store) {
+    applyStore: function(store) {
         return store && Ext.StoreManager.lookup(store, 'tree');
     },
 
-    updateStore: function (store, oldStore) {
+    updateStore: function(store, oldStore) {
         var me = this,
             root;
 
@@ -255,7 +334,7 @@ Ext.define('Ext.list.Tree', {
                 rootchange: 'onRootChange',
                 update: 'onNodeUpdate'
             });
-        
+
             root = store.getRoot();
             if (root) {
                 me.createRootItem(root);
@@ -267,25 +346,19 @@ Ext.define('Ext.list.Tree', {
         }
     },
 
-    updateExpanderFirst: function (expanderFirst) {
+    updateExpanderFirst: function(expanderFirst) {
         this.element.toggleCls(this.expanderFirstCls, expanderFirst);
     },
 
-    updateExpanderOnly: function (value) {
+    updateExpanderOnly: function(value) {
         this.element.toggleCls(this.expanderOnlyCls, !value);
     },
 
-    updateHighlightPath: function (updatePath) {
+    updateHighlightPath: function(updatePath) {
         this.element.toggleCls(this.highlightPathCls, updatePath);
     },
 
-    onElResize: function(el, details) {
-        if (!this.getMicro()) {
-            this.expandedWidth = details.width;
-        }
-    },
-
-    updateMicro: function (micro) {
+    updateMicro: function(micro) {
         var me = this;
 
         if (!micro) {
@@ -296,9 +369,10 @@ Ext.define('Ext.list.Tree', {
         me.element.toggleCls(me.microCls, micro);
     },
 
-    updateUi: function (ui, oldValue) {
-        var el = this.element,
-            uiPrefix = this.uiPrefix;
+    updateUi: function(ui, oldValue) {
+        var me = this,
+            el = me.element,
+            uiPrefix = me.uiPrefix;
 
         if (oldValue) {
             el.removeCls(uiPrefix + oldValue);
@@ -308,8 +382,8 @@ Ext.define('Ext.list.Tree', {
         }
 
         // Ensure that the cached iconSize is read from the style.
-        delete this.iconSize;
-        this.syncIconSize();
+        delete me.iconSize;
+        me.syncIconSize();
     },
 
     /**
@@ -317,7 +391,7 @@ Ext.define('Ext.list.Tree', {
      * @param {Ext.data.TreeModel} node The node.
      * @return {Ext.list.AbstractTreeItem} The item. `null` if not found.
      */
-    getItem: function (node) {
+    getItem: function(node) {
         var map = this.itemMap,
             ret;
 
@@ -331,7 +405,7 @@ Ext.define('Ext.list.Tree', {
     /**
      * This method is called to populate and return a config object for new nodes. This
      * can be overridden by derived classes to manipulate properties or `xtype` of the
-     * returned object. Upon return, the object is passed to `{@link Ext#create}` and the
+     * returned object. Upon return, the object is passed to `{@link Ext#method!create}` and the
      * reference is stored as part of this tree.
      *
      * The base class implementation will apply any configured `{@link #defaults}` to the
@@ -340,10 +414,10 @@ Ext.define('Ext.list.Tree', {
      * @param {Ext.data.TreeModel} node The node backing the item.
      * @param {Ext.list.AbstractTreeItem} parent The parent item. This is never `null` but
      * may be an instance of `{@link Ext.list.RootTreeItem}`.
-     * @return {Object} The config object to pass to `{@link Ext#create}` for the item.
+     * @return {Object} The config object to pass to `{@link Ext#method!create}` for the item.
      * @template
      */
-    getItemConfig: function (node, parent) {
+    getItemConfig: function(node, parent) {
         return Ext.apply({
             parentItem: parent.isRootListItem ? null : parent,
             owner: this,
@@ -370,7 +444,7 @@ Ext.define('Ext.list.Tree', {
          *
          * @private
          */
-        createItem: function (node, parent) {
+        createItem: function(node, parent) {
             var me = this,
                 item = Ext.create(me.getItemConfig(node, parent)),
                 toolsElement = me.toolsElement,
@@ -401,7 +475,7 @@ Ext.define('Ext.list.Tree', {
          *
          * @private
          */
-        createRootItem: function (root) {
+        createRootItem: function(root) {
             var me = this,
                 item;
 
@@ -436,13 +510,19 @@ Ext.define('Ext.list.Tree', {
                 return;
             }
 
-           	// Cancel any mouseout timer,
+            // Cancel any mouseout timer,
             if (me.toolMouseListeners) {
                 me.toolMouseListeners.destroy();
                 me.floaterMouseListeners.destroy();
+
+                me.floaterMouseListeners = me.toolMouseListeners = null;
             }
-            
+
             me.unfloatAll();
+
+            if (!byHover && !me.getFloatLeafItems() && item.getNode().isLeaf()) {
+                return;
+            }
 
             me.activeFloater = floater = item;
             me.floatedByHover = byHover;
@@ -453,8 +533,39 @@ Ext.define('Ext.list.Tree', {
                 // monitorMouseLeave allows straying out for the specified short time
                 me.toolMouseListeners = item.getToolElement().monitorMouseLeave(300, me.checkForMouseLeave, me);
                 me.floaterMouseListeners = (item.floater || item).el.monitorMouseLeave(300, me.checkForMouseLeave, me);
+                floater.element.on('mouseover', 'onMouseOver', me);
             } else {
                 Ext.on('mousedown', 'checkForOutsideClick', me);
+            }
+        },
+
+        shouldRippleItem: function (item, e) {
+            if (item && item.getSelected()) {
+                return false;
+            }
+
+            return this.mixins.itemrippler.shouldRippleItem.call(this, item, e);
+        },
+
+        onTouchStart: function(e) {
+            this.doItemRipple(e);
+        },
+
+        onTouchEnd: function(e) {
+            this.doItemRipple(e);
+        },
+
+        doItemRipple: function(e) {
+            var me = this,
+                item = e.getTarget('[data-recordId]'),
+                id;
+
+            if (item) {
+                id = item.getAttribute('data-recordId');
+                item = me.itemMap[id];
+                if (item && me.shouldRippleItem(item, e)) {
+                    this.rippleItem(item, e);
+                }
             }
         },
 
@@ -464,7 +575,7 @@ Ext.define('Ext.list.Tree', {
          *
          * @private
          */
-        onClick: function (e) {
+        onClick: function(e) {
             var item = e.getTarget('[data-recordId]'),
                 id;
 
@@ -477,21 +588,21 @@ Ext.define('Ext.list.Tree', {
             }
         },
 
-        onMouseEnter: function (e) {
+        onMouseEnter: function(e) {
             this.onMouseOver(e);
         },
 
-        onMouseLeave: function () {
+        onMouseLeave: function() {
             this.setOverItem(null);
         },
 
-        onMouseOver: function (e) {
-            var comp = Ext.Component.fromElement(e.getTarget());
+        onMouseOver: function(e) {
+            var comp = Ext.Component.from(e);
 
             this.setOverItem(comp && comp.isTreeListItem && comp);
         },
 
-        checkForMouseLeave: function (e) {
+        checkForMouseLeave: function(e) {
             var floater = this.activeFloater,
                 relatedTarget = e.getRelatedTarget();
 
@@ -515,7 +626,7 @@ Ext.define('Ext.list.Tree', {
          *
          * @private
          */
-        onNodeAppend: function (parentNode, node) {
+        onNodeAppend: function(parentNode, node) {
             // If it's a root we'll handle it on rootchange
             if (parentNode) {
                 var item = this.itemMap[parentNode.internalId];
@@ -532,7 +643,7 @@ Ext.define('Ext.list.Tree', {
          *
          * @private
          */
-        onNodeCollapse: function (node) {
+        onNodeCollapse: function(node) {
             var item = this.itemMap[node.internalId];
 
             if (item) {
@@ -546,7 +657,7 @@ Ext.define('Ext.list.Tree', {
          *
          * @private
          */
-        onNodeExpand: function (node) {
+        onNodeExpand: function(node) {
             var me = this,
                 item = me.itemMap[node.internalId],
                 childNodes, len, i, parentNode, child;
@@ -577,7 +688,7 @@ Ext.define('Ext.list.Tree', {
          *
          * @private
          */
-        onNodeInsert: function (parentNode, node, refNode) {
+        onNodeInsert: function(parentNode, node, refNode) {
             var item = this.itemMap[parentNode.internalId];
 
             if (item) {
@@ -593,7 +704,7 @@ Ext.define('Ext.list.Tree', {
          *
          * @private
          */
-        onNodeRemove: function (parentNode, node, isMove) {
+        onNodeRemove: function(parentNode, node, isMove) {
             // If it's a move we don't need to do anything, we won't process it
             // as a removal, the addition will handle it all.
             // Also if the node being removed is the root we'll handle it in rootchange
@@ -604,7 +715,7 @@ Ext.define('Ext.list.Tree', {
                     item.nodeRemove(node);
                 }
             }
-        },  
+        },
 
         /**
          * Handles when a node updates.
@@ -615,7 +726,7 @@ Ext.define('Ext.list.Tree', {
          *
          * @private
          */
-        onNodeUpdate: function (store, node, type, modifiedFieldNames) {
+        onNodeUpdate: function(store, node, type, modifiedFieldNames) {
             var item = this.itemMap[node.internalId];
 
             if (item) {
@@ -629,7 +740,7 @@ Ext.define('Ext.list.Tree', {
          *
          * @private
          */
-        onRootChange: function (root) {
+        onRootChange: function(root) {
             var me = this;
 
             me.removeRoot();
@@ -648,7 +759,7 @@ Ext.define('Ext.list.Tree', {
          *
          * @private
          */
-        removeItem: function (node)  {
+        removeItem: function(node) {
             var map = this.itemMap,
                 id = node.internalId,
                 item, toolEl;
@@ -666,7 +777,7 @@ Ext.define('Ext.list.Tree', {
             }
         },
 
-        removeRoot: function () {
+        removeRoot: function() {
             var me = this,
                 rootItem = me.rootItem;
 
@@ -721,12 +832,12 @@ Ext.define('Ext.list.Tree', {
         syncIconSize: function() {
             var me = this,
                 size = me.iconSize ||
-                      (me.iconSize = parseInt(me.element.getStyle('background-position'), 10));
+                    (me.iconSize = parseInt(me.element.getStyle('background-position'), 10));
 
             me.setIconSize(size);
         },
 
-        unfloatAll: function () {
+        unfloatAll: function() {
             var me = this,
                 floater = me.activeFloater;
 
@@ -735,12 +846,13 @@ Ext.define('Ext.list.Tree', {
                 me.activeFloater = null;
 
                 if (me.floatedByHover) {
-                    floater.getToolElement().un('mouseleave', 'checkForMouseLeave', me);
-                    floater.element.un({
-                        scope: me,
-                        mouseleave: 'checkForMouseLeave',
-                        mouseover: 'onMouseOver'
-                    });
+                    if (me.toolMouseListeners) {
+                        me.toolMouseListeners.destroy();
+                        me.floaterMouseListeners.destroy();
+
+                        me.floaterMouseListeners = me.toolMouseListeners = null;
+                    }
+                    floater.element.un('mouseover', 'onMouseOver', me);
                 } else {
                     Ext.un('mousedown', 'checkForOutsideClick', me);
                 }
@@ -749,11 +861,11 @@ Ext.define('Ext.list.Tree', {
 
         defaultIconSize: 22,
 
-        updateIconSize: function (value) {
+        updateIconSize: function(value) {
             this.setIndent(value || this.defaultIconSize);
         },
 
-        updateIndent: function (value) {
+        updateIndent: function(value) {
             var rootItem = this.rootItem;
 
             if (rootItem) {

@@ -1,34 +1,56 @@
-/* global expect, jasmine, Ext, MockAjaxManager, spyOn */
+/* global describe, expect, jasmine, Ext, MockAjaxManager, spyOn */
 
-describe("Ext.app.ViewModel", function() {
-    
+topSuite("Ext.app.ViewModel", [
+    'Ext.data.Store',
+    'Ext.data.validator.*',
+    'Ext.Container',
+    'Ext.app.ViewController'
+], function() {
     var viewModel, scheduler, session, spy;
 
-    function bindDeepNotify (key, fn, scope) {
-        var bind = viewModel.bind(key, fn || spy, scope);
+    function bindDeepNotify (key, fn, scope, vm) {
+        vm = vm || viewModel;
+
+        var bind = vm.bind(key, fn || spy, scope);
         bind.deep = true;
-        viewModel.notify();
+        vm.notify();
         return bind;
     }
 
-    function bindNotify (key, fn, scope) {
-        var bind = viewModel.bind(key, fn || spy, scope);
-        viewModel.notify();
+    function bindNotify (key, fn, scope, vm) {
+        vm = vm || viewModel;
+
+        var bind = vm.bind(key, fn || spy, scope);
+        vm.notify();
         return bind;
     }
 
-    function setNotify (key, value) {
-        viewModel.set(key, value);
-        viewModel.notify();
+    function setNotify (key, value, vm) {
+        vm = vm || viewModel;
+
+        vm.set(key, value);
+        vm.notify();
     }
-    
+
+    function setBindNotify(binding, value, vm) {
+        vm = vm || viewModel;
+        binding.setValue(value);
+        vm.notify();
+    }
+
     function notify() {
         viewModel.notify();
     }
 
     function reset () {
-        for (var i = 0, len = arguments.length; i < len; ++i) {
-            arguments[i].reset();
+        var spies = Ext.isArray(arguments[0]) ? arguments[0] : arguments,
+            s;
+
+        for (var i = 0, len = spies.length; i < len; ++i) {
+            s = spies[i];
+            if (s) {
+                s.reset();
+            }
         }
     }
 
@@ -77,17 +99,14 @@ describe("Ext.app.ViewModel", function() {
     }
 
     function complete(data) {
-        Ext.Ajax.mockComplete({
-            status: 200,
-            responseText: Ext.encode(data)
-        });
+        Ext.Ajax.mockCompleteWithData(data);
     }
 
     function completeNotify(data) {
         complete(data);
         notify();
     }
-    
+
     beforeEach(function() {
         Ext.data.Store.prototype.config.asynchronousLoad = false;
 
@@ -95,7 +114,7 @@ describe("Ext.app.ViewModel", function() {
         MockAjaxManager.addMethods();
         spy = jasmine.createSpy();
     });
-    
+
     afterEach(function() {
         Ext.data.Store.prototype.config.asynchronousLoad = undefined;
 
@@ -1354,6 +1373,327 @@ describe("Ext.app.ViewModel", function() {
                     user = makeRecord(User, id, data);
                 }
 
+                describe("record info bindings", function() {
+                    var Order, order;
+
+                    beforeEach(function() {
+                        Order = Ext.define('spec.Order', {
+                            extend: 'Ext.data.Model',
+                            fields: [{
+                                name: 'orderNo',
+                                validators: 'presence'
+                            }, {
+                                name: 'total',
+                                validators: {
+                                    type: 'range',
+                                    min: 0
+                                }
+                            }]
+                        });
+                    });
+
+                    afterEach(function() {
+                        Order = order = null;
+                        Ext.undefine('spec.Order');
+                    });
+
+                    describe("valid", function() {
+                        describe("starting state", function() {
+                            it("should trigger as invalid when not valid", function() {
+                                order = new Order();
+                                setNotify('order', order);
+                                bindNotify('{order.valid}', spy);
+                                expect(spy.callCount).toBe(1);
+                                expectArgs(false);
+                            });
+
+                            it("should trigger as valid when valid", function() {
+                                order = new Order({
+                                    orderNo: 'foo',
+                                    total: 100
+                                });
+                                setNotify('order', order);
+                                bindNotify('{order.valid}', spy);
+                                expect(spy.callCount).toBe(1);
+                                expectArgs(true);
+                            });
+                        });
+
+                        describe("dynamic", function() {
+                            it("should react to single set calls", function() {
+                                order = new Order();
+                                setNotify('order', order);
+                                bindNotify('{order.valid}', spy);
+                                expect(spy.callCount).toBe(1);
+                                expectArgs(false);
+                                order.set('orderNo', 'foo');
+                                notify();
+                                expect(spy.callCount).toBe(1);
+                                order.set('total', 50);
+                                notify();
+                                expect(spy.callCount).toBe(2);
+                                expectArgs(true);
+                                order.set('total', -10);
+                                notify();
+                                expect(spy.callCount).toBe(3);
+                                expectArgs(false);
+                            });
+
+                            it("should react to multiple set calls", function() {
+                                order = new Order();
+                                setNotify('order', order);
+                                bindNotify('{order.valid}', spy);
+                                expect(spy.callCount).toBe(1);
+                                expectArgs(false);
+                                order.set({
+                                    orderNo: 'foo',
+                                    total: 20
+                                });
+                                notify();
+                                expect(spy.callCount).toBe(2);
+                                expectArgs(true);
+                                order.set({
+                                    orderNo: 'bar',
+                                    total: -1
+                                });
+                                notify();
+                                expect(spy.callCount).toBe(3);
+                                expectArgs(false);
+                            });
+
+                            it("should react to a reject", function() {
+                                order = new Order();
+                                setNotify('order', order);
+                                bindNotify('{order.valid}', spy);
+                                expect(spy.callCount).toBe(1);
+                                expectArgs(false);
+                                order.set({
+                                    orderNo: 'foo',
+                                    total: 30
+                                });
+                                notify();
+                                expect(spy.callCount).toBe(2);
+                                expectArgs(true);
+                                order.reject();
+                                notify();
+                                expect(spy.callCount).toBe(3);
+                                expectArgs(false);
+                            });
+                        });
+                    });
+
+                    describe("dirty", function() {
+                        describe("starting state", function() {
+                            it("should trigger as not dirty when not dirty", function() {
+                                order = new Order();
+                                setNotify('order', order);
+                                bindNotify('{order.dirty}', spy);
+                                expect(spy.callCount).toBe(1);
+                                expectArgs(false);
+                            });
+
+                            it("should trigger as dirty when dirty", function() {
+                                order = new Order();
+                                order.set({
+                                    orderNo: 'foo',
+                                    total: 100
+                                });
+                                setNotify('order', order);
+                                bindNotify('{order.dirty}', spy);
+                                expect(spy.callCount).toBe(1);
+                                expectArgs(true);
+                            });
+                        });
+
+                        describe("dynamic", function() {
+                            it("should react to single set calls", function() {
+                                order = new Order({
+                                    orderNo: 'foo',
+                                    total: 50
+                                });
+                                setNotify('order', order);
+                                bindNotify('{order.dirty}', spy);
+                                expect(spy.callCount).toBe(1);
+                                expectArgs(false);
+                                order.set('orderNo', 'bleh');
+                                notify();
+                                expect(spy.callCount).toBe(2);
+                                expectArgs(true);
+                                order.set('orderNo', 'xxx');
+                                notify();
+                                expect(spy.callCount).toBe(2);
+                                order.set('orderNo', 'foo');
+                                notify();
+                                expect(spy.callCount).toBe(3);
+                                expectArgs(false);
+                            });
+
+                            it("should react to multiple set calls", function() {
+                                order = new Order({
+                                    orderNo: 'foo',
+                                    total: 50
+                                });
+                                setNotify('order', order);
+                                bindNotify('{order.dirty}', spy);
+                                expect(spy.callCount).toBe(1);
+                                expectArgs(false);
+                                order.set({
+                                    orderNo: 'bleh',
+                                    total: 55
+                                });
+                                notify();
+                                expect(spy.callCount).toBe(2);
+                                expectArgs(true);
+                                order.set({
+                                    orderNo: 'xxx',
+                                    total: 60
+                                });
+                                notify();
+                                expect(spy.callCount).toBe(2);
+                                order.set({
+                                    orderNo: 'foo',
+                                    total: 50
+                                });
+                                notify();
+                                expect(spy.callCount).toBe(3);
+                                expectArgs(false);
+                            });
+
+                            it("should react to commit", function() {
+                                order = new Order();
+                                setNotify('order', order);
+                                bindNotify('{order.dirty}', spy);
+                                expect(spy.callCount).toBe(1);
+                                expectArgs(false);
+
+                                order.set('orderNo', 'qqq');
+                                notify();
+                                expect(spy.callCount).toBe(2);
+                                expectArgs(true);
+                                order.commit();
+                                notify();
+                                expect(spy.callCount).toBe(3);
+                                expectArgs(false);
+                                order.commit();
+                                notify();
+                                expect(spy.callCount).toBe(3);
+                            });
+
+                            it("should react to reject", function() {
+                                order = new Order();
+                                setNotify('order', order);
+                                bindNotify('{order.dirty}', spy);
+                                expect(spy.callCount).toBe(1);
+                                expectArgs(false);
+
+                                order.set('orderNo', 'qqq');
+                                notify();
+                                expect(spy.callCount).toBe(2);
+                                expectArgs(true);
+                                order.reject();
+                                notify();
+                                expect(spy.callCount).toBe(3);
+                                expectArgs(false);
+                                order.reject();
+                                notify();
+                                expect(spy.callCount).toBe(3);
+                            });
+                        });
+                    });
+
+                    describe("phantom", function() {
+                        describe("starting state", function() {
+                            it("should trigger as not phantom when not phantom", function() {
+                                order = new Order({
+                                    id: 1
+                                });
+                                setNotify('order', order);
+                                bindNotify('{order.phantom}', spy);
+                                expect(spy.callCount).toBe(1);
+                                expectArgs(false);
+                            });
+
+                            it("should trigger as phantom when phantom", function() {
+                                order = new Order();
+                                setNotify('order', order);
+                                bindNotify('{order.phantom}', spy);
+                                expect(spy.callCount).toBe(1);
+                                expectArgs(true);
+                            });
+                        });
+
+                        describe("dynamic", function() {
+                            it("should react to a commit", function() {
+                                order = new Order();
+                                setNotify('order', order);
+                                bindNotify('{order.phantom}', spy);
+                                expect(spy.callCount).toBe(1);
+                                expectArgs(true);
+
+                                order.commit();
+                                notify();
+                                expect(spy.callCount).toBe(2);
+                                expectArgs(false);
+                            });
+                        });
+                    });
+
+                    describe("formulas", function() {
+                        it("should not evaluate when the data changes by default", function() {
+                            var calls = 0,
+                                val;
+
+                            order = new Order();
+                            viewModel.setFormulas({
+                                getIt: function(get) {
+                                    ++calls;
+                                    return get('order').isModified('orderNo');
+                                }
+                            });
+
+                            setNotify('order', order);
+                            bindNotify('{getIt}', function(v) {
+                                val = v;
+                            });
+                            expect(calls).toBe(1);
+                            expect(val).toBe(false);
+                            order.set('orderNo', '123');
+                            notify();
+                            expect(calls).toBe(1);
+                        });
+
+                        it("should re-evaluate when the data changes with deep: true", function() {
+                            var calls = 0,
+                                val;
+
+                            order = new Order();
+                            viewModel.setFormulas({
+                                getIt: {
+                                    bind: {
+                                        deep: true,
+                                        bindTo: '{order}'
+                                    },
+                                    get: function(order) {
+                                        ++calls;
+                                        return order.isModified('orderNo');
+                                    }
+                                }
+                            });
+
+                            setNotify('order', order);
+                            bindNotify('{getIt}', function(v) {
+                                val = v;
+                            });
+                            expect(calls).toBe(1);
+                            expect(val).toBe(false);
+                            order.set('orderNo', '123');
+                            notify();
+                            expect(calls).toBe(2);
+                            expect(val).toBe(true);
+                        });
+                    });
+                });
+
                 describe("local modifications", function() {
                     it("should publish when setting a record instance", function() {
                         makeUser(1);
@@ -1552,29 +1892,52 @@ describe("Ext.app.ViewModel", function() {
                 });
 
                 describe("remote loading", function() {
-                    it("should not react when bound and loading", function() {
+                    it("should publish if the record is not loading", function() {
                         makeUser(1);
                         bindNotify('{user}', spy);
-                        user.load();
                         setNotify('user', user);
-                        expect(spy).not.toHaveBeenCalled();
+                        expectArgs(user, undefined);
                     });
 
-                    it("should react once loading has completed", function() {
-                        makeUser(1);
-                        bindNotify('{user}', spy);
-                        user.load();
-                        setNotify('user', user);
-                        completeNotify({});
-                        expect(spy).toHaveBeenCalled();
-                    });
-
-                    it("should not publish a field while loading", function() {
+                    it("should not publish a field while loading for the first time", function() {
                         makeUser(1);
                         bindNotify('{user.name}', spy);
                         user.load();
                         setNotify('user', user);
                         expect(spy).not.toHaveBeenCalled();
+                    });
+
+                    it("should not publish if the record is loading for the first time but wait til data is loaded", function() {
+                        makeUser(1);
+                        bindNotify('{user}', spy);
+                        user.load();
+                        setNotify('user', user);
+                        expect(spy).not.toHaveBeenCalled();
+                        completeNotify({
+                            id: 1,
+                            name: 'Foo',
+                            age: 100
+                        });
+                        expectArgs(user, undefined);
+                    });
+
+                    it("should publish if changes are made while the record is doing a load after the first", function() {
+                        makeUser(1);
+                        user.load();
+                        completeNotify({
+                            id: 1,
+                            name: 'Foo',
+                            age: 100
+                        });
+
+                        bindNotify('{user.name}', spy);
+                        user.load();
+                        setNotify('user', user);
+                        spy.reset();
+
+                        user.set('name', 'xxx');
+                        notify();
+                        expectArgs('xxx', 'Foo');
                     });
                 });
 
@@ -1744,27 +2107,530 @@ describe("Ext.app.ViewModel", function() {
                         expectArgs(store, undefined);
                     });
 
-                    it("should not publish if loading when attached", function() {
+                    it("should publish if loading when attached", function() {
                         bindNotify('{store}', spy);
                         store.load();
                         setNotify('store', store);
-                        expect(spy).not.toHaveBeenCalled();
+                        expectArgs(store, undefined);
                     });
 
-                    it("should not publish if the store is loading during a notify", function() {
+                    it("should publish if the store is loading during a notify", function() {
                         bindNotify('{store}', spy);
                         viewModel.set('store', store);
                         store.load();
                         notify();
-                        expect(spy).not.toHaveBeenCalled();
+                        expectArgs(store, undefined);
                     });
 
-                    it("should publish when the store completes the load", function() {
+                    it("should not publish the store reference when store data changes", function() {
                         bindNotify('{store}', spy);
-                        store.load();
                         setNotify('store', store);
-                        completeNotify([]);
-                        expectArgs(store, undefined);
+                        spy.reset();
+                        store.add({});
+                        notify();
+                        expect(spy).not.toHaveBeenCalled();
+                    });
+                });
+
+                describe("store info bindings", function() {
+                    var store, prop,
+                        foo, bar, baz;
+
+                    afterEach(function() {
+                        foo = bar = baz = prop = store = Ext.destroy(store);
+                    });
+
+                    function makeInlineStore() {
+                        store = new Ext.data.Store({
+                            model: User,
+                            data: [{
+                                name: 'Bar'
+                            }, {
+                                name: 'Baz'
+                            }, {
+                                name: 'Foo'
+                            }],
+                            proxy: {
+                                type: 'ajax',
+                                url: 'foo'
+                            }
+                        });
+                        bar = store.getAt(0);
+                        baz = store.getAt(1);
+                        foo = store.getAt(2);
+                    }
+
+                    function makeLoadStore(autoLoad) {
+                        store = new Ext.data.Store({
+                            model: User,
+                            proxy: {
+                                type: 'ajax',
+                                url: 'foo'
+                            },
+                            autoLoad: autoLoad
+                        });
+                    }
+
+                    function setup() {
+                        if (prop) {
+                            prop = '.' + prop;
+                        }
+                        bindNotify('{store' + prop + '}', spy);
+                        setNotify('store', store);
+                    }
+
+                    describe("formulas", function() {
+                        function findName(store, name) {
+                            var idx = store.findBy(function(r) {
+                                    return r.get('name') === name;
+                                });
+
+                            return idx === -1 ? null : store.getAt(idx);
+                        }
+
+                        it("should not evaluate when the data changes by default", function() {
+                            makeInlineStore();
+                            var calls = 0,
+                                val;
+
+                            viewModel.setFormulas({
+                                getIt: function(get) {
+                                    ++calls;
+                                    return findName(get('store'), 'Foo');
+                                }
+                            });
+
+                            setup();
+                            bindNotify('{getIt}', function(v) {
+                                val = v;
+                            });
+                            expect(calls).toBe(1);
+                            expect(val).toBe(foo);
+                            store.remove(foo);
+                            notify();
+                            expect(calls).toBe(1);
+                        });
+
+                        it("should re-evaluate when the data changes with deep: true", function() {
+                            makeInlineStore();
+                            var calls = 0,
+                                val;
+
+                            viewModel.setFormulas({
+                                getIt: {
+                                    bind: {
+                                        deep: true,
+                                        bindTo: '{store}'
+                                    },
+                                    get: function(store) {
+                                        ++calls;
+                                        return findName(store, 'Foo');
+                                    }
+                                }
+                            });
+
+                            setup();
+                            bindNotify('{getIt}', function(v) {
+                                val = v;
+                            });
+                            expect(calls).toBe(1);
+                            expect(val).toBe(foo);
+                            store.remove(foo);
+                            notify();
+                            expect(calls).toBe(2);
+                            expect(val).toBeNull();
+                        });
+                    });
+
+                    describe("count", function() {
+                        beforeEach(function() {
+                            prop = 'count';
+                        });
+
+                        describe("with inline data", function() {
+                            it("should be available immediately", function() {
+                                makeInlineStore();
+                                setup();
+                                expectArgs(3, undefined);
+                            });
+                        });
+
+                        describe("with an autoLoad", function() {
+                            it("should not publish while the store is pending a load/loading", function() {
+                                makeLoadStore(true);
+                                setup();
+                                expect(spy).not.toHaveBeenCalled();
+                                waitsFor(function() {
+                                    return Ext.Ajax.mockGetAllRequests().length > 0;
+                                });
+                                runs(function() {
+                                    expect(spy).not.toHaveBeenCalled();
+                                    completeNotify([{}, {}]);
+                                    expectArgs(2, undefined);
+                                });
+                            });
+                        });
+
+                        describe("with no load", function() {
+                            it("should publish straight away", function() {
+                                makeLoadStore(false);
+                                setup();
+                                expectArgs(0, undefined);
+                            });
+                        });
+
+                        describe("dynamic", function() {
+                            beforeEach(function() {
+                                makeInlineStore();
+                                setup();
+                                spy.reset();
+                            });
+
+                            it("should react to an add", function() {
+                                store.add({});
+                                notify();
+                                expectArgs(4, 3);
+                            });
+
+                            it("should react to a remove", function() {
+                                store.removeAt(0);
+                                notify();
+                                expectArgs(2, 3);
+                            });
+
+                            it("should react to a removeAll", function() {
+                                store.removeAll();
+                                notify();
+                                expectArgs(0, 3);
+                            });
+
+                            it("should react to a remote load", function() {
+                                store.load();
+                                expect(spy).not.toHaveBeenCalled();
+                                completeNotify([{}, {}, {}, {}, {}]);
+                                expectArgs(5, 3);
+                            });
+
+                            it("should react to a local load", function() {
+                                store.loadData([{}, {}]);
+                                notify();
+                                expectArgs(2, 3);
+                            });
+
+                            it("should react to filtering", function() {
+                                store.getFilters().add({
+                                    filterFn: function(rec) {
+                                        return rec.get('name') === 'Foo';
+                                    }
+                                });
+                                notify();
+                                expectArgs(1, 3);
+                                store.getFilters().removeAll();
+                                notify();
+                                expectArgs(3, 1);
+                            });
+                        });
+                    });
+
+                    describe("first", function() {
+                        beforeEach(function() {
+                            prop = 'first';
+                        });
+
+                        describe("with inline data", function() {
+                            it("should be available immediately", function() {
+                                makeInlineStore();
+                                setup();
+                                expectArgs(bar, undefined);
+                            });
+                        });
+
+                        describe("with an autoLoad", function() {
+                            it("should not publish while the store is pending a load/loading", function() {
+                                makeLoadStore(true);
+                                setup();
+                                expect(spy).not.toHaveBeenCalled();
+                                waitsFor(function() {
+                                    return Ext.Ajax.mockGetAllRequests().length > 0;
+                                });
+                                runs(function() {
+                                    expect(spy).not.toHaveBeenCalled();
+                                    completeNotify([{}, {}]);
+                                    expectArgs(store.getAt(0), undefined);
+                                });
+                            });
+                        });
+
+                        describe("with no load", function() {
+                            it("should publish straight away", function() {
+                                makeLoadStore(false);
+                                setup();
+                                expectArgs(null, undefined);
+                            });
+                        });
+
+                        describe("dynamic", function() {
+                            beforeEach(function() {
+                                makeInlineStore();
+                                setup();
+                                spy.reset();
+                            });
+
+                            it("should react to an add", function() {
+                                var r = store.insert(0, {})[0];
+                                notify();
+                                expectArgs(r, bar);
+                            });
+
+                            it("should react to a remove", function() {
+                                store.removeAt(0);
+                                notify();
+                                expectArgs(baz, bar);
+                            });
+
+                            it("should react to a removeAll", function() {
+                                store.removeAll();
+                                notify();
+                                expectArgs(null, bar);
+                            });
+
+                            it("should react to a remote load", function() {
+                                store.load();
+                                expect(spy).not.toHaveBeenCalled();
+                                completeNotify([{}, {}, {}, {}, {}]);
+                                expectArgs(store.getAt(0), bar);
+                            });
+
+                            it("should react to a local load", function() {
+                                store.loadData([{}, {}]);
+                                notify();
+                                expectArgs(store.getAt(0), bar);
+                            });
+
+                            it("should react to filtering", function() {
+                                store.getFilters().add({
+                                    filterFn: function(rec) {
+                                        return rec.get('name') === 'Foo';
+                                    }
+                                });
+                                notify();
+                                expectArgs(foo, bar);
+                                store.getFilters().removeAll();
+                                notify();
+                                expectArgs(bar, foo);
+                            });
+
+                            it("should react to a sort", function() {
+                                store.sort('name', 'DESC');
+                                notify();
+                                expectArgs(foo, bar);
+                                store.sort('name', 'ASC');
+                                notify();
+                                expectArgs(bar, foo);
+                            });
+
+                            it("should react to an update", function() {
+                                store.sort('name', 'ASC');
+                                foo.set('name', 'AAA');
+                                notify();
+                                expectArgs(foo, bar);
+                            });
+                        });
+
+                        describe("two-way", function() {
+                            it("should be able to set a model property", function() {
+                                makeInlineStore();
+                                setup();
+
+                                var first = store.first(),
+                                    b = bindNotify('{store.first.name}', Ext.emptyFn);
+
+                                b.setValue('aaa');
+                                notify();
+                                expect(first.get('name')).toBe('aaa');
+                                expect(store.first()).toBe(first);
+                            });
+                        });
+                    });
+
+                    describe("last", function() {
+                        beforeEach(function() {
+                            prop = 'last';
+                        });
+
+                        describe("with inline data", function() {
+                            it("should be available immediately", function() {
+                                makeInlineStore();
+                                setup();
+                                expectArgs(foo, undefined);
+                            });
+                        });
+
+                        describe("with an autoLoad", function() {
+                            it("should not publish while the store is pending a load/loading", function() {
+                                makeLoadStore(true);
+                                setup();
+                                expect(spy).not.toHaveBeenCalled();
+                                waitsFor(function() {
+                                    return Ext.Ajax.mockGetAllRequests().length > 0;
+                                });
+                                runs(function() {
+                                    expect(spy).not.toHaveBeenCalled();
+                                    completeNotify([{}, {}]);
+                                    expectArgs(store.getAt(1), undefined);
+                                });
+                            });
+                        });
+
+                        describe("with no load", function() {
+                            it("should publish straight away", function() {
+                                makeLoadStore(false);
+                                setup();
+                                expectArgs(null, undefined);
+                            });
+                        });
+
+                        describe("dynamic", function() {
+                            beforeEach(function() {
+                                makeInlineStore();
+                                setup();
+                                spy.reset();
+                            });
+
+                            it("should react to an add", function() {
+                                var r = store.add({})[0];
+                                notify();
+                                expectArgs(r, foo);
+                            });
+
+                            it("should react to a remove", function() {
+                                store.removeAt(2);
+                                notify();
+                                expectArgs(baz, foo);
+                            });
+
+                            it("should react to a removeAll", function() {
+                                store.removeAll();
+                                notify();
+                                expectArgs(null, foo);
+                            });
+
+                            it("should react to a remote load", function() {
+                                store.load();
+                                expect(spy).not.toHaveBeenCalled();
+                                completeNotify([{}, {}, {}, {}, {}]);
+                                expectArgs(store.getAt(4), foo);
+                            });
+
+                            it("should react to a local load", function() {
+                                store.loadData([{}, {}]);
+                                notify();
+                                expectArgs(store.getAt(1), foo);
+                            });
+
+                            it("should react to filtering", function() {
+                                store.getFilters().add({
+                                    filterFn: function(rec) {
+                                        return rec.get('name') === 'Bar';
+                                    }
+                                });
+                                notify();
+                                expectArgs(bar, foo);
+                                store.getFilters().removeAll();
+                                notify();
+                                expectArgs(foo, bar);
+                            });
+
+                            it("should react to a sort", function() {
+                                store.sort('name', 'DESC');
+                                notify();
+                                expectArgs(bar, foo);
+                                store.sort('name', 'ASC');
+                                notify();
+                                expectArgs(foo, bar);
+                            });
+
+                            it("should react to an update", function() {
+                                store.sort('name', 'ASC');
+                                notify();
+                                bar.set('name', 'ZZZ');
+                                notify();
+                                expectArgs(bar, foo);
+                            });
+                        });
+
+                        describe("two-way", function() {
+                            it("should be able to set a model property", function() {
+                                makeInlineStore();
+                                setup();
+
+                                var last = store.last(),
+                                    b = bindNotify('{store.last.name}', Ext.emptyFn);
+
+                                b.setValue('aaa');
+                                notify();
+                                expect(last.get('name')).toBe('aaa');
+                                expect(store.last()).toBe(last);
+                            });
+                        });
+                    });
+
+                    describe("loading", function() {
+                        beforeEach(function() {
+                            prop = 'loading';
+                        });
+
+                        it("should not be loading if the store is configured with autoLoad: false", function() {
+                            makeLoadStore(false);
+                            setup();
+                            expect(spy.callCount).toBe(1);
+                            expectArgs(false);
+                        });
+
+                        it("should be loading if the store has a pending a load", function() {
+                            makeLoadStore(true);
+                            setup();
+                            expect(spy.callCount).toBe(1);
+                            expectArgs(true);
+                        });
+
+                        it("should be loading if the store has is loading", function() {
+                            makeLoadStore(false);
+                            setup();
+                            spy.reset();
+                            store.load();
+                            notify();
+                            expect(spy.callCount).toBe(1);
+                            expectArgs(true);
+                        });
+
+                        it("should switch back to not loading once the load completes", function() {
+                            makeLoadStore(false);
+                            setup();
+                            spy.reset();
+                            store.load();
+                            notify();
+                            expect(spy.callCount).toBe(1);
+                            expectArgs(true, false);
+                            complete([]);
+                            notify();
+                            expect(spy.callCount).toBe(2);
+                            expectArgs(false, true);
+                        });
+                    });
+
+                    describe("totalCount", function() {
+                        beforeEach(function() {
+                            prop = 'totalCount';
+                        });
+
+                        it("should bind to the totalCount", function() {
+                            makeInlineStore();
+                            spyOn(store, 'getTotalCount').andReturn(3);
+                            setup();
+                            expect(spy.callCount).toBe(1);
+                            expectArgs(3);
+                        });
                     });
                 });
 
@@ -1781,7 +2647,7 @@ describe("Ext.app.ViewModel", function() {
                     afterEach(function() {
                         user = null;
                     });
-                    
+
                     it("should create/load the store if it's never been loaded", function() {
                         // We don't have a reference to the store, so spy on everything here
                         var loadSpy = spyOn(Ext.data.ProxyStore.prototype, 'load').andCallThrough();
@@ -2125,13 +2991,12 @@ describe("Ext.app.ViewModel", function() {
                             expect(proxySpy).not.toHaveBeenCalled();
                         });
 
-                        it("should not publish if the attached store is loading, it should wait until the load completes", function() {
+                        it("should publish if the attached store is loading, it should wait until the load completes", function() {
                             makeUser(1);
                             bindNotify('{user.posts}', spy);
                             setNotify('user', user);
-                            expect(spy).not.toHaveBeenCalled();
+                            expectArgs(user.posts(), undefined);
                             completeNotify([]);
-                            expect(spy).toHaveBeenCalled();
                         });
 
                         it("should publish if the store has been loaded before", function() {
@@ -2528,13 +3393,12 @@ describe("Ext.app.ViewModel", function() {
                             expect(proxySpy).not.toHaveBeenCalled();
                         });
 
-                        it("should not publish if the attached store is loading, it should wait until the load completes", function() {
+                        it("should publish if the attached store is loading", function() {
                             makeUser(1);
                             bindNotify('{user.groups}', spy);
                             setNotify('user', user);
-                            expect(spy).not.toHaveBeenCalled();
+                            expect(spy.callCount).toBe(1);
                             completeNotify([]);
-                            expect(spy).toHaveBeenCalled();
                         });
 
                         it("should publish if the store has been loaded before", function() {
@@ -2636,13 +3500,12 @@ describe("Ext.app.ViewModel", function() {
                             expect(proxySpy).not.toHaveBeenCalled();
                         });
 
-                        it("should not publish if the attached store is loading, it should wait until the load completes", function() {
+                        it("should publish if the attached store is loading", function() {
                             makeGroup(1);
                             bindNotify('{group.users}', spy);
                             setNotify('group', group);
-                            expect(spy).not.toHaveBeenCalled();
+                            expect(spy.callCount).toBe(1);
                             completeNotify([]);
-                            expect(spy).toHaveBeenCalled();
                         });
 
                         it("should publish if the store has been loaded before", function() {
@@ -2705,439 +3568,1921 @@ describe("Ext.app.ViewModel", function() {
     createRecordSuite(true);
 
     describe("nesting viewmodels", function () {
-        var rec, User, subViewModel, grandSubViewModel;
+        describe("values", function() {
+            function createValueSuite(key) {
+                var rootKey = key.split('.')[0],
+                    bindKey = '{' + key + '}',
+                    child, vms;
 
-        function completeWithRecord(id, data) {
-            Ext.Ajax.mockComplete({
-                status: 200,
-                responseText: Ext.encode(Ext.apply({
-                    id: id,
-                    name: 'Name1',
-                    age: 20,
-                    description: 'Desc1'
-                }, data))
-            });
-        }
+                function createChild(parent, cfg) {
+                    cfg = Ext.apply({
+                        parent: parent
+                    }, cfg);
+                    return new Ext.app.ViewModel(cfg);
+                }
 
-        beforeEach(function() {
-            User = Ext.define('spec.User', {
-                extend: 'Ext.data.Model',
-                fields: ['id', 'name', 'age', 'description']
-            });
-            createViewModel(true);
-            subViewModel = new Ext.app.ViewModel({
-                id: 'subVM',
-                parent: viewModel
-            });
-            grandSubViewModel = new Ext.app.ViewModel({
-                id: 'grandSubVM',
-                parent: subViewModel
-            });
-        });
+                function createWithData(data, parent) {
+                    return new Ext.app.ViewModel({
+                        data: data,
+                        parent: parent
+                    });
+                }
 
-        afterEach(function() {
-            grandSubViewModel.destroy();
-            subViewModel.destroy();
-            Ext.undefine('spec.User');
-            grandSubViewModel = subViewModel = User = rec = null;
-        });
+                function makeVms(vals) {
+                    vms = [];
 
-        it('should inherit data from parent view models', function () {
-            var fooBar = 0,
-                calls = 0;
+                    Ext.Array.forEach(vals, function(v, i) {
+                        var isEmpty = v === null,
+                            parent = i === 0 ? null : vms[i - 1],
+                            o = {};
 
-            subViewModel.bind('{foo.bar}', function (value) {
-                fooBar = value;
-                ++calls;
-            });
+                        if (v === null) {
+                            vms.push(createChild(parent));
+                        } else {
+                            vms.push(createWithData(makeData(v), parent));
+                        }
+                    });
+                }
 
-            viewModel.set('foo', { bar: 42 });
-            notify();
+                function expectValues(values) {
+                    Ext.Array.forEach(values, function(v, i) {
+                        expect(vms[i].get(key)).toBe(v);
+                    });
+                }
 
-            expect(calls).toBe(1);
-            expect(fooBar).toBe(42);
-        });
+                function makeData(v) {
+                    var o = {},
+                        current = o,
+                        parts = key.split('.'),
+                        last = parts.length - 1;
 
-        it('should inherit data from grandparent view models', function () {
-            var fooBar = 0,
-                calls = 0;
+                    Ext.Array.forEach(key.split('.'), function(part, idx) {
+                        if (idx === last) {
+                            current[part] = v;
+                        } else {
+                            current = current[part] = {};
+                        }
+                    });
 
-            grandSubViewModel.bind('{foo.bar}', function (value) {
-                fooBar = value;
-                ++calls;
-            });
+                    return o;
+                }
 
-            viewModel.set('foo', { bar: 42 });
-            notify();
+                function expectParentValue(v) {
+                    expect(viewModel.get(key)).toBe(v);
+                }
 
-            expect(calls).toBe(1);
-            expect(fooBar).toBe(42);
-        });
+                function expectChildValue(v) {
+                    expect(child.get(key)).toBe(v);
+                }
 
-        it('should maintain indirection with multiple view models', function () {
-            var fooBar = 0,
-                subFooBar = 0,
-                grandSubFooBar = 0,
-                calls = 0,
-                subCalls = 0,
-                grandSubCalls = 0;
-
-            viewModel.bind('{foo.bar}', function (value) {
-                fooBar = value;
-                ++calls;
-            });
-            subViewModel.bind('{foo.bar}', function (value) {
-                subFooBar = value;
-                ++subCalls;
-            });
-            grandSubViewModel.bind('{foo.bar}', function (value) {
-                grandSubFooBar = value;
-                ++grandSubCalls;
-            });
-
-            viewModel.set('foo', { bar: 42 });
-            notify();
-
-            expect(scheduler.passes).toBe(1);
-
-            expect(calls).toBe(1);
-            expect(fooBar).toBe(42);
-            expect(subCalls).toBe(1);
-            expect(subFooBar).toBe(42);
-            expect(grandSubCalls).toBe(1);
-            expect(grandSubFooBar).toBe(42);
-
-            subViewModel.set('foo', { bar: 427 });
-            notify();
-
-            // Should get this delivered in one pass due to sort order
-            expect(scheduler.passes).toBe(2);
-
-            expect(calls).toBe(1);
-            expect(fooBar).toBe(42);
-            expect(subCalls).toBe(2);
-            expect(subFooBar).toBe(427);
-            expect(grandSubCalls).toBe(2);
-            expect(grandSubFooBar).toBe(427);
-
-            subViewModel.set('foo', undefined);
-            notify();
-
-            // Should get this delivered in one pass due to sort order
-            expect(scheduler.passes).toBe(3);
-
-            expect(calls).toBe(1);
-            expect(fooBar).toBe(42);
-            expect(subCalls).toBe(3);
-            expect(subFooBar).toBe(42);
-            expect(grandSubCalls).toBe(3);
-            expect(grandSubFooBar).toBe(42);
-        });
-
-        it('should modify parent VM instances', function () {
-            var fooBar = 0,
-                subFooBar = 0,
-                grandSubFooBar = 0,
-                calls = 0,
-                subCalls = 0,
-                grandSubCalls = 0;
-
-            viewModel.bind('{foo.bar}', function (value) {
-                fooBar = value;
-                ++calls;
-            });
-            subViewModel.bind('{foo.bar}', function (value) {
-                subFooBar = value;
-                ++subCalls;
-            });
-            grandSubViewModel.bind('{foo.bar}', function (value) {
-                grandSubFooBar = value;
-                ++grandSubCalls;
-            });
-
-            viewModel.set('foo', { bar: 42 });
-            notify();
-
-            expect(scheduler.passes).toBe(1);
-
-            expect(calls).toBe(1);
-            expect(fooBar).toBe(42);
-            expect(subCalls).toBe(1);
-            expect(subFooBar).toBe(42);
-            expect(grandSubCalls).toBe(1);
-            expect(grandSubFooBar).toBe(42);
-
-            // We are navigating to "foo.bar" which is found in viewModel and setting
-            // that to 427. Even though we have set this from subViewModel the fact that
-            // we set "foo.bar" means we travel upwards to find the object.
-            subViewModel.set('foo.bar',  427);
-            notify();
-
-            // Should get this delivered in one pass due to sort order
-            expect(scheduler.passes).toBe(2);
-
-            expect(calls).toBe(2);
-            expect(fooBar).toBe(427);
-            expect(subCalls).toBe(2);
-            expect(subFooBar).toBe(427);
-            expect(grandSubCalls).toBe(2);
-            expect(grandSubFooBar).toBe(427);
-        });
-
-        describe("overwriting values from parent to child", function() {
-            it("should be able to modify a value when the binding is scheduled", function() {
-                viewModel.set('value', 1);
-                subViewModel.bind('{value}', spy);
-                subViewModel.set('value', 2);
-                viewModel.notify();
-                expect(spy.callCount).toBe(1);
-                expectArgs(2, undefined);
-            });
-
-            it("should be able to modify a value when the binding is unscheduled", function() {
-                viewModel.set('value', 1);
-                subViewModel.bind('{value}', spy);
-                viewModel.notify();
-                subViewModel.set('value', 2);
-                viewModel.notify();
-                expect(spy.callCount).toBe(2);
-                expectArgs(2, 1);
-            });
-        });
-
-        describe('with formulas', function () {
-            var foo = 0,
-                bar = 0,
-                baz = 0,
-                fooCalls = 0,
-                barCalls = 0,
-                bazCalls = 0,
-                fooBinding;
-
-            beforeEach(function () {
-                viewModel.set({
-                    firstName: 'Don',
-                    lastName: 'Griffin',
-                    abc: {
-                        v: 'abc'
-                    },
-                    xyz: 'xyz'
+                afterEach(function() {
+                    vms = child = Ext.destroy(vms, child);
                 });
-                viewModel.setFormulas({
-                    // simple function form
-                    foo: function (get) {
-                        return get('abc.v') + get('xyz');
-                    },
-                    fullName: {
-                        get: function (get) {
-                            return get('firstName') + ' ' + get('lastName');
-                        },
-                        set: function (name) {
-                            var a = name.split(' ');
 
-                            this.set({
-                                firstName: a[0],
-                                lastName: a[1]
+                describe("inheriting values", function() {
+                    describe("initial values", function() {
+                        function setParentValue(v) {
+                            setNotify(key, v);
+                        }
+
+                        function setChildValue(v) {
+                            setNotify(key, v, child);
+                        }
+
+                        describe("value only in parent", function() {
+                            beforeEach(function() {
+                                viewModel = createWithData(makeData(1));
+                                child = createChild(viewModel);
                             });
-                        }
-                    }
-                });
 
-                subViewModel.set({
-                    xyz: 'XYZ'
-                });
-                subViewModel.setFormulas({
-                    // object w/get (no bind)
-                    bar: {
-                        get: function (get) {
-                            return get('abc.v') + get('xyz');
-                        }
-                    },
-                    // object w/get and bind
-                    explicit: {
-                        get: function (data) {
-                            return '(' + data.foo.v + '/' + data.foo.x + ')';
-                        },
-                        bind: {
-                            foo: {
-                                v: '{abc.v}',
-                                x: '{xyz}'
+                            it("should inherit a value from the parent", function() {
+                                expectChildValue(1);
+                            });
+
+                            it("should have the value available in the parent", function() {
+                                expectParentValue(1);
+                            });
+                        });
+
+                        describe("value only in child", function() {
+                            beforeEach(function() {
+                                createViewModel();
+                                child = createWithData(makeData(1), viewModel);
+                            });
+
+                            it("should have the value in the child", function() {
+                                expectChildValue(1);
+                            });
+
+                            it("should have no value in the parent", function() {
+                                expectParentValue(null);
+                            });
+                        });
+
+                        describe("value in parent and child", function() {
+                            it("should have the value in the child", function() {
+                                viewModel = createWithData(makeData(1));
+                                child = createWithData(makeData(2), viewModel);
+                                expectChildValue(2);
+                            });
+
+                            it("should have the value in the parent", function() {
+                                viewModel = createWithData(makeData(1));
+                                child = createWithData(makeData(2), viewModel);
+                                expectParentValue(1);
+                            });
+
+                            it("should not inherit data when configuring a root/child with the same value", function() {
+                                viewModel = createWithData(makeData(key));
+                                child = createWithData(makeData(key), viewModel);
+
+                                expectParentValue(key);
+                                expectChildValue(key);
+
+                                setParentValue(2);
+                                expectParentValue(2);
+                                expectChildValue(key);
+
+                                setChildValue(3);
+                                expectParentValue(2);
+                                expectChildValue(3);
+                            });
+                        });
+
+                        describe("multiple layers", function() {
+                            it("should inherit the value from the nearest parent", function(){
+                                makeVms([1, null, 2, null, 3, null]);
+                                expectValues([1, 1, 2, 2, 3, 3]);
+                            });
+                        });
+                    });
+
+                    describe("dynamic values", function() {
+                        var parentSpy, childSpy, parentBind, childBind;
+
+                        function createParentBind() {
+                            if (!parentBind) {
+                                parentBind = bindNotify(bindKey, parentSpy);
                             }
                         }
-                    }
-                });
 
-                grandSubViewModel.set({
-                    abc: {
-                        v: 'ABC'
-                    }
-                });
-                grandSubViewModel.setFormulas({
-                    baz: function (get) {
-                        return get('abc.v') + get('xyz');
-                    },
-                    welcome: function (get) {
-                        return 'Hello ' + get('fullName') + '!';
-                    }
-                });
+                        function createChildBind() {
+                            if (!childBind) {
+                                childBind = bindNotify(bindKey, childSpy, null, child);
+                            }
+                        }
 
-                fooBinding = viewModel.bind('{foo}', function (value) {
-                    foo = value;
-                    ++fooCalls;
+                        function expectParentSpy(value, callCount) {
+                            if (parentBind) {
+                                expect(parentSpy.callCount).toBe(callCount);
+                                if (parentSpy.callCount > 0) {
+                                    expect(parentSpy.mostRecentCall.args[0]).toBe(value);
+                                }
+                            }
+                        }
+
+                        function expectChildSpy(value, callCount) {
+                            if (childBind) {
+                                expect(childSpy.callCount).toBe(callCount);
+                                if (childSpy.callCount > 0) {
+                                    expect(childSpy.mostRecentCall.args[0]).toBe(value);
+                                }
+                            }
+                        }
+
+                        beforeEach(function() {
+                            parentSpy = jasmine.createSpy();
+                            childSpy = jasmine.createSpy();
+                        });
+
+                        afterEach(function() {
+                            parentSpy = childSpy = parentBind = childBind = null;
+                        });
+
+                        describe("via viewmodel set method", function() {
+                            function setParentValue(v) {
+                                setNotify(key, v);
+                            }
+
+                            function setChildValue(v) {
+                                setNotify(key, v, child);
+                            }
+
+                            describe("no data", function() {
+                                beforeEach(function() {
+                                    createViewModel();
+                                    child = createChild(viewModel);
+                                });
+
+                                function createSuite(withParentStub, withChildStub) {
+                                    beforeEach(function() {
+                                        if (withParentStub) {
+                                            createParentBind();
+                                        }
+
+                                        if (withChildStub) {
+                                            createChildBind();
+                                        }
+                                    });
+
+                                    describe("first set on the parent", function() {
+                                        beforeEach(function() {
+                                            setParentValue(1);
+
+                                            expectParentSpy(1, 1);
+                                            expectChildSpy(1, 1);
+                                        });
+
+                                        it("should climb when setting data on the child", function() {
+                                            setChildValue(2);
+
+                                            expectParentValue(2);
+                                            expectChildValue(2);
+
+                                            expectParentSpy(2, 2);
+                                            expectChildSpy(2, 2);
+                                        });
+
+                                        it("should have the child inherit changes", function() {
+                                            setParentValue(2);
+
+                                            expectParentValue(2);
+                                            expectChildValue(2);
+
+                                            expectParentSpy(2, 2);
+                                            expectChildSpy(2, 2);
+                                        });
+                                    });
+
+                                    describe("first set on the child", function() {
+                                        beforeEach(function() {
+                                            setChildValue(1);
+                                        });
+
+                                        it("should set the data on the child", function() {
+                                            expectParentValue(null);
+                                            expectChildValue(1);
+
+                                            expectParentSpy(null, 0);
+                                            expectChildSpy(1, 1);
+                                        });
+
+                                        it("should be able to set a value on the parent", function() {
+                                            setParentValue(2);
+
+                                            expectParentValue(2);
+                                            expectChildValue(1);
+
+                                            expectParentSpy(2, 1);
+                                            expectChildSpy(1, 1);
+                                        });
+
+                                        it("should not climb on subsequent sets", function() {
+                                            setParentValue(2);
+                                            setChildValue(3);
+
+                                            expectParentValue(2);
+                                            expectChildValue(3);
+
+                                            expectParentSpy(2, 1);
+                                            expectChildSpy(3, 2);
+                                            
+                                        });
+                                    });
+                                }
+
+                                describe("no stubs created", function() {
+                                    createSuite(false, false);
+                                });
+
+                                describe("parent stub created", function() {
+                                    createSuite(true, false);
+                                });
+
+                                describe("child stub created", function() {
+                                    createSuite(false, true);
+                                });
+
+                                describe("both stubs created", function() {
+                                    createSuite(true, true);
+                                });
+                            });
+
+                            describe("data in the parent", function() {
+                                // By virtue of having data in the parent, a stub will
+                                // always exist
+                                beforeEach(function() {
+                                    viewModel = createWithData(makeData(1));
+                                    child = createChild(viewModel);
+                                    createParentBind();
+                                    parentSpy.reset();
+                                });
+
+                                function createSuite(withChildStub) {
+                                    beforeEach(function() {
+                                        if (withChildStub) {
+                                            createChildBind();
+                                            childSpy.reset();
+                                        }
+                                    });
+
+                                    describe("first set on the parent", function() {
+                                        beforeEach(function() {
+                                            setParentValue(2);
+                                        });
+                                        it("should inherit the value from the parent", function() {
+                                            expectParentValue(2);
+                                            expectChildValue(2);
+
+                                            expectParentSpy(2, 1);
+                                            expectChildSpy(2, 1);
+                                        });
+
+                                        it("should climb and set the value on the parent", function() {
+                                            setChildValue(3);
+
+                                            expectParentValue(3);
+                                            expectChildValue(3);
+
+                                            expectParentSpy(3, 2);
+                                            expectChildSpy(3, 2);
+                                        });
+                                    });
+
+                                    describe("first set on the child", function() {
+                                        beforeEach(function() {
+                                            setChildValue(2);
+                                        });
+
+                                        it("should climb and set the value", function() {
+                                            expectParentValue(2);
+                                            expectChildValue(2);
+
+                                            expectParentSpy(2, 1);
+                                            expectChildSpy(2, 1);
+                                        });
+
+                                        it("should inherit subsequent sets on the parent", function() {
+                                            setParentValue(3);
+
+                                            expectParentValue(3);
+                                            expectChildValue(3);
+
+                                            expectParentSpy(3, 2);
+                                            expectChildSpy(3, 2);
+                                        });
+                                    });
+                                }
+
+                                describe("child stub not created", function() {
+                                    createSuite(false);
+                                });
+
+                                describe("child stub created", function() {
+                                    createSuite(true);
+                                });
+                            });
+
+                            describe("data in the child", function() {
+                                // By virtue of having data in the child, a stub will
+                                // always exist
+                                beforeEach(function() {
+                                    createViewModel();
+                                    child = createWithData(makeData(1), viewModel);
+                                    createChildBind();
+                                    childSpy.reset();
+                                });
+
+                                function createSuite(withParentStub) {
+                                    beforeEach(function() {
+                                        if (withParentStub) {
+                                            createParentBind();
+                                            parentSpy.reset();
+                                        }
+                                    });
+
+                                    describe("first set on the parent", function() {
+                                        beforeEach(function() {
+                                            setParentValue(2);
+                                        });
+
+                                        it("should set data on the child", function() {
+                                            setChildValue(3);
+
+                                            expectParentValue(2);
+                                            expectChildValue(3);
+
+                                            expectParentSpy(2, 1);
+                                            expectChildSpy(3, 1);
+                                        });
+
+                                        it("should not climb", function() {
+                                            setChildValue(3);
+
+                                            expectParentValue(2);
+                                            expectChildValue(3);
+
+                                            expectParentSpy(2, 1);
+                                            expectChildSpy(3, 1);
+                                        });
+                                    });
+
+                                    describe("first set on the child", function() {
+                                        beforeEach(function() {
+                                            setChildValue(2);
+                                        });
+
+                                        it("should set the data on the child", function() {
+                                            expectParentValue(null);
+                                            expectChildValue(2);
+
+                                            expectParentSpy(null, 0);
+                                            expectChildSpy(2, 1);
+                                        });
+
+                                        it("should be able to set a value on the parent", function() {
+                                            setParentValue(3);
+
+                                            expectParentValue(3);
+                                            expectChildValue(2);
+
+                                            expectParentSpy(3, 1);
+                                            expectChildSpy(2, 1);
+                                        });
+
+                                        it("should not climb on subsequent sets", function() {
+                                            setParentValue(3);
+                                            setChildValue(4);
+
+                                            expectParentValue(3);
+                                            expectChildValue(4);
+
+                                            expectParentSpy(3, 1);
+                                            expectChildSpy(4, 2);
+                                        });
+                                    });
+                                }
+
+                                describe("parent stub not created", function() {
+                                    createSuite(false);
+                                });
+
+                                describe("parent stub created", function() {
+                                    createSuite(true);
+                                });
+                            });
+
+                            describe("data in parent and child", function() {
+                                // Both stubs will already exist
+                                beforeEach(function() {
+                                    viewModel = createWithData(makeData(1));
+                                    child = createWithData(makeData(2), viewModel);
+                                    createParentBind();
+                                    createChildBind();
+                                    parentSpy.reset();
+                                    childSpy.reset();
+                                });
+
+                                it("should set data on the child", function() {
+                                    setChildValue(3);
+
+                                    expectParentValue(1);
+                                    expectChildValue(3);
+
+                                    expectParentSpy(null, 0);
+                                    expectChildSpy(3, 1);
+                                });
+
+                                it("should set data on the parent", function() {
+                                    setParentValue(3);
+
+                                    expectParentValue(3);
+                                    expectChildValue(2);
+
+                                    expectParentSpy(3, 1);
+                                    expectChildSpy(null, 0);
+                                });
+                            });
+
+                            describe("multiple layers", function() {
+                                function createSuite(withBind) {
+                                    var spies;
+
+                                    beforeEach(function() {
+                                        spies = [];
+                                    });
+
+                                    afterEach(function() {
+                                        spies = null;
+                                    });
+
+                                    function runFn() {
+                                        if (withBind) {
+                                            Ext.Array.forEach(vms, function(vm) {
+                                                var s = jasmine.createSpy();
+                                                bindNotify(bindKey, s, null, vm);
+                                                spies.push(s);
+                                            });
+                                        }
+                                    }
+
+                                    function expectSpies(values) {
+                                        if (withBind) {
+                                            Ext.Array.forEach(spies, function(s, idx) {
+                                                var v = values[idx];
+                                                if (v === null) {
+                                                    expect(s.callCount).toBe(0);
+                                                } else {
+                                                    expect(s.callCount).toBe(1);
+                                                    expect(s.mostRecentCall.args[0]).toBe(v);
+                                                }
+                                                s.reset();
+                                            });
+                                        }
+                                    }
+
+                                    it("should climb up to the nearest value on set", function() {
+                                        makeVms([1, null, null, 2, null, null]);
+                                        runFn();
+
+                                        expectValues([1, 1, 1, 2, 2, 2]);
+                                        expectSpies([1, 1, 1, 2, 2, 2]);
+
+                                        setNotify(key, 100, vms[5]);
+                                        expectValues([1, 1, 1, 100, 100, 100]);
+                                        expectSpies([null, null, null, 100, 100, 100]);
+
+                                        setNotify(key, 101, vms[4]);
+                                        expectValues([1, 1, 1, 101, 101, 101]);
+                                        expectSpies([null, null, null, 101, 101, 101]);
+
+                                        setNotify(key, 102, vms[3]);
+                                        expectSpies([null, null, null, 102, 102, 102]);
+
+                                        setNotify(key, 200, vms[2]);
+                                        expectValues([200, 200, 200, 102, 102, 102]);
+                                        expectSpies([200, 200, 200, null, null, null]);
+
+                                        setNotify(key, 201, vms[1]);
+                                        expectValues([201, 201, 201, 102, 102, 102]);
+                                        expectSpies([201, 201, 201, null, null, null]);
+
+                                        setNotify(key, 202, vms[0]);
+                                        expectValues([202, 202, 202, 102, 102, 102]);
+                                        expectSpies([202, 202, 202, null, null, null]);
+                                    });
+
+                                    it("should stop climbing if there's no value above", function() {
+                                        makeVms([null, null, null, 1, null, null]);
+                                        runFn();
+
+                                        expectValues([null, null, null, 1, 1, 1]);
+                                        expectSpies([null, null, null, 1, 1, 1]);
+
+                                        setNotify(key, 100, vms[5]);
+                                        expectValues([null, null, null, 100, 100, 100]);
+                                        expectSpies([null, null, null, 100, 100, 100]);
+
+                                        setNotify(key, 200, vms[2]);
+                                        expectValues([null, null, 200, 100, 100, 100]);
+                                        expectSpies([null, null, 200, null, null, null]);
+
+                                        setNotify(key, 201, vms[1]);
+                                        expectValues([null, 201, 200, 100, 100, 100]);
+                                        expectSpies([null, 201, null, null, null, null]);
+                                    });
+                                }
+
+                                describe("bindings not created", function() {
+                                    createSuite(false);
+                                });
+
+                                describe("bindings created", function() {
+                                    createSuite(true);
+                                });
+                            });
+                        });
+
+                        describe("via binding", function() {
+                            function setParentValue(v) {
+                                createParentBind();
+                                setBindNotify(parentBind, v);
+                            }
+
+                            function setChildValue(v) {
+                                createChildBind();
+                                setBindNotify(childBind, v, child);
+                            }
+
+                            describe("no data", function() {
+                                beforeEach(function() {
+                                    createViewModel();
+                                    child = createChild(viewModel);
+                                });
+
+                                describe("first set on the parent", function() {
+                                    function createSuite(withChildStub) {
+                                        beforeEach(function() {
+                                            createParentBind();
+                                            if (withChildStub) {
+                                                createChildBind();
+                                            }
+                                            setParentValue(1);
+                                        });
+
+                                        it("should set data on the parent and inherit to the child", function() {
+                                            expectParentValue(1);
+                                            expectChildValue(1);
+
+                                            expectParentSpy(1, 1);
+                                            expectChildSpy(1, 1);
+                                        });
+
+                                        it("should climb and set values on the parent", function() {
+                                            setChildValue(2);
+
+                                            expectParentValue(2);
+                                            expectChildValue(2);
+
+                                            expectParentSpy(2, 2);
+                                            expectChildSpy(2, 2);
+                                        });
+                                    }
+
+                                    describe("child stub not created", function() {
+                                        createSuite(false);
+                                    });
+
+                                    describe("child stub created", function() {
+                                        createSuite(true);
+                                    });
+                                });
+
+                                describe("first set on the child", function() {
+                                    function createSuite(withParentStub) {
+                                        beforeEach(function() {
+                                            createChildBind();
+                                            if (withParentStub) {
+                                                createParentBind();
+                                            }
+                                            setChildValue(1);
+                                        });
+
+                                        it("should set the data on the child", function() {
+                                            expectParentValue(null);
+                                            expectChildValue(1);
+
+                                            expectParentSpy(null, 0);
+                                            expectChildSpy(1, 1);
+                                        });
+
+                                        it("should be able to set a value on the parent", function() {
+                                            setParentValue(2);
+
+                                            expectParentValue(2);
+                                            expectChildValue(1);
+
+                                            expectParentSpy(2, 1);
+                                            expectChildSpy(1, 1);
+                                        });
+
+                                        it("should not climb on subsequent sets", function() {
+                                            setParentValue(2);
+                                            setChildValue(3);
+
+                                            expectParentValue(2);
+                                            expectChildValue(3);
+
+                                            expectParentSpy(2, 1);
+                                            expectChildSpy(3, 2);
+                                        });
+                                    }
+
+                                    describe("parent stub not created", function() {
+                                        createSuite(false);
+                                    });
+
+                                    describe("parent stub created", function() {
+                                        createSuite(true);
+                                    });
+                                });
+                            });
+
+                            describe("data in the parent", function() {
+                                beforeEach(function() {
+                                    viewModel = createWithData(makeData(1));
+                                    child = createChild(viewModel);
+                                });
+
+                                describe("first set on the parent", function() {
+                                    function createSuite(withChildStub) {
+                                        beforeEach(function() {
+                                            createParentBind();
+                                            if (withChildStub) {
+                                                createChildBind();
+                                            }
+                                            setParentValue(1);
+                                        });
+
+                                        it("should set data on the parent and inherit to the child", function() {
+                                            expectParentValue(1);
+                                            expectChildValue(1);
+
+                                            expectParentSpy(1, 1);
+                                            expectChildSpy(1, 1);
+                                        });
+
+                                        it("should climb and set values on the parent", function() {
+                                            setChildValue(2);
+
+                                            expectParentValue(2);
+                                            expectChildValue(2);
+
+                                            expectParentSpy(2, 2);
+                                            expectChildSpy(2, 2);
+                                        });
+                                    }
+
+                                    describe("child stub not created", function() {
+                                        createSuite(false);
+                                    });
+
+                                    describe("child stub created", function() {
+                                        createSuite(true);
+                                    });
+                                });
+
+                                describe("first set on the child", function() {
+                                    // Child stub has to be created
+
+                                    it("should climb and set values on the parent", function() {
+                                        setChildValue(2);
+
+                                        expectParentValue(2);
+                                        expectChildValue(2);
+
+                                        expectParentSpy(2, 2);
+                                        expectChildSpy(2, 2);
+                                    });
+                                });
+                            });
+
+                            describe("data in the child", function() {
+                                beforeEach(function() {
+                                    createViewModel();
+                                    child = createWithData(makeData(1), viewModel);
+                                });
+
+                                describe("first set on the parent", function() {
+                                    // Parent stub has to be created
+
+                                    beforeEach(function() {
+                                        setParentValue(2);
+                                    });
+
+                                    it("should set the data on the parent", function() {
+                                        expectParentValue(2);
+                                        expectChildValue(1);
+
+                                        expectParentSpy(2, 1);
+                                        expectChildSpy(null, 0);
+                                    });
+
+                                    it("should not climb on subsequent child sets", function() {
+                                        setChildValue(3);
+
+                                        expectParentValue(2);
+                                        expectChildValue(3);
+
+                                        expectParentSpy(2, 1);
+                                        expectChildSpy(3, 2);
+                                    });
+                                });
+
+                                describe("first set on the child", function() {
+                                    function createSuite(withParentStub) {
+                                        beforeEach(function() {
+                                            createChildBind();
+                                            if (withParentStub) {
+                                                createParentBind();
+                                            }
+                                            setChildValue(2);
+                                            
+                                        });
+
+                                        it("should set the data on the child", function() {
+                                            expectParentValue(null);
+                                            expectChildValue(2);
+
+                                            expectParentSpy(null, 0);
+                                            expectChildSpy(2, 2);
+                                        });
+
+                                        it("should be able to set a value on the parent", function() {
+                                            setParentValue(3);
+
+                                            expectParentValue(3);
+                                            expectChildValue(2);
+
+                                            expectParentSpy(3, 1);
+                                            expectChildSpy(2, 2);
+                                        });
+
+                                        it("should not climb on subsequent sets", function() {
+                                            setParentValue(2);
+                                            setChildValue(3);
+
+                                            expectChildValue(3);
+                                            expectParentValue(2);
+
+                                            expectParentSpy(2, 1);
+                                            expectChildSpy(3, 3);
+                                        });
+                                    }
+
+                                    describe("parent stub not created", function() {
+                                        createSuite(false);
+                                    });
+
+                                    describe("parent stub created", function() {
+                                        createSuite(true);
+                                    });
+                                });
+                            });
+
+                            describe("data in parent and child", function() {
+                                // Both stubs will exist
+                                beforeEach(function() {
+                                    viewModel = createWithData(makeData(1));
+                                    child = createWithData(makeData(2), viewModel);
+
+                                    createParentBind();
+                                    createChildBind();
+                                });
+
+                                describe("first set on the parent", function() {
+                                    beforeEach(function() {
+                                        setParentValue(3);
+                                    });
+
+                                    it("should set the data on the parent", function() {
+                                        expectParentValue(3);
+                                        expectChildValue(2);
+
+                                        expectParentSpy(3, 2);
+                                        expectChildSpy(2, 1);
+                                    });
+
+                                    it("should be able to set a value on the child", function() {
+                                        setChildValue(4);
+
+                                        expectParentValue(3);
+                                        expectChildValue(4);
+
+                                        expectParentSpy(3, 2);
+                                        expectChildSpy(4, 2);
+                                    });
+                                });
+
+                                describe("first set on the child", function() {
+                                    beforeEach(function() {
+                                        setChildValue(3);
+                                    });
+
+                                    it("should set the data on the child", function() {
+                                        expectParentValue(1);
+                                        expectChildValue(3);
+
+                                        expectParentSpy(1, 1);
+                                        expectChildSpy(3, 2);
+                                    });
+
+                                    it("should be able to set a value on the parent", function() {
+                                        setParentValue(4);
+
+                                        expectParentValue(4);
+                                        expectChildValue(3);
+
+                                        expectParentSpy(4, 2);
+                                        expectChildSpy(3, 2);
+                                    });
+                                });
+                            });
+
+                            describe("multiple layers", function() {
+                                function createSuite(withBind) {
+                                    var spies, bindings;
+
+                                    beforeEach(function() {
+                                        bindings = [];
+                                        spies = [];
+                                    });
+
+                                    afterEach(function() {
+                                        spies = bindings = null;
+                                    });
+
+                                    function getBind(vm, theSpy) {
+                                        var index = Ext.Array.indexOf(vms, vm),
+                                            b = bindings[index];
+
+                                        if (!b) {
+                                            bindings[index] = b = bindNotify(bindKey, theSpy || spy, null, vm);
+                                        }
+                                        return b;
+                                    }
+
+                                    function setValue(value, vm) {
+                                        var bind = getBind(vm);
+                                        setBindNotify(bind, value, vm);
+                                    }
+
+                                    function runFn() {
+                                        if (withBind) {
+                                            Ext.Array.forEach(vms, function(vm) {
+                                                var s = jasmine.createSpy();
+                                                getBind(vm, s);
+                                                spies.push(s);
+                                            });
+                                        }
+                                    }
+
+                                    function expectSpies(values) {
+                                        if (withBind) {
+                                            Ext.Array.forEach(spies, function(s, idx) {
+                                                var v = values[idx];
+                                                if (v === null) {
+                                                    expect(s.callCount).toBe(0);
+                                                } else {
+                                                    expect(s.callCount).toBe(1);
+                                                    expect(s.mostRecentCall.args[0]).toBe(v);
+                                                }
+                                                s.reset();
+                                            });
+                                        }
+                                    }
+
+                                    it("should climb up to the nearest value on set", function() {
+                                        makeVms([1, null, null, 2, null, null]);
+                                        runFn();
+
+                                        expectValues([1, 1, 1, 2, 2, 2]);
+                                        expectSpies([1, 1, 1, 2, 2, 2]);
+
+                                        setValue(100, vms[5]);
+                                        expectValues([1, 1, 1, 100, 100, 100]);
+                                        expectSpies([null, null, null, 100, 100, 100]);
+
+                                        setValue(101, vms[4]);
+                                        expectValues([1, 1, 1, 101, 101, 101]);
+                                        expectSpies([null, null, null, 101, 101, 101]);
+
+                                        setValue(102, vms[3]);
+                                        expectValues([1, 1, 1, 102, 102, 102]);
+                                        expectSpies([null, null, null, 102, 102, 102]);
+
+                                        setValue(200, vms[2]);
+                                        expectValues([200, 200, 200, 102, 102, 102]);
+                                        expectSpies([200, 200, 200, null, null, null]);
+
+                                        setValue(201, vms[1]);
+                                        expectValues([201, 201, 201, 102, 102, 102]);
+                                        expectSpies([201, 201, 201, null, null, null]);
+
+                                        setValue(202, vms[0]);
+                                        expectValues([202, 202, 202, 102, 102, 102]);
+                                        expectSpies([202, 202, 202, null, null, null]);
+                                    });
+
+                                    it("should stop climbing if there's no value above", function() {
+                                        makeVms([null, null, null, 1, null, null]);
+                                        runFn();
+
+                                        setValue(100, vms[5]);
+                                        expectValues([null, null, null, 100, 100, 100]);
+
+                                        setValue(200, vms[2]);
+                                        expectValues([null, null, 200, 100, 100, 100]);
+
+                                        setValue(201, vms[1]);
+                                        expectValues([null, 201, 200, 100, 100, 100]);
+                                    });
+                                }
+
+                                describe("bindings not created", function() {
+                                    createSuite(false);
+                                });
+
+                                describe("bindings created", function() {
+                                    createSuite(true);
+                                });
+                            });
+                        });
+
+                        describe("setting using setData", function() {
+                            var spies, bindings;
+
+                            function setData(value, vm) {
+                                vm.setData(makeData(value));
+                                vm.notify();
+                            }
+
+                            function setValue(value, vm) {
+                                setNotify(key, value, vm);
+                            }
+
+                            function getBind(vm) {
+                                var index = Ext.Array.indexOf(vms, vm),
+                                    b = bindings[index],
+                                    s;
+
+                                if (!b) {
+                                    s = jasmine.createSpy();
+                                    spies[index] = s;
+                                    bindings[index] = b = bindNotify(bindKey, s, null, vm);
+                                }
+                                return b;
+                            }
+
+                            function expectSpies(values) {
+                                Ext.Array.forEach(values, function(v, idx) {
+                                    var s = spies[idx];
+                                    if (s) {
+                                        if (v === null) {
+                                            expect(s.callCount).toBe(0);
+                                        } else {
+                                            expect(s.callCount).toBe(1);
+                                            expect(s.mostRecentCall.args[0]).toBe(v);
+                                        }
+                                        s.reset();
+                                    }
+                                });
+                            }
+
+                            beforeEach(function() {
+                                bindings = [];
+                                spies = [];
+                            });
+
+                            afterEach(function() {
+                                bindings = spies = null;
+                            });
+
+                            describe("inserting a value at the top", function() {
+                                function createSuite(withTopStub, withChildStub) {
+                                    beforeEach(function() {
+                                        makeVms([null, null, 1, null, 2]);
+                                        if (withTopStub) {
+                                            getBind(vms[0]);   
+                                        }
+
+                                        if (withChildStub) {
+                                            getBind(vms[1]);
+                                        }
+                                        getBind(vms[2]);
+                                        getBind(vms[3]);
+                                        getBind(vms[4]);
+                                        reset(spies);
+
+                                        setData(200, vms[0]);
+                                    });
+
+                                    it("should set the data on the top vm and inherit for children with no value", function() {
+                                        expectValues([200, 200, 1, 1, 2]);
+                                    });
+
+                                    it("should trigger the appropriate bindings", function() {
+                                        expectSpies([200, 200, null, null, null]);
+                                    });
+
+                                    it("should not climb when setting on the lower root", function() {
+                                        reset(spies);
+
+                                        setValue(100, vms[2]);
+
+                                        expectValues([200, 200, 100, 100, 2]);
+                                        expectSpies([null, null, 100, 100, null]);
+                                    });
+
+                                    it("should climb when setting a child of the new root", function() {
+                                        reset(spies);
+
+                                        setValue(201, vms[1]);
+
+                                        expectValues([201, 201, 1, 1, 2]);
+                                        expectSpies([201, 201, null, null, null]);
+                                    });
+
+                                    it("should inherit the value when setting on the new root", function() {
+                                        reset(spies);
+
+                                        setValue(202, vms[0]);
+
+                                        expectValues([202, 202, 1, 1, 2]);
+                                        expectSpies([202, 202, null, null, null]);
+                                    });
+                                }
+
+                                describe("top stub not created", function() {
+                                    describe("child stub not created", function() {
+                                        createSuite(false, false);
+                                    });
+
+                                    describe("child stub created", function() {
+                                        createSuite(false, true);
+                                    });
+                                });
+
+                                describe("top stub created", function() {
+                                    describe("child stub not created", function() {
+                                        createSuite(true, false);
+                                    });
+
+                                    describe("child stub created", function() {
+                                        createSuite(true, true);
+                                    });
+                                });
+                            });
+
+                            describe("inserting a value in the middle", function() {
+                                function createSuite(withMiddleStub, withMiddleChildStub) {
+                                    beforeEach(function() {
+                                        makeVms([1, null, null, null, 2]);
+                                        if (withMiddleStub) {
+                                            getBind(vms[2]);   
+                                        }
+
+                                        if (withMiddleChildStub) {
+                                            getBind(vms[3]);
+                                        }
+                                        getBind(vms[0]);
+                                        getBind(vms[1]);
+                                        getBind(vms[4]);
+                                        reset(spies);
+
+                                        setData(100, vms[2]);
+                                    });
+
+                                    it("should set the data on the middle vm and have children inherit as appropriate", function() {
+                                        expectValues([1, 1, 100, 100, 2]);
+                                    });
+
+                                    it("should trigger the appropriate bindings", function() {
+                                        expectSpies([null, null, 100, 100, null]);
+                                    });
+
+                                    it("should not climb when setting on the bottom", function() {
+                                        reset(spies);
+
+                                        setValue(200, vms[4]);
+
+                                        expectValues([1, 1, 100, 100, 200]);
+                                        expectSpies([null, null, null, null, 200]);
+                                    });
+
+                                    it("should climb when setting a the child of the middle", function() {
+                                        reset(spies);
+
+                                        setValue(201, vms[3]);
+
+                                        expectValues([1, 1, 201, 201, 2]);
+                                        expectSpies([null, null, 201, 201, null]);
+                                    });
+
+                                    it("should inherit the value when setting on the middle", function() {
+                                        reset(spies);
+
+                                        setValue(202, vms[2]);
+
+                                        expectValues([1, 1, 202, 202, 2]);
+                                        expectSpies([null, null, 202, 202, null]);
+                                    });
+                                }
+
+                                describe("middle stub not created", function() {
+                                    describe("middle child not created", function() {
+                                        createSuite(false, false);
+                                    });
+
+                                    describe("middle child created", function() {
+                                        createSuite(false, true);
+                                    });
+                                });
+
+                                describe("middle stub created", function() {
+                                    describe("middle child not created", function() {
+                                        createSuite(true, false);
+                                    });
+
+                                    describe("middle child created", function() {
+                                        createSuite(true, true);
+                                    });
+                                });
+                            });
+
+                            describe("inserting a value at the bottom", function() {
+                                function createSuite(withBottomStub) {
+                                    beforeEach(function() {
+                                        makeVms([1, null, 2, null, null]);
+                                        if (withBottomStub) {
+                                            getBind(vms[4]);   
+                                        }
+                                        getBind(vms[0]);
+                                        getBind(vms[1]);
+                                        getBind(vms[2]);
+                                        getBind(vms[3]);
+                                        reset(spies);
+
+                                        setData(100, vms[4]);
+                                    });
+
+                                    it("should set the data on the bottom", function() {
+                                        expectValues([1, 1, 2, 2, 100]);
+                                    });
+
+                                    it("should trigger the appropriate bindings", function() {
+                                        expectSpies([null, null, null, null, 100]);
+                                    });
+
+                                    it("should not climb when setting on the bottom", function() {
+                                        reset(spies);
+
+                                        setValue(200, vms[4]);
+
+                                        expectValues([1, 1, 2, 2, 200]);
+                                        expectSpies([null, null, null, null, 200]);
+                                    });
+                                }
+
+                                describe("with bottom stub not created", function() {
+                                    createSuite(false);
+                                });
+
+                                describe("with bottom stub created", function() {
+                                    createSuite(true);
+                                });
+                            });
+                        });
+
+                        describe("clearing values with undefined", function() {
+                            var spies, bindings;
+
+                            function clear(vm) {
+                                var o = {};
+                                o[rootKey] = undefined;
+                                vm.setData(o);
+                                vm.notify();
+                            }
+
+                            function setValue(value, vm) {
+                                setNotify(key, value, vm);
+                            }
+
+                            function getBind(vm) {
+                                var index = Ext.Array.indexOf(vms, vm),
+                                    b = bindings[index],
+                                    s;
+
+                                if (!b) {
+                                    s = jasmine.createSpy();
+                                    spies[index] = s;
+                                    bindings[index] = b = bindNotify(bindKey, s, null, vm);
+                                }
+                                return b;
+                            }
+
+                            function expectSpies(values) {
+                                Ext.Array.forEach(values, function(v, idx) {
+                                    var s = spies[idx];
+                                    if (s) {
+                                        if (v === null) {
+                                            expect(s.callCount).toBe(0);
+                                        } else {
+                                            if (Ext.isObject(v)) {
+                                                v = v.v;
+                                            }
+                                            expect(s.callCount).toBe(1);
+                                            expect(s.mostRecentCall.args[0]).toBe(v);
+                                        }
+                                        s.reset();
+                                    }
+                                });
+                            }
+
+                            beforeEach(function() {
+                                bindings = [];
+                                spies = [];
+                            });
+
+                            afterEach(function() {
+                                bindings = spies = null;
+                            });
+
+                            describe("clearing top level value", function() {
+                                function createSuite(withChildStub) {
+                                    beforeEach(function() {
+                                        makeVms([1, null, 2, null, 3]);
+                                        if (withChildStub) {
+                                            getBind(vms[1]);   
+                                        }
+
+                                        getBind(vms[0]);
+                                        getBind(vms[2]);
+                                        getBind(vms[3]);
+                                        getBind(vms[4]);
+                                        reset(spies);
+
+                                        clear(vms[0]);
+                                    });
+
+                                    it("should clear the data", function() {
+                                        expectValues([null, null, 2, 2, 3]);
+                                    });
+
+                                    it("should trigger bindings for affected values", function() {
+                                        expectSpies([{v: null}, {v: null}, null, null, null]);
+                                    });
+
+                                    it("should not climb when setting a value on the middle vm", function() {
+                                        setValue(100, vms[2]);
+
+                                        expectValues([null, null, 100, 100, 3]);
+                                    });
+
+                                    it("should not climb when setting the child of the root", function() {
+                                        setValue(100, vms[1]);
+
+                                        expectValues([null, 100, 2, 2, 3]);
+                                    });
+
+                                    it("should be able to set a value at the child, then the root", function() {
+                                        setValue(100, vms[1]);
+                                        setValue(200, vms[0]);
+
+                                        expectValues([200, 100, 2, 2, 3]);
+                                    });
+
+                                    it("should inherit the value on the child", function() {
+                                        setValue(200, vms[0]);
+
+                                        expectValues([200, 200, 2, 2, 3]);
+                                    });
+                                }
+
+                                // Child refers to child of the stub being cleared
+                                describe("with child stub not created", function() {
+                                    createSuite(false);
+                                });
+
+                                describe("with child stub created", function() {
+                                    createSuite(true);
+                                });
+                            });
+
+                            describe("clearing middle value", function() {
+                                function createSuite(withChildStub) {
+                                    beforeEach(function() {
+                                        makeVms([1, null, 2, null, 3]);
+                                        if (withChildStub) {
+                                            getBind(vms[3]);
+                                        }
+
+                                        getBind(vms[0]);
+                                        getBind(vms[1]);
+                                        getBind(vms[2]);
+                                        getBind(vms[4]);
+                                        reset(spies);
+
+                                        clear(vms[2]);
+                                    });
+
+                                    it("should clear the data", function() {
+                                        expectValues([1, 1, 1, 1, 3]);
+                                    });
+
+                                    it("should trigger bindings for affected values", function() {
+                                        expectSpies([null, null, 1, 1, null]);
+                                    });
+
+                                    it("should not climb when setting a value on the bottom vm", function() {
+                                        setValue(100, vms[4]);
+
+                                        expectValues([1, 1, 1, 1, 100]);
+                                    });
+
+                                    it("should climb when setting the child of the cleared vm", function() {
+                                        setValue(100, vms[3]);
+
+                                        expectValues([100, 100, 100, 100, 3]);
+                                    });
+
+                                    it("should climb when setting on the cleared vm", function() {
+                                        setValue(100, vms[2]);
+
+                                        expectValues([100, 100, 100, 100, 3]);
+                                    });
+
+                                    it("should inherit the values on changes of the parent", function() {
+                                        setValue(200, vms[0]);
+
+                                        expectValues([200, 200, 200, 200, 3]);
+                                    });
+                                }
+
+                                // Child refers to child of the stub being cleared
+                                describe("with child stub not created", function() {
+                                    createSuite(false);
+                                });
+
+                                describe("with child stub created", function() {
+                                    createSuite(true);
+                                });
+                            });
+
+                            describe("clearing bottom value", function() {
+                                beforeEach(function() {
+                                    makeVms([1, null, 2, null, 3]);
+
+                                    getBind(vms[0]);
+                                    getBind(vms[1]);
+                                    getBind(vms[2]);
+                                    getBind(vms[3]);
+                                    getBind(vms[4]);
+                                    reset(spies);
+
+                                    clear(vms[4]);
+                                });
+
+                                it("should clear the data", function() {
+                                    expectValues([1, 1, 2, 2, 2]);
+                                });
+
+                                it("should trigger bindings for affected values", function() {
+                                    expectSpies([null, null, null, null, 2]);
+                                });
+
+                                it("should climb when setting a value on the bottom vm", function() {
+                                    setValue(100, vms[4]);
+
+                                    expectValues([1, 1, 100, 100, 100]);
+                                });
+                            });
+                        });
+                    });
                 });
-                subViewModel.bind('{bar} - {foo}', function (value) {
-                    bar = value;
-                    ++barCalls;
-                });
-                grandSubViewModel.bind('{baz} - {bar} - {foo} - {explicit}', function (value) {
-                    baz = value;
-                    ++bazCalls;
-                });
-                notify();
+            }
+
+            describe("root level key", function() {
+                createValueSuite('foo');
             });
 
-            it('should bind formulas to values in ancestor viewmodels', function () {
-                expect(scheduler.passes).toBe(1);
-                expect(foo).toBe('abcxyz');
-                expect(bar).toBe('abcXYZ - abcxyz');
-                expect(baz).toBe('ABCXYZ - abcXYZ - abcxyz - (abc/XYZ)');
+            describe("nested value", function() {
+                createValueSuite('foo.bar.baz');
             });
+        });
 
-            it('should not allow setting the value of a formula', function () {
-                expect(function () {
-                    fooBinding.setValue(10);
-                }).toThrow();
-            });
+        describe("scheduler passes + dependencies", function() {
+            var rec, User, subViewModel, grandSubViewModel;
 
-            it('should update when values change in ancestor viewmodels', function () {
-                viewModel.set('abc.v', '~abc~');
-                viewModel.set('xyz', '~xyz~');
-
-                notify();
-                expect(scheduler.passes).toBe(2);
-
-                expect(foo).toBe('~abc~~xyz~');
-                expect(bar).toBe('~abc~XYZ - ~abc~~xyz~');
-                expect(baz).toBe('ABCXYZ - ~abc~XYZ - ~abc~~xyz~ - (~abc~/XYZ)');
-            });
-
-            it('should react to formula dependencies in base view models', function () {
-                var fullName, lastNameFirstName, welcome;
-
-                expect(scheduler.passes).toBe(1);
-
-                viewModel.bind('{lastName}, {firstName}', function (s) {
-                    lastNameFirstName = s;
+            function completeWithRecord(id, data) {
+                Ext.Ajax.mockComplete({
+                    status: 200,
+                    responseText: Ext.encode(Ext.apply({
+                        id: id,
+                        name: 'Name1',
+                        age: 20,
+                        description: 'Desc1'
+                    }, data))
                 });
-                var fullNameBinding = viewModel.bind('{fullName}', function (s) {
-                    fullName = s;
-                });
-                grandSubViewModel.bind('{welcome}', function (s) {
-                    welcome = s;
-                });
+            }
 
-                notify();
-                expect(scheduler.passes).toBe(2);
-                expect(fullName).toBe('Don Griffin');
-                expect(lastNameFirstName).toBe('Griffin, Don');
-                expect(welcome).toBe('Hello Don Griffin!');
-
-                fullNameBinding.setValue('Evan Trimboli');
-
-                notify();
-                expect(scheduler.passes).toBe(3);
-                expect(fullName).toBe('Evan Trimboli');
-                expect(lastNameFirstName).toBe('Trimboli, Evan');
-                expect(welcome).toBe('Hello Evan Trimboli!');
-            });
-
-            it('should work with fields on records', function () {
-                subViewModel.setFormulas({
-                    fromRecord: function (get) {
-                        return get('rec.fld');
-                    }
-                });
-
-                var Model = Ext.define(null, {
+            beforeEach(function() {
+                User = Ext.define('spec.User', {
                     extend: 'Ext.data.Model',
-                    fields: ['fld']
+                    fields: ['id', 'name', 'age', 'description']
                 });
+                createViewModel(true);
+                subViewModel = new Ext.app.ViewModel({
+                    id: 'subVM',
+                    parent: viewModel
+                });
+                grandSubViewModel = new Ext.app.ViewModel({
+                    id: 'grandSubVM',
+                    parent: subViewModel
+                });
+            });
 
-                rec = new Model({ fld: 42 });
-                viewModel.set('rec', rec);
+            afterEach(function() {
+                grandSubViewModel.destroy();
+                subViewModel.destroy();
+                Ext.undefine('spec.User');
+                grandSubViewModel = subViewModel = User = rec = null;
+            });
 
-                var value,
+            it('should inherit data from parent view models', function () {
+                var fooBar = 0,
                     calls = 0;
 
-                grandSubViewModel.bind('The answer is {fromRecord}', function (v) {
-                    value = v;
+                subViewModel.bind('{foo.bar}', function (value) {
+                    fooBar = value;
                     ++calls;
                 });
 
+                viewModel.set('foo', { bar: 42 });
                 notify();
-                expect(scheduler.passes).toBe(2);
+
                 expect(calls).toBe(1);
-                expect(value).toBe('The answer is 42');
+                expect(fooBar).toBe(42);
             });
 
-            it('should track field changes based on record fields', function () {
-                subViewModel.setFormulas({
-                    fromRecord: function (get) {
-                        return get('rec.name');
+            it('should inherit data from grandparent view models', function () {
+                var fooBar = 0,
+                    calls = 0;
+
+                grandSubViewModel.bind('{foo.bar}', function (value) {
+                    fooBar = value;
+                    ++calls;
+                });
+
+                viewModel.set('foo', { bar: 42 });
+                notify();
+
+                expect(calls).toBe(1);
+                expect(fooBar).toBe(42);
+            });
+
+            it('should maintain indirection with multiple view models', function () {
+                var fooBar = 0,
+                    subFooBar = 0,
+                    grandSubFooBar = 0,
+                    calls = 0,
+                    subCalls = 0,
+                    grandSubCalls = 0;
+
+                viewModel.bind('{foo.bar}', function (value) {
+                    fooBar = value;
+                    ++calls;
+                });
+                subViewModel.bind('{foo.bar}', function (value) {
+                    subFooBar = value;
+                    ++subCalls;
+                });
+                grandSubViewModel.bind('{foo.bar}', function (value) {
+                    grandSubFooBar = value;
+                    ++grandSubCalls;
+                });
+
+                viewModel.set('foo', { bar: 42 });
+                notify();
+
+                expect(scheduler.passes).toBe(1);
+
+                expect(calls).toBe(1);
+                expect(fooBar).toBe(42);
+                expect(subCalls).toBe(1);
+                expect(subFooBar).toBe(42);
+                expect(grandSubCalls).toBe(1);
+                expect(grandSubFooBar).toBe(42);
+
+                subViewModel.setData({
+                    foo: {
+                        bar: 427
                     }
                 });
+                notify();
 
-                viewModel.linkTo('rec', {
-                    type: 'User',
-                    id: 1
-                });
+                // Should get this delivered in one pass due to sort order
+                expect(scheduler.passes).toBe(2);
 
-                var value,
-                    calls = 0;
+                expect(calls).toBe(1);
+                expect(fooBar).toBe(42);
+                expect(subCalls).toBe(2);
+                expect(subFooBar).toBe(427);
+                expect(grandSubCalls).toBe(2);
+                expect(grandSubFooBar).toBe(427);
 
-                grandSubViewModel.bind('Greetings {fromRecord}!', function (v) {
-                    value = v;
+                subViewModel.set('foo', undefined);
+                notify();
+
+                // Should get this delivered in one pass due to sort order
+                expect(scheduler.passes).toBe(3);
+
+                expect(calls).toBe(1);
+                expect(fooBar).toBe(42);
+                expect(subCalls).toBe(3);
+                expect(subFooBar).toBe(42);
+                expect(grandSubCalls).toBe(3);
+                expect(grandSubFooBar).toBe(42);
+            });
+
+            it('should modify parent VM instances', function () {
+                var fooBar = 0,
+                    subFooBar = 0,
+                    grandSubFooBar = 0,
+                    calls = 0,
+                    subCalls = 0,
+                    grandSubCalls = 0;
+
+                viewModel.bind('{foo.bar}', function (value) {
+                    fooBar = value;
                     ++calls;
                 });
-
-                completeWithRecord(1, {
-                    name: 'Don'
+                subViewModel.bind('{foo.bar}', function (value) {
+                    subFooBar = value;
+                    ++subCalls;
+                });
+                grandSubViewModel.bind('{foo.bar}', function (value) {
+                    grandSubFooBar = value;
+                    ++grandSubCalls;
                 });
 
+                viewModel.set('foo', { bar: 42 });
                 notify();
-                expect(scheduler.passes).toBe(2);
+
+                expect(scheduler.passes).toBe(1);
+
                 expect(calls).toBe(1);
-                expect(value).toBe('Greetings Don!');
+                expect(fooBar).toBe(42);
+                expect(subCalls).toBe(1);
+                expect(subFooBar).toBe(42);
+                expect(grandSubCalls).toBe(1);
+                expect(grandSubFooBar).toBe(42);
 
-                session.getRecord('User', 1).set('name', 'Evan');
-
+                // We are navigating to "foo.bar" which is found in viewModel and setting
+                // that to 427. Even though we have set this from subViewModel the fact that
+                // we set "foo.bar" means we travel upwards to find the object.
+                subViewModel.set('foo.bar',  427);
                 notify();
-                expect(scheduler.passes).toBe(3);
+
+                // Should get this delivered in one pass due to sort order
+                expect(scheduler.passes).toBe(2);
+
                 expect(calls).toBe(2);
-                expect(value).toBe('Greetings Evan!');
+                expect(fooBar).toBe(427);
+                expect(subCalls).toBe(2);
+                expect(subFooBar).toBe(427);
+                expect(grandSubCalls).toBe(2);
+                expect(grandSubFooBar).toBe(427);
             });
 
-            it("should call the setter in the parent viewmodel when setting the value on a binding bound to a formula in a parent viewmodel", function() {
-                var spy = jasmine.createSpy();
-                viewModel.bind('{firstName} {lastName}', spy);
-                var nameBind = grandSubViewModel.bind('{fullName}', Ext.emptyFn);
-                notify();
-                nameBind.setValue('Foo Bar');
-                notify();
-                expect(spy).toHaveBeenCalled();
-                expect(spy.mostRecentCall.args[0]).toBe('Foo Bar');
+            describe("overwriting values from parent to child", function() {
+                it("should be able to modify a value when the binding is scheduled", function() {
+                    viewModel.set('value', 1);
+                    subViewModel.bind('{value}', spy);
+                    subViewModel.set('value', 2);
+                    viewModel.notify();
+                    expect(spy.callCount).toBe(1);
+                    expectArgs(2, undefined);
+                });
+
+                it("should be able to modify a value when the binding is unscheduled", function() {
+                    viewModel.set('value', 1);
+                    subViewModel.bind('{value}', spy);
+                    viewModel.notify();
+                    subViewModel.set('value', 2);
+                    viewModel.notify();
+                    expect(spy.callCount).toBe(2);
+                    expectArgs(2, 1);
+                });
             });
 
-            it("should call the setter in the parent viewmodel when setting the value on a stub bound to a formula in a parent viewmodel", function() {
-                var spy = jasmine.createSpy();
-                viewModel.bind('{firstName} {lastName}', spy);
-                grandSubViewModel.bind('{fullName}', Ext.emptyFn);
-                grandSubViewModel.set('fullName', 'Foo Bar');
-                notify();
-                expect(spy).toHaveBeenCalled();
-                expect(spy.mostRecentCall.args[0]).toBe('Foo Bar');
-            });
-        }); // with formulas
+            describe('with formulas', function () {
+                var foo = 0,
+                    bar = 0,
+                    baz = 0,
+                    fooCalls = 0,
+                    barCalls = 0,
+                    bazCalls = 0,
+                    fooBinding;
+
+                beforeEach(function () {
+                    grandSubViewModel.set({
+                        abc: {
+                            v: 'ABC'
+                        }
+                    });
+
+                    subViewModel.set({
+                        xyz: 'XYZ'
+                    });
+
+                    viewModel.set({
+                        firstName: 'Don',
+                        lastName: 'Griffin',
+                        abc: {
+                            v: 'abc'
+                        },
+                        xyz: 'xyz'
+                    });
+
+                    viewModel.setFormulas({
+                        // simple function form
+                        foo: function (get) {
+                            return get('abc.v') + get('xyz');
+                        },
+                        fullName: {
+                            get: function (get) {
+                                return get('firstName') + ' ' + get('lastName');
+                            },
+                            set: function (name) {
+                                var a = name.split(' ');
+
+                                this.set({
+                                    firstName: a[0],
+                                    lastName: a[1]
+                                });
+                            }
+                        }
+                    });
+
+                    subViewModel.setFormulas({
+                        // object w/get (no bind)
+                        bar: {
+                            get: function (get) {
+                                return get('abc.v') + get('xyz');
+                            }
+                        },
+                        // object w/get and bind
+                        explicit: {
+                            get: function (data) {
+                                return '(' + data.foo.v + '/' + data.foo.x + ')';
+                            },
+                            bind: {
+                                foo: {
+                                    v: '{abc.v}',
+                                    x: '{xyz}'
+                                }
+                            }
+                        }
+                    });
+
+                    grandSubViewModel.setFormulas({
+                        baz: function (get) {
+                            return get('abc.v') + get('xyz');
+                        },
+                        welcome: function (get) {
+                            return 'Hello ' + get('fullName') + '!';
+                        }
+                    });
+
+                    fooBinding = viewModel.bind('{foo}', function (value) {
+                        foo = value;
+                        ++fooCalls;
+                    });
+                    subViewModel.bind('{bar} - {foo}', function (value) {
+                        bar = value;
+                        ++barCalls;
+                    });
+                    grandSubViewModel.bind('{baz} - {bar} - {foo} - {explicit}', function (value) {
+                        baz = value;
+                        ++bazCalls;
+                    });
+                    notify();
+                });
+
+                it('should bind formulas to values in ancestor viewmodels', function () {
+                    expect(scheduler.passes).toBe(1);
+                    expect(foo).toBe('abcxyz');
+                    expect(bar).toBe('abcXYZ - abcxyz');
+                    expect(baz).toBe('ABCXYZ - abcXYZ - abcxyz - (abc/XYZ)');
+                });
+
+                it('should not allow setting the value of a formula', function () {
+                    expect(function () {
+                        fooBinding.setValue(10);
+                    }).toThrow();
+                });
+
+                it('should update when values change in ancestor viewmodels', function () {
+                    viewModel.set('abc.v', '~abc~');
+                    viewModel.set('xyz', '~xyz~');
+
+                    notify();
+                    expect(scheduler.passes).toBe(2);
+
+                    expect(foo).toBe('~abc~~xyz~');
+                    expect(bar).toBe('~abc~XYZ - ~abc~~xyz~');
+                    expect(baz).toBe('ABCXYZ - ~abc~XYZ - ~abc~~xyz~ - (~abc~/XYZ)');
+                });
+
+                it('should react to formula dependencies in base view models', function () {
+                    var fullName, lastNameFirstName, welcome;
+
+                    expect(scheduler.passes).toBe(1);
+
+                    viewModel.bind('{lastName}, {firstName}', function (s) {
+                        lastNameFirstName = s;
+                    });
+                    var fullNameBinding = viewModel.bind('{fullName}', function (s) {
+                        fullName = s;
+                    });
+                    grandSubViewModel.bind('{welcome}', function (s) {
+                        welcome = s;
+                    });
+
+                    notify();
+                    expect(scheduler.passes).toBe(2);
+                    expect(fullName).toBe('Don Griffin');
+                    expect(lastNameFirstName).toBe('Griffin, Don');
+                    expect(welcome).toBe('Hello Don Griffin!');
+
+                    fullNameBinding.setValue('Evan Trimboli');
+
+                    notify();
+                    expect(scheduler.passes).toBe(3);
+                    expect(fullName).toBe('Evan Trimboli');
+                    expect(lastNameFirstName).toBe('Trimboli, Evan');
+                    expect(welcome).toBe('Hello Evan Trimboli!');
+                });
+
+                it('should work with fields on records', function () {
+                    subViewModel.setFormulas({
+                        fromRecord: function (get) {
+                            return get('rec.fld');
+                        }
+                    });
+
+                    var Model = Ext.define(null, {
+                        extend: 'Ext.data.Model',
+                        fields: ['fld']
+                    });
+
+                    rec = new Model({ fld: 42 });
+                    viewModel.set('rec', rec);
+
+                    var value,
+                        calls = 0;
+
+                    grandSubViewModel.bind('The answer is {fromRecord}', function (v) {
+                        value = v;
+                        ++calls;
+                    });
+
+                    notify();
+                    expect(scheduler.passes).toBe(2);
+                    expect(calls).toBe(1);
+                    expect(value).toBe('The answer is 42');
+                });
+
+                it('should track field changes based on record fields', function () {
+                    subViewModel.setFormulas({
+                        fromRecord: function (get) {
+                            return get('rec.name');
+                        }
+                    });
+
+                    viewModel.linkTo('rec', {
+                        type: 'User',
+                        id: 1
+                    });
+
+                    var value,
+                        calls = 0;
+
+                    grandSubViewModel.bind('Greetings {fromRecord}!', function (v) {
+                        value = v;
+                        ++calls;
+                    });
+
+                    completeWithRecord(1, {
+                        name: 'Don'
+                    });
+
+                    notify();
+                    expect(scheduler.passes).toBe(2);
+                    expect(calls).toBe(1);
+                    expect(value).toBe('Greetings Don!');
+
+                    session.getRecord('User', 1).set('name', 'Evan');
+
+                    notify();
+                    expect(scheduler.passes).toBe(3);
+                    expect(calls).toBe(2);
+                    expect(value).toBe('Greetings Evan!');
+                });
+
+                it("should call the setter in the parent viewmodel when setting the value on a binding bound to a formula in a parent viewmodel", function() {
+                    var spy = jasmine.createSpy();
+                    viewModel.bind('{firstName} {lastName}', spy);
+                    var nameBind = grandSubViewModel.bind('{fullName}', Ext.emptyFn);
+                    notify();
+                    nameBind.setValue('Foo Bar');
+                    notify();
+                    expect(spy).toHaveBeenCalled();
+                    expect(spy.mostRecentCall.args[0]).toBe('Foo Bar');
+                });
+
+                it("should call the setter in the parent viewmodel when setting the value on a stub bound to a formula in a parent viewmodel", function() {
+                    var spy = jasmine.createSpy();
+                    viewModel.bind('{firstName} {lastName}', spy);
+                    grandSubViewModel.bind('{fullName}', Ext.emptyFn);
+                    grandSubViewModel.set('fullName', 'Foo Bar');
+                    notify();
+                    expect(spy).toHaveBeenCalled();
+                    expect(spy.mostRecentCall.args[0]).toBe('Foo Bar');
+                });
+            }); // with formulas
+        });
     }); 
 
     describe("validation binding", function () {
@@ -3209,10 +5554,13 @@ describe("Ext.app.ViewModel", function() {
             });
 
             describe("for invalid fields", function() {
-                var Val = Ext.data.validator.Validator.all;
+                var V = Ext.data.validator;
+                function getMessage(T) {
+                    return T.prototype.config.message;
+                }
 
                 it('should report description too short', function () {
-                    var calls = 0, 
+                    var calls = 0,
                         value;
 
                     viewModel.bind('{theUser.validation.description}', function (v) {
@@ -3250,7 +5598,7 @@ describe("Ext.app.ViewModel", function() {
 
                     expect(scheduler.passes).toBe(1);
                     expect(calls).toBe(1);
-                    expect(value).toBe(Val.presence.config.message);
+                    expect(value).toBe(getMessage(V.Presence));
 
                     // Now make the field valid and see if our binding is notified.
                     var rec = session.getRecord('User', 42);
@@ -3276,7 +5624,7 @@ describe("Ext.app.ViewModel", function() {
 
                     expect(scheduler.passes).toBe(1);
                     expect(calls).toBe(1);
-                    expect(value).toEqual(Val.format.config.message);
+                    expect(value).toEqual(getMessage(V.Format));
 
                     // Now make the field valid and see if our binding is notified.
                     var rec = session.getRecord('User', 42);
@@ -3302,7 +5650,7 @@ describe("Ext.app.ViewModel", function() {
 
                     expect(scheduler.passes).toBe(1);
                     expect(calls).toBe(1);
-                    expect(value).toEqual(Val.inclusion.config.message);
+                    expect(value).toEqual(getMessage(V.Inclusion));
 
                     // Now make the field valid and see if our binding is notified.
                     var rec = session.getRecord('User', 42);
@@ -3328,7 +5676,7 @@ describe("Ext.app.ViewModel", function() {
 
                     expect(scheduler.passes).toBe(1);
                     expect(calls).toBe(1);
-                    expect(value).toEqual(Val.exclusion.config.message);
+                    expect(value).toEqual(getMessage(V.Exclusion));
 
                     // Now make the field valid and see if our binding is notified.
                     var rec = session.getRecord('User', 42);
@@ -3354,7 +5702,7 @@ describe("Ext.app.ViewModel", function() {
 
                     expect(scheduler.passes).toBe(1);
                     expect(calls).toBe(1);
-                    expect(value).toEqual(Val.email.config.message);
+                    expect(value).toEqual(getMessage(V.Email));
 
                     // Now make the field valid and see if our binding is notified.
                     var rec = session.getRecord('User', 42);
@@ -3762,7 +6110,7 @@ describe("Ext.app.ViewModel", function() {
                 expect(result.user3.getId()).toBe(3);
             });
             
-            it("should not deliver until nested dependencies are loaded", function() {
+            it("should not deliver until nested dependencies are available", function() {
                 viewModel.linkTo('aUser', {
                     type: 'User',
                     id: 1
@@ -3775,18 +6123,19 @@ describe("Ext.app.ViewModel", function() {
                 expect(spy).not.toHaveBeenCalled();
                 completeWithRecord(1);
                 notify();
-                expect(spy).not.toHaveBeenCalled();
+                expect(spy.callCount).toBe(1);
+                var result = spy.mostRecentCall.args[0];
+                expect(result.user.$className).toBe('spec.User');
+                expect(result.user.getId()).toBe(1);
+                expect(result.posts.isStore).toBe(true);
+                expect(result.posts.getCount()).toBe(0);
                 completeWithData([{
                     id: 1
                 }, {
                     id: 2
                 }]);
                 notify();
-                expect(spy).toHaveBeenCalled();
-                var result = spy.mostRecentCall.args[0];
-                expect(result.user.$className).toBe('spec.User');
-                expect(result.user.getId()).toBe(1);
-                expect(result.posts.isStore).toBe(true);
+                result = spy.mostRecentCall.args[0];
                 expect(result.posts.getCount()).toBe(2);
             });
         });
@@ -4011,6 +6360,11 @@ describe("Ext.app.ViewModel", function() {
 
                 it("should return a numeric type for -", function() {
                     bindNotify('{a - b}', spy);
+                    expectArgs(-1);
+                });
+
+                it("should return a numeric type for - with no spaces around it", function() {
+                    bindNotify('{a-b}', spy);
                     expectArgs(-1);
                 });
 
@@ -5959,6 +8313,77 @@ describe("Ext.app.ViewModel", function() {
                 }, Ext.emptyFn);
                 viewModel.destroy();
                 expect(binding.destroyed).toBe(true);
+            });
+        });
+    });
+
+    describe('idle event', function () {
+        var listener;
+
+        beforeEach(function() {
+            createViewModel();
+        });
+
+        afterEach(function () {
+            listener = Ext.destroy(listener);
+        });
+
+        it('should fire global idle after bind notification', function () {
+            var calls = [],
+                done;
+
+            listener = Ext.on({
+                destroyable: true,
+
+                idle: function () {
+                    var timer = Ext.Timer.firing;
+
+                    if (timer && timer.fn.$skipTimerCheck) {
+                        return;
+                    }
+
+                    if (timer && !timer.ours) {
+                        var s = timer.creator;
+
+                        if (timer.runner) {
+                            Ext.each(timer.runner.fired, function (task) {
+                                s += '\n-----------------------';
+                                s += 'Task:';
+                                s += task.creator;
+                                s += '\n-----------------------';
+                            });
+                        }
+
+                        expect(s).toBe('not running');
+                    }
+
+                    calls.push('idle');
+                }
+            });
+
+            viewModel.bind('{foo}', function (v) {
+                calls.push({ foo: v });
+                done = true;
+            });
+
+            viewModel.set('foo', 42);
+
+            var timer = Ext.Timer.get(viewModel.getScheduler().timer);
+            if (timer) {
+                timer.ours = true;
+            }
+
+            expect(calls).toEqual([]);
+
+            waitFor(function () {
+                return done;
+            });
+
+            runs(function () {
+                expect(calls).toEqual([
+                    { foo: 42 },
+                    'idle'
+                ]);
             });
         });
     });

@@ -79,6 +79,8 @@
  */
 Ext.define('Ext.Deferred', function (Deferred) {
     var ExtPromise,
+        rejected,
+        resolved,
         when;
 
 return {
@@ -161,15 +163,48 @@ return {
                 promiseOrValue = undefined;
             }
 
-            milliseconds = Math.max(milliseconds, 0);
+            milliseconds = Math.max(milliseconds, 1);
 
             deferred = new Deferred();
 
-            setTimeout(function () {
+            deferred.timeoutId = Ext.defer(function () {
+                delete deferred.timeoutId;
                 deferred.resolve(promiseOrValue);
             }, milliseconds);
 
             return deferred.promise;
+        },
+
+        /**
+         * Get a shared cached rejected promise. Assumes Promises
+         * have been required.
+         * @return {Ext.Promise}
+         *
+         * @private
+         * @since 6.5.0
+         */
+        getCachedRejected: function() {
+            if (!rejected) {
+                // Prevent Cmd from requiring
+                rejected = Ext.Promise.reject();
+            }
+            return rejected;
+        },
+
+        /**
+         * Get a shared cached resolved promise. Assumes Promises
+         * have been required.
+         * @return {Ext.Promise}
+         *
+         * @private
+         * @since 6.5.0
+         */
+        getCachedResolved: function() {
+            if (!resolved) {
+                // Prevent Cmd from requiring
+                resolved = Ext.Promise.resolve();
+            }
+            return resolved;
         },
 
         /**
@@ -323,6 +358,19 @@ return {
         },
 
         /**
+         * Returns a promise that resolves or rejects as soon as one of the promises in the array resolves
+         * or rejects, with the value or reason from that promise.
+         * @param {Ext.promise.Promise[]} promises The promises.
+         * @return {Ext.promise.Promise} The promise to be resolved when the race completes.
+         *
+         * @static
+         * @since 6.5.0
+         */
+        race: function () {
+            return ExtPromise.race.apply(ExtPromise, arguments);
+        },
+
+        /**
          * Traditional reduce function, similar to `Array.reduce()`, that allows input to
          * contain promises and/or values.
          *
@@ -395,10 +443,10 @@ return {
          * @return {Ext.promise.Promise} A Promise of the specified Promise or value.
          * @static
          */
-        resolved: function (value) {
+        resolved: function (promiseOrValue) {
             var deferred = new Ext.Deferred();
 
-            deferred.resolve(value);
+            deferred.resolve(promiseOrValue);
 
             return deferred.promise;
         },
@@ -528,18 +576,18 @@ return {
             var deferred = new Deferred(),
                 timeoutId;
 
-            timeoutId = setTimeout(function () {
+            timeoutId = Ext.defer(function () {
                 if (timeoutId) {
                     deferred.reject(new Error('Promise timed out.'));
                 }
             }, milliseconds);
 
             Deferred.resolved(promiseOrValue).then(function (value) {
-                clearTimeout(timeoutId);
+                Ext.undefer(timeoutId);
                 timeoutId = null;
                 deferred.resolve(value);
             }, function (reason) {
-                clearTimeout(timeoutId);
+                Ext.undefer(timeoutId);
                 timeoutId = null;
                 deferred.reject(reason);
             });
@@ -547,7 +595,7 @@ return {
             return deferred.promise;
         }
     }
-}},
+};},
 function (Deferred) {
     Deferred._ready();
 });

@@ -34,6 +34,12 @@ Ext.define('Ext.data.ResultSet', {
         total: null,
 
         /**
+         * @cfg {Number} remoteTotal
+         * The total number of records reported by the remote data source.
+         */
+        remoteTotal: null,
+
+        /**
          * @cfg {Boolean} success
          * True if the ResultSet loaded successfully, false if any errors were encountered.
          */
@@ -55,7 +61,19 @@ Ext.define('Ext.data.ResultSet', {
          * @cfg {Object} metadata
          * The metadata object from a server sourced JSON data packet.
          */
-        metadata: null
+        metadata: null,
+
+        /**
+         * @cfg {Ext.data.Model[]} groupData
+         * The grouping data.
+         */
+        groupData: null,
+
+        /**
+         * @cfg {Ext.data.Model} summaryData
+         * The summary data.
+         */
+        summaryData: null
     },
 
     /**

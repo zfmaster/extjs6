@@ -1,4 +1,4 @@
-describe("Ext.slider.Single", function() {
+topSuite("Ext.slider.Single", ['Ext.app.ViewModel'], function() {
     var slider;
 
     afterEach(function () {
@@ -77,6 +77,18 @@ describe("Ext.slider.Single", function() {
             notify();
 
             expect(data.val).toBe(50);
+        });
+
+        it("should publish value by default", function() {
+            makeSlider({
+                publishOnComplete: false,
+                reference: 'mySlider'
+            });
+
+            slider.setValue(12);
+            notify();
+
+            expect(viewModel.get('mySlider.value')).toBe(12);
         });
     });
 });

@@ -1,9 +1,11 @@
-describe('Ext.layout.component.Dock', function(){
+topSuite("Ext.layout.component.Dock", ['Ext.Panel', 'Ext.Button'], function() {
     var ct;
 
-    afterEach(function(){
-        Ext.destroy(ct);
-        ct = null;
+    afterEach(function() {
+        if (ct && !ct.$protected) {
+            Ext.destroy(ct);
+            ct = null;
+        }
     });
 
     function makeCt(options, layoutOptions) {
@@ -19,8 +21,7 @@ describe('Ext.layout.component.Dock', function(){
         }
     }
     
-    describe("shrink wrapping around docked items", function(){
-        
+    describe("shrink wrapping around docked items", function() {
         var top = 'top',
             left = 'left',
             u; // u to be used as undefined
@@ -43,8 +44,8 @@ describe('Ext.layout.component.Dock', function(){
             });
         };
     
-        describe("width", function(){
-            var makeDocker = function(options){
+        describe("width", function() {
+            var makeDocker = function(options) {
                 return makeCt(Ext.apply({
                     shrinkWrap: true,
                     border: false,
@@ -53,7 +54,7 @@ describe('Ext.layout.component.Dock', function(){
                 }, options));    
             };
             
-            it("should stretch the body width if the docked item is larger", function(){
+            it("should stretch the body width if the docked item is larger", function() {
                 makeDocker({
                     dockedItems: [
                          makeDocked(top, 100, u)
@@ -64,7 +65,7 @@ describe('Ext.layout.component.Dock', function(){
                 expect(ct.body.getWidth()).toBe(100);
             });
             
-            it("should stretch the docked width if the body is larger", function(){
+            it("should stretch the docked width if the body is larger", function() {
                 makeDocker({
                     dockedItems: [
                         makeDocked(top, u, u, 'a')
@@ -75,7 +76,7 @@ describe('Ext.layout.component.Dock', function(){
                 expect(ct.getDockedItems()[0].getWidth()).toBe(100);
             });
             
-            it("should stretch other docked items to the size of the largest docked item if it is bigger than the body", function(){
+            it("should stretch other docked items to the size of the largest docked item if it is bigger than the body", function() {
                 makeDocker({
                     dockedItems: [
                         makeDocked(top, 100, u),
@@ -86,7 +87,7 @@ describe('Ext.layout.component.Dock', function(){
                 expect(ct.getDockedItems()[1].getWidth()).toBe(100);
             });
             
-            it("should stretch all docked items to the size of the body if the body is largest", function(){
+            it("should stretch all docked items to the size of the body if the body is largest", function() {
                 makeDocker({
                     dockedItems: [
                         makeDocked(top, u, u, 'a'),
@@ -98,7 +99,7 @@ describe('Ext.layout.component.Dock', function(){
                 expect(ct.getDockedItems()[1].getWidth()).toBe(100);
             });
             
-            it("should stretch all items if the body and a single docked item are the largest & same size", function(){
+            it("should stretch all items if the body and a single docked item are the largest & same size", function() {
                 makeDocker({
                     dockedItems: [
                         makeDocked(top, 50, u, u),
@@ -111,8 +112,8 @@ describe('Ext.layout.component.Dock', function(){
             });
         });
         
-        describe("height", function(){
-            var makeDocker = function(options){
+        describe("height", function() {
+            var makeDocker = function(options) {
                 return makeCt(Ext.apply({
                     shrinkWrap: true,
                     border: false,
@@ -121,7 +122,7 @@ describe('Ext.layout.component.Dock', function(){
                 }, options));    
             };
             
-            it("should stretch the body height if the docked item is larger", function(){
+            it("should stretch the body height if the docked item is larger", function() {
                 makeDocker({
                     dockedItems: [
                         makeDocked(left, u, 100)
@@ -132,7 +133,7 @@ describe('Ext.layout.component.Dock', function(){
                 expect(ct.body.getHeight()).toBe(100);
             });
             
-            it("should stretch the docked height if the body is larger", function(){
+            it("should stretch the docked height if the body is larger", function() {
                 makeDocker({
                     dockedItems: [
                         makeDocked(left, u, u, 'a')
@@ -143,7 +144,7 @@ describe('Ext.layout.component.Dock', function(){
                 expect(ct.getDockedItems()[0].getHeight()).toBe(100);
             });
             
-            it("should stretch other docked items to the size of the largest docked item if it is bigger than the body", function(){
+            it("should stretch other docked items to the size of the largest docked item if it is bigger than the body", function() {
                 makeDocker({
                     dockedItems: [
                         makeDocked(left, u, 100),
@@ -154,7 +155,7 @@ describe('Ext.layout.component.Dock', function(){
                 expect(ct.getDockedItems()[1].getHeight()).toBe(100);
             });
             
-            it("should stretch all docked items to the size of the body if the body is largest", function(){
+            it("should stretch all docked items to the size of the body if the body is largest", function() {
                 makeDocker({
                     dockedItems: [
                         makeDocked(left, u, u, 'a'),
@@ -166,7 +167,7 @@ describe('Ext.layout.component.Dock', function(){
                 expect(ct.getDockedItems()[1].getHeight()).toBe(100);
             });
             
-            it("should stretch all items if the body and a single docked item are the largest & same size", function(){
+            it("should stretch all items if the body and a single docked item are the largest & same size", function() {
                 makeDocker({
                     dockedItems: [
                         makeDocked(left, u, 50, u),
@@ -179,8 +180,8 @@ describe('Ext.layout.component.Dock', function(){
             });
         });
         
-        describe("combination", function(){
-            var makeDocker = function(options){
+        describe("combination", function() {
+            var makeDocker = function(options) {
                 return makeCt(Ext.apply({
                     shrinkWrap: true,
                     border: false,
@@ -189,7 +190,7 @@ describe('Ext.layout.component.Dock', function(){
                 }, options));    
             };
             
-            it("should stretch the body in both dimensions if the docked items are larger", function(){
+            it("should stretch the body in both dimensions if the docked items are larger", function() {
                 makeDocker({
                     dockedItems: [
                         makeDocked(top, 100, u),
@@ -203,7 +204,7 @@ describe('Ext.layout.component.Dock', function(){
                 expect(ct.body.getHeight()).toBe(75);
             });
             
-            it("should only stretch the width the dimension where the body is smaller", function(){
+            it("should only stretch the width the dimension where the body is smaller", function() {
                 makeDocker({
                     dockedItems: [
                         makeDocked(top, 100, u),
@@ -218,7 +219,7 @@ describe('Ext.layout.component.Dock', function(){
                 expect(ct.getDockedItems()[1].getHeight()).toBe(100);
             });
             
-            it("should only stretch the height the dimension where the body is smaller", function(){
+            it("should only stretch the height the dimension where the body is smaller", function() {
                 makeDocker({
                     dockedItems: [
                         makeDocked(top, 100, u),
@@ -233,7 +234,7 @@ describe('Ext.layout.component.Dock', function(){
                 expect(ct.getDockedItems()[0].getWidth()).toBe(200);
             });
             
-            it("should not stretch the body if neither docked item is bigger", function(){
+            it("should not stretch the body if neither docked item is bigger", function() {
                 makeDocker({
                     dockedItems: [
                         makeDocked(top, 100, u),
@@ -250,9 +251,9 @@ describe('Ext.layout.component.Dock', function(){
             });
         });
         
-        describe("min/max constraints", function(){
-            describe("width", function(){
-                var makeDocker = function(options){
+        describe("min/max constraints", function() {
+            describe("width", function() {
+                var makeDocker = function(options) {
                     return makeCt(Ext.apply({
                         shrinkWrap: true,
                         border: false,
@@ -261,7 +262,7 @@ describe('Ext.layout.component.Dock', function(){
                     }, options));    
                 };
                 
-                it("should constrain to a minWidth", function(){
+                it("should constrain to a minWidth", function() {
                     makeDocker({
                         minWidth: 200,
                         dockedItems: [
@@ -272,7 +273,7 @@ describe('Ext.layout.component.Dock', function(){
                     expect(ct.getDockedItems()[0].getWidth()).toBe(200);
                 });
                 
-                it("should constrain to a maxWidth", function(){
+                it("should constrain to a maxWidth", function() {
                     makeDocker({
                         maxWidth: 100,
                         dockedItems: [
@@ -284,8 +285,8 @@ describe('Ext.layout.component.Dock', function(){
                 });
             });
             
-            describe("height", function(){
-                var makeDocker = function(options){
+            describe("height", function() {
+                var makeDocker = function(options) {
                     return makeCt(Ext.apply({
                         shrinkWrap: true,
                         border: false,
@@ -294,7 +295,7 @@ describe('Ext.layout.component.Dock', function(){
                     }, options));    
                 };
                 
-                it("should constrain to a minHeight", function(){
+                it("should constrain to a minHeight", function() {
                     makeDocker({
                         minHeight: 200,
                         dockedItems: [
@@ -305,7 +306,7 @@ describe('Ext.layout.component.Dock', function(){
                     expect(ct.getDockedItems()[0].getHeight()).toBe(200);
                 });
                 
-                it("should constrain to a maxWidth", function(){
+                it("should constrain to a maxWidth", function() {
                     makeDocker({
                         maxHeight: 100,
                         dockedItems: [
@@ -317,8 +318,8 @@ describe('Ext.layout.component.Dock', function(){
                 });
             });
             
-            describe("combination", function(){
-                var makeDocker = function(options){
+            describe("combination", function() {
+                var makeDocker = function(options) {
                     return makeCt(Ext.apply({
                         shrinkWrap: true,
                         border: false,
@@ -327,7 +328,7 @@ describe('Ext.layout.component.Dock', function(){
                     }, options));    
                 };
                 
-                it("should constrain a minHeight & maxWidth", function(){
+                it("should constrain a minHeight & maxWidth", function() {
                     makeDocker({
                         minHeight: 100,
                         maxWidth: 100,
@@ -342,7 +343,7 @@ describe('Ext.layout.component.Dock', function(){
                     expect(ct.getDockedItems()[1].getHeight()).toBe(100);
                 });
                 
-                it("should constrain a maxHeight & minWidth", function(){
+                it("should constrain a maxHeight & minWidth", function() {
                     makeDocker({
                         maxHeight: 100,
                         minWidth: 100,
@@ -391,8 +392,8 @@ describe('Ext.layout.component.Dock', function(){
         
     });
 
-    describe('interaction within box layout', function(){
-        it('should handle stretchmax and minHeight together', function(){
+    describe('interaction within box layout', function() {
+        it('should handle stretchmax and minHeight together', function() {
             makeCt({
                     width: 100,
                     border: false,
@@ -557,7 +558,7 @@ describe('Ext.layout.component.Dock', function(){
             }
             
             describe(suiteDesc, function() {
-                beforeEach(function() {
+                beforeAll(function() {
                     var cfg = Ext.apply({
                         margin: 20,
                         width: 400,
@@ -573,9 +574,15 @@ describe('Ext.layout.component.Dock', function(){
                     
                     makeCt(cfg);
                     
+                    ct.$protected = true;
+                    
                     if (changeFn) {
                         changeFn(ct);
                     }
+                });
+                
+                afterAll(function() {
+                    ct = Ext.destroy(ct);
                 });
                 
                 it("should have " + numElChildren + " children in main el", function() {
@@ -596,7 +603,7 @@ describe('Ext.layout.component.Dock', function(){
                 
                 if (hasHeader) {
                     describe("collapsed", function() {
-                        beforeEach(function() {
+                        beforeAll(function() {
                             ct.collapse();
                         });
     
@@ -617,7 +624,7 @@ describe('Ext.layout.component.Dock', function(){
                         });
                         
                         describe("expanded", function() {
-                            beforeEach(function() {
+                            beforeAll(function() {
                                 ct.expand();
                             });
     

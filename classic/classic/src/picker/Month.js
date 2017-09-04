@@ -37,7 +37,7 @@ Ext.define('Ext.picker.Month', {
     focusable: true,
 
     childEls: [
-        'bodyEl', 'prevEl', 'nextEl', 'monthEl', 'yearEl'
+        'bodyEl', 'prevEl', 'nextEl', 'monthEl', 'yearEl', 'buttons'
     ],
 
     renderTpl: [
@@ -66,7 +66,7 @@ Ext.define('Ext.picker.Month', {
           '</div>',
           '<div class="' + Ext.baseCSSPrefix + 'clear"></div>',
           '<tpl if="showButtons">',
-              '<div class="{baseCls}-buttons">{%',
+              '<div id="{id}-buttons" data-ref="buttons" class="{baseCls}-buttons">{%',
                   'var me=values.$comp, okBtn=me.okBtn, cancelBtn=me.cancelBtn;',
                   'okBtn.ownerLayout = cancelBtn.ownerLayout = me.componentLayout;',
                   'okBtn.ownerCt = cancelBtn.ownerCt = me;',
@@ -77,41 +77,45 @@ Ext.define('Ext.picker.Month', {
         '</div>'
     ],
 
-    //<locale>
     /**
-     * @cfg {String} okText The text to display on the ok button.
+     * @cfg {String} okText
+     * The text to display on the OK button.
+     * @locale
      */
     okText: 'OK',
-    //</locale>
 
-    //<locale>
     /**
-     * @cfg {String} cancelText The text to display on the cancel button.
+     * @cfg {String} cancelText
+     * The text to display on the Cancel button.
+     * @locale
      */
     cancelText: 'Cancel',
-    //</locale>
 
     /**
      * @cfg {String} [baseCls='x-monthpicker']
-     *  The base CSS class to apply to the picker element.
+     * The base CSS class to apply to the picker element.
      */
     baseCls: Ext.baseCSSPrefix + 'monthpicker',
 
     /**
-     * @cfg {Boolean} showButtons True to show ok and cancel buttons below the picker.
+     * @cfg {Boolean} showButtons
+     * True to show ok and cancel buttons below the picker.
      */
     showButtons: true,
 
     /**
-     * @cfg {String} [selectedCls='x-monthpicker-selected'] The class to be added to selected items in the picker.
+     * @property {String} [selectedCls='x-monthpicker-selected']
+     * The class to be added to selected items in the picker.
+     * @readonly
      */
 
     /**
-     * @cfg {Date/Number[]} value The default value to set. See {@link #setValue}
+     * @cfg {Date/Number[]} value
+     * The default value to set. See {@link #setValue}
      */
 
     /**
-     * @cfg {String}
+     * @cfg {String} footerButtonUI
      * The {@link Ext.button.Button#ui} to use for the month picker's footer buttons.
      */
     footerButtonUI: 'default',
@@ -208,7 +212,7 @@ Ext.define('Ext.picker.Month', {
             });
         }
 
-        this.callParent();
+        me.callParent();
     },
 
     /**

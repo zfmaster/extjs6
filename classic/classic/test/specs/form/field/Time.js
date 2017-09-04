@@ -1,4 +1,4 @@
-describe("Ext.form.field.Time", function() {
+topSuite("Ext.form.field.Time", function() {
     var component, makeComponent;
 
     beforeEach(function() {

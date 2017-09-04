@@ -1,4 +1,4 @@
-describe('Ext.Toolbar', function() {
+topSuite("Ext.Toolbar", function() {
     var toolbar;
     
     function createToolbar(config) {

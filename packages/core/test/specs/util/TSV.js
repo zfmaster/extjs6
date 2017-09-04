@@ -1,4 +1,4 @@
-describe("Ext.util.TSV", function() {
+topSuite("Ext.util.TSV", function() {
     var TSV = Ext.util.TSV;
 
     // The "hostile" string is a single cell that has all of the special characters in

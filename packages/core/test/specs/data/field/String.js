@@ -1,4 +1,4 @@
-describe("Ext.data.field.String", function() {
+topSuite("Ext.data.field.String", function() {
 
     var field;
     

@@ -1,4 +1,8 @@
-describe("Ext.menu.Bar", function() {
+/* global Ext, expect */
+
+topSuite("Ext.menu.Bar",
+    ['Ext.Button', 'Ext.layout.container.boxOverflow.Menu'],
+function() {
     var menu;
     
     function makeMenuBar(config) {

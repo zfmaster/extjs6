@@ -1,7 +1,4 @@
 /**
- * @class Ext.chart.label.Callout
- * @extends Ext.draw.modifier.Modifier
- *
  * This is a modifier to place labels and callouts by additional attributes.
  */
 Ext.define('Ext.chart.modifier.Callout', {

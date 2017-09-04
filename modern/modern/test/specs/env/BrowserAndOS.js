@@ -1,4 +1,4 @@
-xdescribe("Ext.env.Browser and Ext.env.OS", function() {
+xtopSuite("Ext.env.Browser and Ext.env.OS", false, function() {
 
     var profiles = {
         Safari_502_Mac: {

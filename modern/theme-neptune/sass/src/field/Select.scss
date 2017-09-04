@@ -4,17 +4,17 @@
 
 .x-selectfield-overlay {
     .x-list-item-label {
-        height: 2.6em;
+        height: 34px;
     }
 
     .x-listitem.x-selected {
         .x-list-label {
-            margin-right: 2.6em;
+            margin-right: 34px;
             @include font-icon($selectfield-selected-item-icon, $pseudo: after, $style-pseudo: true);
             &:after {
                 color: $selectfield-selected-item-icon-color;
                 position: absolute;
-                right: .6em;
+                right: 8px;
             }
         }
     }

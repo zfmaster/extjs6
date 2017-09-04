@@ -1,4 +1,8 @@
-describe("Ext.data.proxy.Server", function () {
+/* global Ext, expect, jasmine, spyOn */
+
+topSuite("Ext.data.proxy.Server",
+    ['Ext.data.ArrayStore', 'Ext.data.reader.Xml', 'Ext.data.writer.Xml'],
+function () {
     var proxy,
         ServerProxy = Ext.data.proxy.Server,
         reader = new Ext.data.reader.Reader(),
@@ -449,26 +453,108 @@ describe("Ext.data.proxy.Server", function () {
     });
 
     describe("encoding sorters", function() {
-        it("should provide a default encoded string", function() {
-            var sorter1 = new Ext.util.Sorter({
-                property : "name",
-                direction: "ASC"
+        describe('default encoding', function() {
+            it("should provide a default encoded string", function() {
+                var sorter1 = new Ext.util.Sorter({
+                    property : "name",
+                    direction: "ASC"
+                });
+
+                var sorter2 = new Ext.util.Sorter({
+                    property : "age",
+                    direction: "DESC"
+                });
+
+                proxy = new Ext.data.proxy.Server();
+
+                expect(Ext.decode(proxy.encodeSorters([sorter1, sorter2]))).toEqual([{
+                    property: 'name',
+                    direction: 'ASC'
+                }, {
+                    property: 'age',
+                    direction: 'DESC'
+                }]);
+            });
+        });
+        
+        describe('simple encoding', function() {
+            it("should encode a single sorter into the sortParam and sortDirection params", function() {
+                var sorter1 = new Ext.util.Sorter({
+                        property : "name",
+                        direction: "ASC"
+                    }),
+                    operation,
+                    request,
+                    options;
+
+                proxy = new Ext.data.proxy.Ajax({
+                    simpleSortMode: true,
+                    url: '/',
+                    noCache: false
+                });
+                operation = proxy.createOperation('read', {
+                    sorters: [sorter1]
+                });
+                request = proxy.buildRequest(operation);
+                options = Ext.Ajax.setOptions(request.getCurrentConfig());
+
+                expect(options.url).toEqual('/?sort=name&dir=ASC');
             });
 
-            var sorter2 = new Ext.util.Sorter({
-                property : "age",
-                direction: "DESC"
+            it("should encode multiple sorters into the sortParam and sortDirection params", function() {
+                var sorter1 = new Ext.util.Sorter({
+                        property : "name",
+                        direction: "ASC"
+                    }),
+                    sorter2 = new Ext.util.Sorter({
+                        property : "age",
+                        direction: "DESC"
+                    }),
+                    operation,
+                    request,
+                    options;
+
+                proxy = new Ext.data.proxy.Ajax({
+                    simpleSortMode: true,
+                    url: '/',
+                    noCache: false
+                });
+                operation = proxy.createOperation('read', {
+                    sorters: [sorter1, sorter2]
+                });
+                request = proxy.buildRequest(operation);
+                options = Ext.Ajax.setOptions(request.getCurrentConfig());
+
+                expect(options.url).toEqual('/?sort=name&sort=age&dir=ASC&dir=DESC');
             });
 
-            proxy = new Ext.data.proxy.Server();
-            
-            expect(Ext.decode(proxy.encodeSorters([sorter1, sorter2]))).toEqual([{
-                property: 'name',
-                direction: 'ASC'
-            }, {
-                property: 'age',
-                direction: 'DESC'
-            }]);
+            it("should encode multiple sorters into the sortParam when sortParam is the same as directionParam", function() {
+                var sorter1 = new Ext.util.Sorter({
+                        property : "name",
+                        direction: "ASC"
+                    }),
+                    sorter2 = new Ext.util.Sorter({
+                        property : "age",
+                        direction: "DESC"
+                    }),
+                    operation,
+                    request,
+                    options;
+
+                proxy = new Ext.data.proxy.Ajax({
+                    simpleSortMode: true,
+                    directionParam: 'sort',
+                    url: '/',
+                    noCache: false
+                });
+                operation = proxy.createOperation('read', {
+                    sorters: [sorter1, sorter2]
+                });
+                request = proxy.buildRequest(operation);
+                options = Ext.Ajax.setOptions(request.getCurrentConfig());
+
+                expect(options.url).toEqual('/?sort=name%20ASC&sort=age%20DESC');
+            });
         });
     });
 
@@ -551,13 +637,47 @@ describe("Ext.data.proxy.Server", function () {
     });
 
     describe("encoding group data", function() {
-        it("should JSON encode the data", function() {
-            var proxy = new Ext.data.proxy.Server(),
-                grouper = new Ext.util.Grouper({property: 'name', direction: 'ASC'});
+        describe('default encoding', function() {
+            it("should JSON encode the data", function() {
+                var proxy = new Ext.data.proxy.Server(),
+                    grouper = new Ext.util.Grouper({property: 'name', direction: 'ASC'});
 
-            expect(Ext.decode(proxy.encodeSorters([grouper], true))).toEqual({
-                property: 'name',
-                direction: 'ASC'
+                expect(Ext.decode(proxy.encodeSorters([grouper], true))).toEqual({
+                    property: 'name',
+                    direction: 'ASC'
+                });
+            });
+        });
+
+        describe('simpleGroupMode encoding', function() {
+            it("should JSON encode the data", function() {
+                var proxy = new Ext.data.proxy.Server({
+                        simpleGroupMode: true,
+                        url: '/',
+                        noCache: false
+                    }),
+                    operation = proxy.createOperation('read', {
+                        grouper: new Ext.util.Grouper({property: 'name', direction: 'ASC'})
+                    }),
+                    request = proxy.buildRequest(operation),
+                    options = Ext.Ajax.setOptions(request.getCurrentConfig());
+
+                expect(options.url).toEqual('/?group=name&groupDir=ASC');
+            });
+            it("should encode grouper into the groupParam when groupParam is the same as groupDirectionParam  ", function() {
+                var proxy = new Ext.data.proxy.Server({
+                        simpleGroupMode: true,
+                        groupDirectionParam: 'group',
+                        url: '/',
+                        noCache: false
+                    }),
+                    operation = proxy.createOperation('read', {
+                        grouper: new Ext.util.Grouper({property: 'name', direction: 'ASC'})
+                    }),
+                    request = proxy.buildRequest(operation),
+                    options = Ext.Ajax.setOptions(request.getCurrentConfig());
+
+                expect(options.url).toEqual('/?group=name%20ASC');
             });
         });
     });

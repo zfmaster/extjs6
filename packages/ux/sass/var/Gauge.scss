@@ -23,8 +23,11 @@ $gauge-value-stroke-width: dynamic(1);
     $value-stroke-width: null
 ) {
     $ui-suffix: ui-suffix($ui);
-
+    
     .#{$prefix}gauge#{$ui-suffix} {
+        svg {
+            display: block;
+        }
         .#{$prefix}gauge-track {
             fill: $track-fill;
             fill-opacity: $track-fill-opacity;

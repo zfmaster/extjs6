@@ -5,7 +5,7 @@
  *
  * ## Example
  *
- *     @example miniphone preview
+ *     @example
  *     var form = Ext.create('Ext.form.Panel', {
  *         fullscreen: true,
  *         items: [
@@ -56,13 +56,19 @@
  *
  */
 Ext.define('Ext.field.Checkbox', {
-    extend: 'Ext.field.Field',
+    extend: 'Ext.field.Input',
     alternateClassName: 'Ext.form.Checkbox',
+    xtype: [
+        'checkbox',
+        'checkboxfield'
+    ],
 
-    xtype: 'checkboxfield',
+    mixins: ['Ext.field.BoxLabelable'],
+
     qsaLeftRe: /[\[]/g,
     qsaRightRe: /[\]]/g,
 
+    shareableName: true,
     isCheckbox: true,
 
     defaultBindProperty: 'checked',
@@ -71,6 +77,10 @@ Ext.define('Ext.field.Checkbox', {
         checked: 1
     },
 
+    /**
+     * @cfg
+     * @inheritdoc
+     */
     publishes: {
         checked: 1
     },
@@ -102,101 +112,49 @@ Ext.define('Ext.field.Checkbox', {
          */
         value: '',
 
+
         /**
          * @cfg {Boolean} checked `true` if the checkbox should render initially checked.
          * @accessor
          */
-        checked: false,
-
-        /**
-         * @cfg {Number} tabIndex
-         * @hide
-         */
-        tabIndex: -1,
-
-        /**
-         * @cfg
-         * @inheritdoc
-         */
-        component: {
-            xtype: 'checkboxinput'
-        }
+        checked: false
 
         /**
          * @cfg {Boolean} labelMaskTap
          * @private
          */
     },
+    
+    eventHandlers: {
+        change: 'onChange'
+    },
+
+    inputType: 'checkbox',
 
     classCls: Ext.baseCSSPrefix + 'checkboxfield',
     checkedCls: Ext.baseCSSPrefix + 'checked',
 
-    /**
-     * @private
-     */
-    initialize: function() {
-        var me = this,
-            component = me.getComponent();
-
-        me.callParent();
-
-        component.on({
-            scope: me,
-            order: 'before',
-            masktap: 'onMaskTap'
-        });
-
-        component.doMaskTap = Ext.emptyFn;
-
-        me.labelElement.on({
-            scope: me,
-            tap: 'onMaskTap'
-        });
-
-        // Important to publish the value here, since we
-        // may be relying on checked. This differs from other
-        // fields because the initial value may not come from
-        // the viewModel if it defaults to false.
-        me.publishState('checked', me.getChecked());
+    getBodyTemplate: function() {
+        return this.mixins.boxLabelable.getBodyTemplate.call(this);
     },
 
     /**
      * @private
      */
-    doInitValue: function() {
-        var me = this,
-            initialConfig = me.getInitialConfig();
-
-        // you can have a value or checked config, but checked get priority
-        if (initialConfig.hasOwnProperty('value')) {
-            me.originalState = initialConfig.value;
-        }
-
-        if (initialConfig.hasOwnProperty('checked')) {
-            me.originalState = initialConfig.checked;
-        }
-
-        me.callParent(arguments);
+    getBoxTemplate: function() {
+        return [{
+            reference: 'iconElement',
+            cls: Ext.baseCSSPrefix + 'font-icon ' + Ext.baseCSSPrefix + 'icon-el',
+            children: [this.getInputTemplate()]
+        }]
     },
 
-    /**
-     * @private
-     */
-    updateInputType: function(newInputType) {
-        var component = this.getComponent();
-        if (component) {
-            component.setType(newInputType);
-        }
-    },
-
-    /**
-     * @private
-     */
-    updateName: function(newName) {
-        var component = this.getComponent();
-        if (component) {
-            component.setName(newName);
-        }
+    getInputTemplate: function() {
+        var template = this.callParent();
+        
+        template.onchange = 'return Ext.doEv(this, event);';
+        
+        return template;
     },
 
     /**
@@ -207,11 +165,34 @@ Ext.define('Ext.field.Checkbox', {
         return (this.getChecked()) ? Ext.isEmpty(this._value) ? true : this._value : null;
     },
 
+    /**
+     * @private
+     */
+    checkedRe: /^(true|1|on)/i,
+
+    /**
+     * Returns the `checked` value of this field
+     * @return {Mixed} value The field value
+     */
+    getChecked: function() {
+        return !!this.inputElement.dom.checked;
+    },
+
+    applyChecked: function(checked) {
+        if (this.isConfiguring) {
+            this.originalState = checked;
+        }
+
+        return !!this.checkedRe.test(String(checked));
+    },
+
     updateChecked: function(checked, oldChecked) {
         var me = this,
             eventName;
 
-        me.getComponent().setChecked(checked);
+        if (!me.$onChange) {
+            me.inputElement.dom.checked = checked;
+        }
 
         me.toggleCls(me.checkedCls, checked);
 
@@ -221,26 +202,6 @@ Ext.define('Ext.field.Checkbox', {
             me.fireEvent(eventName, me);
             me.fireEvent('change', me, checked, oldChecked);
         }
-    },
-
-    /**
-     * @private
-     */
-    onMaskTap: function(component, e) {
-        var me = this,
-            dom = me.getComponent().inputElement.dom;
-
-        if (me.getDisabled()) {
-            return false;
-        }
-
-        //we must manually update the input dom with the new checked value
-        dom.checked = !dom.checked;
-
-        me.setChecked(dom.checked);
-
-        //return false so the mask does not disappear
-        return false;
     },
 
     /**
@@ -266,25 +227,32 @@ Ext.define('Ext.field.Checkbox', {
     uncheck: function() {
         return this.setChecked(false);
     },
+    
+    onChange: function(e) {
+        var me = this;
+
+        me.$onChange = true;
+        me.setChecked(!!e.target.checked);
+        delete me.$onChange;
+    },
 
     getSameGroupFields: function() {
         var me = this,
-            component = me.up('formpanel') || me.up('fieldset'),
-            name = me.getName(),
-            replaceLeft = me.qsaLeftRe,
-            replaceRight = me.qsaRightRe;
+            component = me.lookupNameHolder(),
+            name = me.name;
 
         if (!component) {
             // <debug>
-            Ext.Logger.warn('Ext.field.Radio components must always be descendants of an Ext.form.Panel or Ext.form.FieldSet.');
+            Ext.Logger.warn(me.self.$className + ' components must always be descendants of an Ext.field.Panel.');
             // </debug>
-            component = Ext.Viewport;
+
+            // This is to handle ComponentQuery's lack of handling [name=foo[bar]] properly
+            name = name.replace(me.qsaLeftRe, '\\[').replace(me.qsaRightRe, '\\]');
+
+            return Ext.Viewport.query('checkboxfield[name=' + name + ']')
         }
 
-        // This is to handle ComponentQuery's lack of handling [name=foo[bar]] properly
-        name = name.replace(replaceLeft, '\\[');
-        name = name.replace(replaceRight, '\\]');
-        return component.query('checkboxfield[name=' + name + ']');
+        return component.lookupName(name);
     },
 
     /**

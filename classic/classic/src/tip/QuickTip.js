@@ -74,16 +74,18 @@ Ext.define('Ext.tip.QuickTip', {
     shrinkWrapDock: true,
 
     initComponent : function(){
-        var me = this,
-            cfg = me.tagConfig,
-            attr = cfg.attr || (cfg.attr = cfg.namespace + cfg.attribute);
+        var me = this;
 
         // delegate selector is a function which detects presence
         // of attributes which provide QuickTip text.
-        me.delegate = Ext.Function.bind(me.delegate, me);
+        me.delegate = me.delegate.bind(me);
 
         me.target = me.target || Ext.getDoc();
         me.targets = me.targets || {};
+        
+        me.header = me.header || {};
+        me.header.focusableContainer = false;
+        
         me.callParent();
     },
 
@@ -94,7 +96,7 @@ Ext.define('Ext.tip.QuickTip', {
     },
 
     /**
-     * @cfg text
+     * @cfg {String/Object} text
      * @inheritdoc Ext.tip.ToolTip#cfg-html
      */
     text: null,
@@ -290,7 +292,7 @@ Ext.define('Ext.tip.QuickTip', {
         // have fired, so just update content and alignment.
         if (me.isVisible()) {
             me.updateContent();
-            me.handleAfterShow();
+            me.realignToTarget();
         } else {
             if (activeTarget.showDelay) {
                 delay = me.showDelay;

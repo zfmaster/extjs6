@@ -14,16 +14,6 @@ Ext.define('Ext.chart.overrides.AbstractChart', {
         }
     },
 
-    onAdded: function (parent, instanced) {
-        var legend = this.getLegend();
-
-        this.callParent([parent, instanced]);
-
-        if (legend && legend.isDomLegend) {
-            parent.add(legend);
-        }
-    },
-
     onItemRemove: function (item, index, destroy) {
         var map = this.surfaceMap,
             type = item.type,

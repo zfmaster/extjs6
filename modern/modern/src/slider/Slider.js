@@ -1,5 +1,59 @@
 /**
- * Slider component used by Ext.field.Slider.
+ * The slider component utilized by `Ext.field.Slider`.
+ *
+ * The slider is a way to allow the user to select a value from a given numerical range.
+ * You might use it for choosing a percentage, combine two of them to get min and max
+ * values, or use three of them to specify the hex values for a color.
+ *
+ * Each slider contains a single 'thumb' that can be dragged along the slider's length to
+ * change the value.
+ *
+ * ## Simple Slider
+ *
+ *     @example
+ *     Ext.create({
+ *         xtype: 'container',
+ *         fullscreen: true,
+ *         padding: 20,
+ *
+ *         items: [{
+ *             xtype: 'slider',
+ *             value: 42
+ *         }]
+ *     });
+ *
+ * ## Slider with Bound Value
+ *
+ * This slider does not incorporate two-way binding by default.  Please utilize `publishes` or
+ * `twoWayBindable` in order to publish bound values.  You can also use Ext.field.Slider
+ * directly for a more feature-rich component.
+ *
+ *     @example
+ *     Ext.create({
+ *         xtype: 'container',
+ *         fullscreen: true,
+ *         padding: 20,
+ *
+ *         layout: {
+ *             type: 'hbox',
+ *             pack: 'center'
+ *         },
+ *         
+ *         viewModel: {
+ *             data: {
+ *                 value: 42
+ *             }
+ *         },
+ *
+ *         items: [{
+ *             xtype: 'slider',
+ *             value: '{value}'
+ *         }, {
+ *             xtype: 'label',
+ *             bind: '{value}'
+ *         }]
+ *     })
+ *
  */
 Ext.define('Ext.slider.Slider', {
     extend: 'Ext.Component',
@@ -25,7 +79,7 @@ Ext.define('Ext.slider.Slider', {
     * @param {Ext.slider.Slider} this
     * @param {Ext.slider.Thumb} thumb The thumb being dragged
     * @param {Array} value The start value
-    * @param {Ext.EventObject} e
+    * @param {Ext.event.Event} e
     */
 
     /**
@@ -33,7 +87,7 @@ Ext.define('Ext.slider.Slider', {
     * Fires when the slider thumb starts a drag
     * @param {Ext.slider.Slider} this
     * @param {Ext.slider.Thumb} thumb The thumb being dragged
-    * @param {Ext.EventObject} e
+    * @param {Ext.event.Event} e
     */
 
     /**
@@ -42,22 +96,21 @@ Ext.define('Ext.slider.Slider', {
     * @param {Ext.slider.Slider} this
     * @param {Ext.slider.Thumb} thumb The thumb being dragged
     * @param {Array} value The end value
-    * @param {Ext.EventObject} e
+    * @param {Ext.event.Event} e
     */
     config: {
+        // @cmd-auto-dependency { defaultType: "Ext.slider.Thumb", aliasPrefix:'widget.',typeProperty: 'xtype' }
         /**
          * @cfg {Object} thumbDefaults The config object to factory {@link Ext.slider.Thumb} instances
          * @accessor
-         * @cmd-auto-dependency { defaultType: "Ext.slider.Thumb", aliasPrefix:'widget.',typeProperty: 'xtype' }
          */
         thumbDefaults: {
             xtype: 'thumb',
-            draggable: {
-                translatable: {
-                    easingX: {
-                        duration: 300,
-                        type: 'ease-out'
-                    }
+            inheritUi: true,
+            translatable: {
+                easingX: {
+                    duration: 300,
+                    type: 'ease-out'
                 }
             }
         },
@@ -119,11 +172,16 @@ Ext.define('Ext.slider.Slider', {
         animation: true,
 
         /**
-         * Will make this field read only, meaning it cannot be changed with used interaction.
+         * Will make this field read only, meaning it cannot be changed from the user interface.
          * @cfg {Boolean} readOnly
          * @accessor
          */
         readOnly: false
+    },
+
+    defaultBindProperty: 'value',
+    twoWayBindable: {
+        value: 1
     },
 
     /**
@@ -151,10 +209,12 @@ Ext.define('Ext.slider.Slider', {
     fillSelector: '.' + Ext.baseCSSPrefix + 'fill-el',
 
     constructor: function(config) {
-        config = config || {};
+        if (config && config.hasOwnProperty('values')) {
+            config = Ext.apply({
+                value: config.values
+            }, config);
 
-        if (config.hasOwnProperty('values')) {
-            config.value = config.values;
+            delete config.values;
         }
 
         this.thumbs = [];
@@ -166,34 +226,31 @@ Ext.define('Ext.slider.Slider', {
      * @private
      */
     initialize: function() {
-        var element = this.element,
-            thumb;
-
         this.callParent();
-
-        element.on({
-            scope: this,
-            tap: 'onTap',
-            resize: 'onResize'
-        });
-
-        thumb = this.thumbs[0];
-        if (thumb) {
-            thumb.on('resize', 'onThumbResize', this);
-        }
+        this.element.on('tap', 'onTap', this);
     },
 
-    applyThumbDefaults: function(defaults) {
-        defaults.slider = this;
+    onRender: function() {
+        this.callParent();
+        this.whenVisible('refreshSizes');
+    },
 
-        return defaults;
+    applyThumbDefaults: function (defaults) {
+        return Ext.apply({
+            slider: this,
+            ownerCmp: this
+        }, defaults);
     },
 
     /**
      * @private
      */
     factoryThumb: function() {
-        return Ext.factory(this.getThumbDefaults(), Ext.slider.Thumb);
+        var thumb = Ext.create(this.getThumbDefaults());
+
+        thumb.doInheritUi();
+
+        return thumb;
     },
 
     /**
@@ -210,7 +267,7 @@ Ext.define('Ext.slider.Slider', {
      * @return {Ext.slider.Thumb} The thumb instance
      */
     getThumb: function(index) {
-        if (typeof index != 'number') {
+        if (typeof index !== 'number') {
             index = 0;
         }
 
@@ -225,16 +282,14 @@ Ext.define('Ext.slider.Slider', {
         me.offsetValueRatio = valueRange === 0 ? 0 : trackWidth / valueRange;
     },
 
-    onThumbResize: function(){
-        var thumb = this.thumbs[0];
-        if (thumb) {
-            this.thumbWidth = thumb.getElementWidth();
-        }
+    onThumbResize: function (thumb, thumbWidth) {
+        this.thumbWidth = thumbWidth;
+
         this.refresh();
     },
 
-    onResize: function(element, info) {
-        this.elementWidth = info.width;
+    onResize: function(width) {
+        this.elementWidth = width;
         this.refresh();
     },
 
@@ -263,12 +318,8 @@ Ext.define('Ext.slider.Slider', {
         }
     },
 
-    onThumbDragStart: function(thumb, e) {
+    onThumbDragStart: function (thumb, e) {
         var me = this;
-
-        me.refreshAllThumbConstraints();
-
-        e.claimGesture();
 
         if (me.getAllowThumbsOverlapping()) {
             me.setActiveThumb(thumb);
@@ -278,7 +329,7 @@ Ext.define('Ext.slider.Slider', {
         me.fireEvent('dragstart', me, thumb, me.dragStartValue, e);
     },
 
-    onThumbDrag: function(thumb, e, offsetX) {
+    onThumbDragMove: function (thumb, e, offsetX) {
         var me = this,
             index = me.getThumbIndex(thumb),
             offsetValueRatio = me.offsetValueRatio,
@@ -293,23 +344,32 @@ Ext.define('Ext.slider.Slider', {
         return false;
     },
 
-    setIndexValue: function(index, value, animation) {
+    setIndexValue: function (index, value, animation) {
         var me = this,
             thumb = me.thumbs[index],
             values = me.getArrayValues(),
             minValue = me.getMinValue(),
             offsetValueRatio = me.offsetValueRatio,
             increment = me.getIncrement(),
-            draggable = thumb.getDraggable();
+            pos = (value - minValue) * offsetValueRatio;
 
-        draggable.setOffset((value - minValue) * offsetValueRatio, null, animation);
+        // draggable.setOffset((value - minValue) * offsetValueRatio, null, animation);
+        thumb.setXY(pos, null, animation);
 
-        values[index] = minValue + Math.round((draggable.offset.x / offsetValueRatio) / increment) * increment;
+        values[index] = minValue + Math.round((pos / offsetValueRatio) / increment) * increment;
 
         me.setValue(values);
+        me.refreshAdjacentThumbConstraints(thumb);
     },
 
-    onThumbDragEnd: function(thumb, e) {
+    onChange: function(thumb, newValue, oldValue) {
+        var me = this;
+        if (me.hasListeners.change) {
+            me.fireEvent('change', me, thumb, newValue, oldValue);
+        }
+    },
+
+    onThumbDragEnd: function (thumb, e) {
         var me = this,
             index = me.getThumbIndex(thumb),
             newValue = me.getArrayValues()[index],
@@ -318,7 +378,7 @@ Ext.define('Ext.slider.Slider', {
         me.snapThumbPosition(thumb, newValue);
         me.fireEvent('dragend', me, thumb, me.getArrayValues(), e);
         if (oldValue !== newValue) {
-            me.fireEvent('change', me, thumb, newValue, oldValue);
+            me.onChange(thumb, newValue, oldValue);
         }
     },
 
@@ -326,30 +386,21 @@ Ext.define('Ext.slider.Slider', {
         return this.thumbs.indexOf(thumb);
     },
 
-    refreshThumbConstraints: function(thumb) {
+    refreshAdjacentThumbConstraints: function (thumb) {
         var me = this,
-            allowThumbsOverlapping = me.getAllowThumbsOverlapping(),
-            offsetX = thumb.getDraggable().getOffset().x,
+            offsetX = thumb.getLeft(),
             thumbs = me.thumbs,
             index = me.getThumbIndex(thumb),
             previousThumb = thumbs[index - 1],
             nextThumb = thumbs[index + 1],
-            thumbWidth = me.thumbWidth;
+            thumbWidth = me.getAllowThumbsOverlapping() ? 0 : me.thumbWidth;
 
         if (previousThumb) {
-            previousThumb.getDraggable().addExtraConstraint({
-                max: {
-                    x: offsetX - ((allowThumbsOverlapping) ? 0 : thumbWidth)
-                }
-            });
+            previousThumb.setDragMax(offsetX - thumbWidth);
         }
 
         if (nextThumb) {
-            nextThumb.getDraggable().addExtraConstraint({
-                min: {
-                    x: offsetX + ((allowThumbsOverlapping) ? 0 : thumbWidth)
-                }
-            });
+            nextThumb.setDragMin(offsetX + thumbWidth);
         }
     },
 
@@ -398,10 +449,9 @@ Ext.define('Ext.slider.Slider', {
         thumb = me.thumbs[closestIndex];
 
         me.setIndexValue(closestIndex, value, me.getAnimation());
-        me.refreshThumbConstraints(thumb);
 
         if (oldValue !== value) {
-            me.fireEvent('change', me, thumb, value, oldValue);
+            me.onChange(thumb, value, oldValue);
         }
     },
 
@@ -418,44 +468,36 @@ Ext.define('Ext.slider.Slider', {
             valueIsArray = me.getValueIsArray(),
             filteredValues = [],
             previousFilteredValue = me.getMinValue(),
-            filteredValue, i, ln, result;
+            filteredValue, i, ln;
 
         for (i = 0,ln = values.length; i < ln; i++) {
             filteredValue = me.constrainValue(values[i]);
 
             if (filteredValue < previousFilteredValue) {
                 //<debug>
-                Ext.Logger.warn("Invalid values of '"+Ext.encode(values)+"', values at smaller indexes must " +
+                Ext.log.warn("Invalid values of '" + Ext.encode(values) +
+                    "', values at smaller indexes must " +
                     "be smaller than or equal to values at greater indexes");
                 //</debug>
                 filteredValue = previousFilteredValue;
             }
 
             filteredValues.push(filteredValue);
-
             previousFilteredValue = filteredValue;
         }
 
-        if (!me.refreshing && oldValue) {
-            if (Ext.Array.equals(values, oldValue)) {
-                filteredValues = undefined;
-            }
+        if (!me.refreshing && oldValue && Ext.Array.equals(values, oldValue)) {
+            filteredValues = undefined;
         }
-
-        if (filteredValues) {
+        else {
             me.values = filteredValues;
-        }
 
-        if (valueIsArray) {
-            result = filteredValues;
-        } else {
-            if (value && value.length === 1) {
-                result = value[0];
-            } else {
-                result = value;
+            if (!valueIsArray && filteredValues.length === 1) {
+                filteredValues = filteredValues[0];
             }
         }
-        return result;
+
+        return filteredValues;
     },
 
     /**
@@ -524,23 +566,20 @@ Ext.define('Ext.slider.Slider', {
         var me = this,
             thumbs = me.thumbs,
             thumbsCount = thumbs.length,
-            i, ln, thumb;
+            i, thumb;
 
-        if (thumbsCount > count) {
-            for (i = 0,ln = thumbsCount - count; i < ln; i++) {
-                thumb = thumbs[thumbs.length - 1];
-                thumb.destroy();
-                Ext.Array.remove(thumbs, thumb);
-            }
+        while (count < thumbs.length) {
+            thumb = thumbs.pop();
+            thumb.destroy();
         }
-        else if (thumbsCount < count) {
-            for (i = thumbsCount, ln = count; i < ln; i++) {
-                thumb = me.factoryThumb();
-                thumbs.push(thumb);
-                me.trackElement.appendChild(thumb.fillElement);
-                me.thumbWrapElement.appendChild(thumb.element);
-                me.element.appendChild(thumb.sizerElement);
-            }
+
+        while (count > thumbs.length) {
+            thumb = me.factoryThumb();
+            thumbs.push(thumb);
+
+            me.trackElement.appendChild(thumb.fillElement);
+            me.thumbWrapElement.appendChild(thumb.element);
+            me.element.appendChild(thumb.sizerElement);
         }
 
         if (thumbsCount !== count) {
@@ -653,25 +692,49 @@ Ext.define('Ext.slider.Slider', {
         this.callParent();
     },
 
+    getRefItems: function(deep) {
+        return this.thumbs;
+    },
+
     privates: {
-        refreshAllThumbConstraints: function() {
-            var thumbs = this.thumbs,
+        /**
+         * This method is called by the `thumb` before a drag gets going. We are still
+         * allowed to adjust the constraints at this point so we fix them all up.
+         * @private
+         */
+        refreshAllThumbConstraints: function () {
+            var me = this,
+                thumbs = me.thumbs,
                 len = thumbs.length,
+                thumbWidth = me.getAllowThumbsOverlapping() ? 0 : me.thumbWidth,
                 i;
 
             for (i = 0; i < len; i++) {
-                this.refreshThumbConstraints(thumbs[i]);
+                me.refreshAdjacentThumbConstraints(thumbs[i]);
             }
+
+            thumbs[0].setDragMin(0);
+            thumbs[len - 1].setDragMax(me.elementWidth - thumbWidth);
+        },
+
+        refreshSizes: function() {
+            var me = this,
+                thumb = me.thumbs[0];
+
+            me.elementWidth = me.element.measure('w');
+            if (thumb) {
+                me.thumbWidth = thumb.element.measure('w');
+            }
+            me.refresh();
         },
 
         snapThumbPosition: function(thumb, value) {
             var ratio = this.offsetValueRatio,
-                draggable = thumb.getDraggable(),
                 offset;
 
             if (isFinite(ratio)) {
                 offset = Ext.Number.correctFloat((value - this.getMinValue()) * ratio);
-                draggable.refreshContainerSize().setExtraConstraint(null).setOffset(offset);
+                thumb.setXY(offset, null);
             }
         },
 
@@ -690,9 +753,8 @@ Ext.define('Ext.slider.Slider', {
             for (i = 0; i < ln; i++) {
                 thumb = thumbs[i];
                 fillElement = fillElements[i];
-                // during animation offset may be different from what the draggable reports
                 thumbOffset = (i === thumbIndex) ? offset :
-                    thumb.getDraggable().getOffset().x + (thumb.element.getWidth() / 2);
+                    thumb.getLeft() + (thumb.element.getWidth() / 2);
 
                 fillElement.setWidth(thumbOffset - prevOffset);
                 fillElement.setLocalX(prevOffset);

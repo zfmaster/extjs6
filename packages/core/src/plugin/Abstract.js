@@ -75,10 +75,12 @@ Ext.define('Ext.plugin.Abstract', {
      *      var panel = Ext.create({
      *          xtype: 'panel',
      *
-     *          plugins: [{
-     *              id: 'foo',
-     *              ...
-     *          }]
+     *          plugins: {
+     *              foobar: {
+     *                  id: 'foo',
+     *                  ...
+     *              }
+     *          }
      *      });
      *
      *      // later on:
@@ -109,7 +111,7 @@ Ext.define('Ext.plugin.Abstract', {
      */
     destroy: function() {
         this.cmp = this.pluginConfig = null;
-        
+
         this.callParent();
     },
 
@@ -122,7 +124,7 @@ Ext.define('Ext.plugin.Abstract', {
             if (Ext.isArray(alias)) {
                 alias = alias[0];
             }
-            
+
             prototype.ptype = alias.split('plugin.')[1];
         }
     },
@@ -141,5 +143,67 @@ Ext.define('Ext.plugin.Abstract', {
         // a "this.mixins.observable" even though Ext.plugin.Abstract
         // does not mix it in directly
         return scope || me.mixins.observable.resolveListenerScope.call(me, defaultScope);
+    },
+
+    statics: {
+        decode: function (plugins, typeProp, include) {
+            if (plugins) {
+                var type = Ext.typeOf(plugins), // 'object', 'array', 'string'
+                    entry, key, obj, value;
+
+                if (type === 'string') {
+                    obj = {};
+
+                    // allows for findPlugin to find a plugin
+                    // defined as a string
+                    obj[typeProp] = plugins;
+
+                    plugins = [ obj ];
+                }
+                else if (plugins.isInstance) {
+                    plugins = [ plugins ];
+                }
+                else if (type === 'object') {
+                    if (plugins[typeProp]) {
+                        plugins = [plugins];
+                    }
+                    else {
+                        obj = include ? Ext.merge(Ext.clone(include), plugins) : plugins;
+                        plugins = [];
+
+                        for (key in obj) {
+                            if (!(value = obj[key])) {
+                                continue;
+                            }
+
+                            entry = {
+                                id: key
+                            };
+
+                            entry[typeProp] = key;
+
+                            if (key === 'responsive') {
+                                entry.weight = -1000;
+                            }
+
+                            Ext.apply(entry, value);
+                            plugins.push(entry);
+                        }
+
+                        plugins.sort(Ext.weightSortFn);
+                    }
+                }
+                //<debug>
+                else if (type !== 'array') {
+                    Ext.raise('Invalid value for "plugins" config ("' + type + '"');
+                }
+                //</debug>
+                else {
+                    plugins = plugins.slice(); // so that all cases return mutable array
+                }
+            }
+
+            return plugins;
+        }
     }
 });

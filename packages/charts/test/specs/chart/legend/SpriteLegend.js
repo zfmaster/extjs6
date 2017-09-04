@@ -1,7 +1,7 @@
-describe("Ext.chart.legend.SpriteLegend", function () {
+/* global Ext, expect */
 
+topSuite("Ext.chart.legend.SpriteLegend", ['Ext.chart.*', 'Ext.data.ArrayStore'], function() {
     function generateStoreData(pointCount) {
-
         var data = [
                 { month: 'Jan' },
                 { month: 'Feb' },
@@ -24,17 +24,347 @@ describe("Ext.chart.legend.SpriteLegend", function () {
         for (; i < ln; i++) {
             entry = data[i];
             for (j = 0; j < pointCount; j++) {
-                entry['data' + (j + 1).toString()] = Math.random() * 10
+                entry['data' + (j + 1).toString()] = Math.random() * 10;
             }
         }
 
         return data;
     }
+    
+    beforeEach(function() {
+        // Silence Sencha download server warnings
+        spyOn(Ext.log, 'warn');
+    });
+
+    describe('docked', function () {
+        var chart;
+
+        afterEach(function () {
+            Ext.destroy(chart);
+        });
+
+        it('should position the sprite legend properly', function () {
+            var side = 400,
+                layoutDone,
+                legendSpriteCount,
+                legendSpriteIds;
+
+            chart = new Ext.chart.CartesianChart({
+                renderTo: Ext.getBody(),
+                width: side,
+                height: side,
+                store: {
+                    data: [
+                        { x: 1, y: 1 },
+                        { x: 2, y: 3 },
+                        { x: 3, y: 1 }
+                    ]
+                },
+                axes: [
+                    {
+                        type: 'numeric',
+                        position: 'left'
+                    },
+                    {
+                        type: 'category',
+                        position: 'bottom'
+                    }
+                ],
+                series: {
+                    type: 'bar',
+                    xField: 'x',
+                    yField: 'y'
+                },
+                listeners: {
+                    layout: function () {
+                        layoutDone = true;
+                    }
+                }
+            });
+
+            waitsFor(function () {
+                return layoutDone;
+            });
+
+            runs(function () {
+                chart.setLegend({
+                    type: 'sprite',
+                    docked: 'top'
+                });
+                layoutDone = false;
+            });
+
+            waitsFor(function () {
+                return layoutDone;
+            });
+
+            runs(function () {
+                // docked: 'top'
+                var chartRect = chart.getChartRect(),
+                    legend = chart.getLegend(),
+                    legendSize = legend.getSize(),
+                    legendSurface = legend.getSurface(),
+                    legendSprites = legendSurface.getItems(),
+                    legendRect = legendSurface.getRect();
+
+                expect(chartRect[0]).toBe(0);
+                expect(chartRect[1]).toBe(legendSize.height);
+                expect(chartRect[2]).toBe(side);
+                expect(chartRect[3]).toBe(side - legendSize.height);
+
+                expect(legendRect[0]).toBe(0);
+                expect(legendRect[1]).toBe(0);
+                expect(legendRect[2]).toBe(side);
+                expect(legendRect[3]).toBe(legendSize.height);
+
+                legendSpriteCount = legendSprites.length;
+                // Don't want to be too specific here, as the number of sprites may change
+                // in the future, but there must be something there.
+                expect(legendSpriteCount).toBeGreaterThan(0);
+
+                legendSpriteIds = {};
+                for (var i = 0; i < legendSpriteCount; i++) {
+                    legendSpriteIds[legendSprites[i].getId()] = true;
+                }
+
+                chart.setLegend({
+                    type: 'sprite',
+                    docked: 'top' // that's not a mistake, setting again to 'top'
+                });
+                layoutDone = false;
+            });
+
+            waitsFor(function () {
+                return layoutDone;
+            });
+
+            runs(function () {
+                // docked: 'top'
+                var chartRect = chart.getChartRect(),
+                    legend = chart.getLegend(),
+                    legendSize = legend.getSize(),
+                    legendSurface = legend.getSurface(),
+                    legendSprites = legendSurface.getItems(),
+                    legendRect = legendSurface.getRect();
+
+                // Sprites from the previous legend should not remain in the chart's
+                // 'legend' surface. We should get the same number of sprites, not double
+                // the sprites ...
+                expect(legendSprites.length).toBe(legendSpriteCount);
+
+                // ... and those sprites should be all different.
+                for (var i = 0; i < legendSpriteCount; i++) {
+                    expect(legendSprites[i].getId() in legendSpriteIds).toBe(false);
+                }
+
+                expect(chartRect[0]).toBe(0);
+                expect(chartRect[1]).toBe(legendSize.height);
+                expect(chartRect[2]).toBe(side);
+                expect(chartRect[3]).toBe(side - legendSize.height);
+
+                expect(legendRect[0]).toBe(0);
+                expect(legendRect[1]).toBe(0);
+                expect(legendRect[2]).toBe(side);
+                expect(legendRect[3]).toBe(legendSize.height);
+
+                chart.setLegend({
+                    type: 'sprite',
+                    docked: 'right'
+                });
+                layoutDone = false;
+            });
+
+            waitsFor(function () {
+                return layoutDone;
+            });
+
+            runs(function () {
+                // docked: 'right'
+                var chartRect = chart.getChartRect(),
+                    legend = chart.getLegend(),
+                    legendSize = legend.getSize(),
+                    legendRect = legend.getSurface().getRect();
+
+                expect(chartRect[0]).toBe(0);
+                expect(chartRect[1]).toBe(0);
+                expect(chartRect[2]).toBe(side - legendSize.width);
+                expect(chartRect[3]).toBe(side);
+
+                expect(legendRect[0]).toBe(side - legendSize.width);
+                expect(legendRect[1]).toBe(0);
+                expect(legendRect[2]).toBe(legendSize.width);
+                expect(legendRect[3]).toBe(side);
+
+                chart.setLegend({
+                    type: 'sprite',
+                    docked: 'bottom'
+                });
+                layoutDone = false;
+            });
+
+            waitsFor(function () {
+                return layoutDone;
+            });
+
+            runs(function () {
+                // docked: 'bottom'
+                var chartRect = chart.getChartRect(),
+                    legend = chart.getLegend(),
+                    legendSize = legend.getSize(),
+                    legendRect = legend.getSurface().getRect();
+
+                expect(chartRect[0]).toBe(0);
+                expect(chartRect[1]).toBe(0);
+                expect(chartRect[2]).toBe(side);
+                expect(chartRect[3]).toBe(side - legendSize.height);
+
+                expect(legendRect[0]).toBe(0);
+                expect(legendRect[1]).toBe(side - legendSize.height);
+                expect(legendRect[2]).toBe(side);
+                expect(legendRect[3]).toBe(legendSize.height);
+
+                chart.setLegend({
+                    type: 'sprite',
+                    docked: 'left'
+                });
+                layoutDone = false;
+            });
+
+            waitsFor(function () {
+                return layoutDone;
+            });
+
+            runs(function () {
+                // docked: 'left'
+                var chartRect = chart.getChartRect(),
+                    legend = chart.getLegend(),
+                    legendSize = legend.getSize(),
+                    legendRect = legend.getSurface().getRect();
+
+                expect(chartRect[0]).toBe(legendSize.width);
+                expect(chartRect[1]).toBe(0);
+                expect(chartRect[2]).toBe(side - legendSize.width);
+                expect(chartRect[3]).toBe(side);
+
+                expect(legendRect[0]).toBe(0);
+                expect(legendRect[1]).toBe(0);
+                expect(legendRect[2]).toBe(legendSize.width);
+                expect(legendRect[3]).toBe(side);
+
+                chart.setLegend(null);
+                layoutDone = false;
+            });
+
+            waitsFor(function () {
+                return layoutDone;
+            });
+
+            runs(function () {
+                // legend: null
+                var chartRect = chart.getChartRect();
+
+                expect(chartRect[0]).toBe(0);
+                expect(chartRect[1]).toBe(0);
+                expect(chartRect[2]).toBe(side);
+                expect(chartRect[3]).toBe(side);
+
+                chart.setLegend({
+                    type: 'sprite',
+                    docked: 'right' // creating ...
+                });
+                layoutDone = false;
+            });
+
+            waitsFor(function () {
+                return layoutDone;
+            });
+
+            runs(function () {
+                var legend = chart.getLegend(),
+                    legendSurface = legend.getSurface();
+
+                expect(legendSurface.getHidden()).toBe(false);
+
+                chart.getLegend().setHidden(true); // ... and hiding
+                layoutDone = false;
+            });
+
+            waitsFor(function () {
+                return layoutDone;
+            });
+
+            runs(function () {
+                // docked: 'right',
+                // hidden: true
+                var chartRect = chart.getChartRect(),
+                    legend = chart.getLegend(),
+                    legendSurface = legend.getSurface();
+
+                expect(chartRect[0]).toBe(0);
+                expect(chartRect[1]).toBe(0);
+                expect(chartRect[2]).toBe(side);
+                expect(chartRect[3]).toBe(side);
+
+                expect(legendSurface.getHidden()).toBe(true);
+
+                chart.getLegend().setHidden(false);
+                layoutDone = false;
+            });
+
+            waitsFor(function () {
+                return layoutDone;
+            });
+
+            runs(function () {
+                // docked: 'right',
+                // hidden: false
+                var chartRect = chart.getChartRect(),
+                    legend = chart.getLegend(),
+                    legendSize = legend.getSize(),
+                    legendSurface = legend.getSurface();
+
+                expect(chartRect[0]).toBe(0);
+                expect(chartRect[1]).toBe(0);
+                expect(chartRect[2]).toBe(side - legendSize.width);
+                expect(chartRect[3]).toBe(side);
+
+                expect(legendSurface.getHidden()).toBe(false);
+
+                chart.setLegend({
+                    type: 'sprite',
+                    docked: 'right',
+                    hidden: true // creating already hidden
+                });
+                layoutDone = false;
+            });
+
+            waitsFor(function () {
+                return layoutDone;
+            });
+
+            runs(function () {
+                // docked: 'right',
+                // hidden: true
+                var chartRect = chart.getChartRect(),
+                    legend = chart.getLegend(),
+                    legendSurface = legend.getSurface();
+
+                expect(chartRect[0]).toBe(0);
+                expect(chartRect[1]).toBe(0);
+                expect(chartRect[2]).toBe(side);
+                expect(chartRect[3]).toBe(side);
+
+                expect(legendSurface.getHidden()).toBe(true);
+            });
+
+        });
+    });
 
     describe("updateTheme", function () {
         var storeData = generateStoreData(2);
 
         var chartConfig = {
+            animation: false,
             width: 400,
             height: 300,
             renderTo: document.body,
@@ -81,7 +411,7 @@ describe("Ext.chart.legend.SpriteLegend", function () {
         });
 
         afterEach(function () {
-            Ext.destroy(store, chart);
+            Ext.destroy(chart, store);
         });
 
         it("should use the style from the theme, " +
@@ -180,16 +510,23 @@ describe("Ext.chart.legend.SpriteLegend", function () {
         });
     });
 
+    // Safari 7 times out here in Modern for unknown reason in TeamCity only.
+    // Works fine locally (tested in Safari 7.0 (9537.71).
+    TODO(Ext.isSafari7).
     describe("store", function () {
         var storeData = generateStoreData(4),
-            store, chart;
+            store, chart, legend;
 
         beforeEach(function () {
+            var layoutEndSpy;
+
             store = new Ext.data.Store({
                 fields: [ 'month', 'data1', 'data2', 'data3', 'data4' ],
                 data: storeData
             });
+
             chart = new Ext.chart.CartesianChart({
+                animation: false,
                 width: 400,
                 height: 300,
                 renderTo: document.body,
@@ -231,6 +568,10 @@ describe("Ext.chart.legend.SpriteLegend", function () {
                     }
                 }]
             });
+            legend = chart.getLegend();
+            layoutEndSpy = spyOn(chart, 'onLayoutEnd').andCallThrough();
+
+            waitsForSpy(layoutEndSpy, "chart layout to finish");
         });
 
         afterEach(function () {
@@ -238,124 +579,67 @@ describe("Ext.chart.legend.SpriteLegend", function () {
         });
 
         it("should trigger sprite/layout update on data update", function () {
-            var series = chart.getSeries()[0];
-            var legend = chart.getLegend();
-            var originalMethod = legend.performLayout;
-            var oldBorderWidth, newBorderWidth;
-            var oldSecondItem, oldSecondItemX, newSecondItem, newSecondItemX;
-            var layoutDone;
-
-            legend.performLayout = function () {
-                originalMethod.call(legend);
-                layoutDone = true;
-            };
-
-            runs(function () {
-                legend.scheduleLayout();
-            });
-
-            waitsFor(function () {
-                return layoutDone;
-            }, "initial layout to finish");
+            var series = chart.getSeries()[0],
+                oldBorderWidth, newBorderWidth,
+                oldSecondItem, oldSecondItemX, newSecondItem, newSecondItemX;
 
             runs(function () {
                 oldBorderWidth = legend.borderSprite.getBBox().width;
                 oldSecondItem = legend.getSprites()[1];
                 oldSecondItemX = oldSecondItem.getBBox().x;
                 expect(oldSecondItemX > 0).toBe(true);
-            });
-
-            runs(function () {
-                layoutDone = false;
                 series.setTitle([ 'Edge', 'Firewall', 'Cross', 'Savanna' ]);
             });
 
+            // Wait for the required test conditions to become true
             waitsFor(function () {
-                return layoutDone;
-            });
-
-            runs(function () {
                 newBorderWidth = legend.borderSprite.getBBox().width;
-                expect(newBorderWidth > oldBorderWidth).toBe(true);
                 newSecondItem = legend.getSprites()[1];
-                // The sprite should be reused.
-                expect(newSecondItem).toEqual(oldSecondItem);
-                expect(newSecondItem.getLabel().attr.text).toEqual('Firewall');
                 newSecondItemX = newSecondItem.getBBox().x;
-                expect(newSecondItemX > oldSecondItemX).toBe(true);
 
-                legend.performLayout = originalMethod;
+                return newBorderWidth > oldBorderWidth &&
+                        newSecondItem === oldSecondItem &&
+                        newSecondItem.getLabel().attr.text === 'Firewall' &&
+                        newSecondItemX > oldSecondItemX;
             });
         });
 
         it("should trigger sprite/layout update on data change", function () {
-            var series = chart.getSeries()[0];
-            var legend = chart.getLegend();
-            var originalMethod = legend.performLayout;
-            var oldBorderWidth, newBorderWidth;
-            var oldSecondItem, oldSecondItemX, newSecondItem, newSecondItemX, lastItem;
-            var layoutDone;
-
-            legend.performLayout = function () {
-                originalMethod.call(legend);
-                layoutDone = true;
-            };
-
-            runs(function () {
-                legend.scheduleLayout();
-            });
-
-            waitsFor(function () {
-                return layoutDone;
-            }, "initial layout to finish");
+            var series = chart.getSeries()[0],
+                oldBorderWidth, newBorderWidth,
+                oldSecondItem, oldSecondItemX, newSecondItem, newSecondItemX;
 
             runs(function () {
                 oldBorderWidth = legend.borderSprite.getBBox().width;
                 oldSecondItem = legend.getSprites()[1];
                 oldSecondItemX = oldSecondItem.getBBox().x;
                 expect(oldSecondItemX > 0).toBe(true);
-                lastItem = legend.getSprites()[3];
-            });
-
-            runs(function () {
-                layoutDone = false;
                 series.setTitle([ 'IE', 'Chrome', 'Safari' ]);
             });
 
+            // Wait for the required test conditions to become true
             waitsFor(function () {
-                return layoutDone;
-            });
-
-            runs(function () {
                 newBorderWidth = legend.borderSprite.getBBox().width;
-                expect(newBorderWidth < oldBorderWidth).toBe(true);
                 newSecondItem = legend.getSprites()[1];
-                // The sprite should be reused.
-                expect(newSecondItem).toEqual(oldSecondItem);
-                expect(newSecondItem.getLabel().attr.text).toEqual('Chrome');
-                expect(legend.getSprites().length).toBe(4);
                 newSecondItemX = newSecondItem.getBBox().x;
+
+                return newBorderWidth < oldBorderWidth &&
+                // The sprite should be reused.
+                    newSecondItem === oldSecondItem &&
+                    newSecondItem.getLabel().attr.text === 'Chrome' &&
+                    legend.getSprites().length === 4 &&
                 // The second sprite now displays the third title ('Chrome'),
                 // but because the whole legend is centered, it should actually
                 // move to the right, as there is now one less item.
-                expect(newSecondItemX > oldSecondItemX).toBe(true);
-                expect(legend.getSprites()[3].getLabel().attr.text).toBe('data4');
-
-                legend.performLayout = originalMethod;
+                    newSecondItemX > oldSecondItemX &&
+                    legend.getSprites()[3].getLabel().attr.text === 'data4';
             });
         });
 
         it("should trigger sprite/layout update on data sort", function () {
-            var legend = chart.getLegend();
-            var originalMethod = legend.performLayout;
-            var oldBorderWidth, newBorderWidth;
-            var sprites = legend.getSprites();
-            var layoutDone;
-
-            legend.performLayout = function () {
-                originalMethod.call(legend);
-                layoutDone = true;
-            };
+            var oldBorderWidth, newBorderWidth,
+                performLayoutSpy = spyOn(legend, 'performLayout').andCallThrough(),
+                sprites = legend.getSprites();
 
             function checkPositions(sprites) {
                 expect(sprites[0].getBBox().x < sprites[1].getBBox().x).toBe(true);
@@ -364,66 +648,348 @@ describe("Ext.chart.legend.SpriteLegend", function () {
             }
 
             runs(function () {
-                legend.scheduleLayout();
-            });
-
-            waitsFor(function () {
-                return layoutDone;
-            }, "initial legend layout to finish");
-
-            runs(function () {
                 // Initial positions:
                 // IE - Firefox - Chrome - Safari
                 checkPositions(sprites);
 
                 oldBorderWidth = legend.borderSprite.getBBox().width;
-            });
-
-            runs(function () {
-                layoutDone = false;
                 chart.legendStore.sort('name', 'DESC');
+                performLayoutSpy.reset();
             });
 
-            waitsFor(function () {
-                return layoutDone;
-            }, "legend layout to finish after DESC sort");
+           waitsForSpy(performLayoutSpy, "legend layout to finish after DESC sort");
 
             runs(function () {
                 newBorderWidth = legend.borderSprite.getBBox().width;
+
+                // Relative positions of the sprites should stay the same.
+                checkPositions(sprites);
+
                 // The sum of all sprite widths should stay the same,
                 // and thus the legend border width too.
-                expect(newBorderWidth).toEqual(oldBorderWidth);
-
                 // Safari - IE - Firefox - Chrome
                 expect(sprites[0].getLabel().attr.text).toBe('Safari');
                 expect(sprites[1].getLabel().attr.text).toBe('IE');
                 expect(sprites[2].getLabel().attr.text).toBe('Firefox');
                 expect(sprites[3].getLabel().attr.text).toBe('Chrome');
 
+                chart.legendStore.sort('name', 'ASC');
+                performLayoutSpy.reset();
+            });
+            
+           waitsForSpy(performLayoutSpy, "legend layout to finish after ASC sort");
+
+            runs(function() {
                 // Relative positions of the sprites should stay the same.
                 checkPositions(sprites);
-            });
 
-            runs(function () {
-                layoutDone = false;
-                chart.legendStore.sort('name', 'ASC');
-            });
-
-            waitsFor(function () {
-                return layoutDone;
-            }, "legend layout to finish after ASC sort");
-
-            runs(function () {
                 // Chrome - Firefox - IE - Safari
                 expect(sprites[0].getLabel().attr.text).toBe('Chrome');
                 expect(sprites[1].getLabel().attr.text).toBe('Firefox');
                 expect(sprites[2].getLabel().attr.text).toBe('IE');
                 expect(sprites[3].getLabel().attr.text).toBe('Safari');
-
-                // Relative positions of the sprites should stay the same.
-                checkPositions(sprites);
             });
+        });
+    });
 
+    describe('series colors', function () {
+        var chart, layoutEnd;
+        var colors1 = ['red', 'blue', 'green', 'orange', 'yellow'];
+        var colors2 = ['gold', 'cyan', 'magenta', 'lime', 'navy'];
+        var n = colors1.length;
+        var data = (function () {
+            var data = [];
+
+            for (var i = 0; i < n; i++) {
+                var point = {
+                    x: 'cat' + (i+1)
+                };
+                for (var j = 0; j < n; j++) {
+                    point['y' + (j+1)] = j+1;
+                }
+                data.push(point);
+            }
+
+            return data;
+        })();
+
+        afterEach(function () {
+            chart = Ext.destroy(chart);
+            layoutEnd = false;
+        });
+
+
+        it('should use theme colors in a cartesian (bar) chart', function () {
+            runs(function () {
+                chart = Ext.create({
+                    xtype: 'cartesian',
+                    animation: false,
+                    renderTo: document.body,
+                    width: 400,
+                    height: 400,
+                    store: {
+                        data: data.slice()
+                    },
+                    legend: {
+                        type: 'sprite',
+                        docked: 'right'
+                    },
+                    series: [{
+                        type: 'bar',
+                        xField: 'x',
+                        yField: ['y1', 'y2', 'y3', 'y4', 'y5']
+                    }],
+                    listeners: {
+                        layout: function () {
+                            layoutEnd =  true;
+                        }
+                    }
+                });
+            });
+            waitsFor(function () {
+                return layoutEnd;
+            });
+            runs(function () {
+                var series = chart.getSeries()[0],
+                    seriesSprites = series.getSprites(),
+                    legendSprites = chart.getLegend().getSprites(),
+                    themeColors = chart.getTheme().getColors();
+
+                for (var i = 0; i < n; i++) {
+                    expect(seriesSprites[i].attr.fillStyle).toBe(themeColors[i]);
+                    expect(legendSprites[i].getMarker().attr.fillStyle).toBe(themeColors[i]);
+                }
+            });
+        });
+        it('should use theme colors in a polar (pie3d) chart', function () {
+            runs(function () {
+                chart = Ext.create({
+                    xtype: 'polar',
+                    animation: false,
+                    renderTo: document.body,
+                    width: 400,
+                    height: 400,
+                    store: {
+                        data: data.slice()
+                    },
+                    legend: {
+                        type: 'sprite',
+                        docked: 'right'
+                    },
+                    series: [{
+                        type: 'pie3d',
+                        angleField: 'y1',
+                        label: {
+                            field: 'x'
+                        }
+                    }],
+                    listeners: {
+                        layout: function () {
+                            layoutEnd =  true;
+                        }
+                    }
+                });
+            });
+            waitsFor(function () {
+                return layoutEnd;
+            });
+            runs(function () {
+                var series = chart.getSeries()[0],
+                    seriesSprites = series.getSprites(),
+                    legendSprites = chart.getLegend().getSprites(),
+                    themeColors = chart.getTheme().getColors();
+
+                for (var i = 0; i < n; i++) {
+                    expect(seriesSprites[i * series.spritesPerSlice].attr.baseColor).toBe(themeColors[i]);
+                    expect(legendSprites[i].getMarker().attr.fillStyle).toBe(themeColors[i]);
+                }
+            });
+        });
+        it('should use colors from the series "colors" config (cartesian, bar)', function () {
+            runs(function () {
+                chart = Ext.create({
+                    xtype: 'cartesian',
+                    animation: false,
+                    renderTo: document.body,
+                    width: 400,
+                    height: 400,
+                    store: {
+                        data: data.slice()
+                    },
+                    legend: {
+                        type: 'sprite',
+                        docked: 'right'
+                    },
+                    series: [{
+                        type: 'bar',
+                        xField: 'x',
+                        yField: ['y1', 'y2', 'y3', 'y4', 'y5'],
+                        colors: colors1.slice()
+                    }],
+                    listeners: {
+                        layout: function () {
+                            layoutEnd =  true;
+                        }
+                    }
+                });
+            });
+            waitsFor(function () {
+                return layoutEnd;
+            });
+            runs(function () {
+                var series = chart.getSeries()[0],
+                    seriesSprites = series.getSprites(),
+                    legendSprites = chart.getLegend().getSprites();
+
+                for (var i = 0; i < n; i++) {
+                    var hexColor = Ext.util.Color.fly(colors1[i]).toString();
+                    expect(seriesSprites[i].attr.fillStyle).toBe(hexColor);
+                    expect(legendSprites[i].getMarker().attr.fillStyle).toBe(hexColor);
+                }
+            });
+        });
+        it('should use colors from the series "colors" config (polar, pie3d)', function () {
+            runs(function () {
+                chart = Ext.create({
+                    xtype: 'polar',
+                    animation: false,
+                    renderTo: document.body,
+                    width: 400,
+                    height: 400,
+                    store: {
+                        data: data.slice()
+                    },
+                    legend: {
+                        type: 'sprite',
+                        docked: 'right'
+                    },
+                    series: [{
+                        type: 'pie3d',
+                        angleField: 'y1',
+                        label: {
+                            field: 'x'
+                        },
+                        colors: colors1.slice()
+                    }],
+                    listeners: {
+                        layout: function () {
+                            layoutEnd =  true;
+                        }
+                    }
+                });
+            });
+            waitsFor(function () {
+                return layoutEnd;
+            });
+            runs(function () {
+                var series = chart.getSeries()[0],
+                    seriesSprites = series.getSprites(),
+                    legendSprites = chart.getLegend().getSprites();
+
+                for (var i = 0; i < n; i++) {
+                    var hexColor = Ext.util.Color.fly(colors1[i]).toString();
+                    expect(seriesSprites[i * series.spritesPerSlice].attr.baseColor).toBe(hexColor);
+                    expect(legendSprites[i].getMarker().attr.fillStyle).toBe(hexColor);
+                }
+            });
+        });
+        it('should reflect dynamic changes to the series "colors" config (cartesian, bar)', function () {
+            runs(function () {
+                chart = Ext.create({
+                    xtype: 'cartesian',
+                    animation: false,
+                    renderTo: document.body,
+                    width: 400,
+                    height: 400,
+                    store: {
+                        data: data.slice()
+                    },
+                    legend: {
+                        type: 'sprite',
+                        docked: 'right'
+                    },
+                    series: [{
+                        type: 'bar',
+                        xField: 'x',
+                        yField: ['y1', 'y2', 'y3', 'y4', 'y5'],
+                        colors: colors1.slice()
+                    }],
+                    listeners: {
+                        layout: function () {
+                            layoutEnd =  true;
+                        }
+                    }
+                });
+            });
+            waitsFor(function () {
+                return layoutEnd;
+            });
+            runs(function () {
+                layoutEnd = false;
+                chart.getSeries()[0].setColors(colors2.slice());
+            });
+            waits(1);
+            runs(function () {
+                var series = chart.getSeries()[0],
+                    seriesSprites = series.getSprites(),
+                    legendSprites = chart.getLegend().getSprites();
+
+                for (var i = 0; i < n; i++) {
+                    var hexColor = Ext.util.Color.fly(colors2[i]).toString();
+                    expect(seriesSprites[i].attr.fillStyle).toBe(hexColor);
+                    expect(legendSprites[i].getMarker().attr.fillStyle).toBe(hexColor);
+                }
+            });
+        });
+        it('should reflect dynamic changes to the series "colors" config (polar, pie3d)', function () {
+            runs(function () {
+                chart = Ext.create({
+                    xtype: 'polar',
+                    animation: false,
+                    renderTo: document.body,
+                    width: 400,
+                    height: 400,
+                    store: {
+                        data: data.slice()
+                    },
+                    legend: {
+                        type: 'sprite',
+                        docked: 'right'
+                    },
+                    series: [{
+                        type: 'pie3d',
+                        angleField: 'y1',
+                        label: {
+                            field: 'x'
+                        },
+                        colors: colors1.slice()
+                    }],
+                    listeners: {
+                        layout: function () {
+                            layoutEnd =  true;
+                        }
+                    }
+                });
+            });
+            waitsFor(function () {
+                return layoutEnd;
+            });
+            runs(function () {
+                layoutEnd = false;
+                chart.getSeries()[0].setColors(colors2.slice());
+            });
+            waits(1);
+            runs(function () {
+                var series = chart.getSeries()[0],
+                    seriesSprites = series.getSprites(),
+                    legendSprites = chart.getLegend().getSprites();
+
+                for (var i = 0; i < n; i++) {
+                    var hexColor = Ext.util.Color.fly(colors2[i]).toString();
+                    expect(seriesSprites[i * series.spritesPerSlice].attr.baseColor).toBe(hexColor);
+                    expect(legendSprites[i].getMarker().attr.fillStyle).toBe(hexColor);
+                }
+            });
         });
     });
 });

@@ -24,6 +24,16 @@ Ext.define('Ext.util.History', {
     useTopWindow: false,
 
     /**
+     * @property {Boolean} hashbang If set to `true`, when a hash is set, the hash will be prefixed
+     * with an exclamation making it a hash bang instead of just a hash.
+     *
+     *     Ext.util.History.add('foo'); // will result in #foo
+     *
+     *     Ext.util.History.hashbang = true;
+     *     Ext.util.History.add('bar'); // will result in #!bar
+     */
+
+    /**
      * @property {String} currentToken The current token.
      * @private
      */
@@ -40,10 +50,11 @@ Ext.define('Ext.util.History', {
      * @param {String} token An identifier associated with the page state at that point in its history.
      */
 
+    hashRe: /^(#?!?)/,
+
     constructor: function() {
         var me = this;
 
-        me.hiddenField = null;
         me.ready = false;
         me.currentToken = null;
         me.mixins.observable.constructor.call(me);
@@ -57,7 +68,7 @@ Ext.define('Ext.util.History', {
      * @private
      */
     getHash: function() {
-        return this.win.location.hash.substr(1);
+        return this.win.location.hash.replace(this.hashRe, '');
     },
 
     /**
@@ -65,12 +76,27 @@ Ext.define('Ext.util.History', {
      * {@link #add} method instead.
      *
      * @param {String} hash The hash to use
+     * @param {Boolean} replace If `true`, the hash passed in will replace the current resource
+     * by using the `location.replace()` API.
      * @private
      */
-    setHash: function(hash) {
+    setHash: function(hash, replace) {
+        var me = this,
+            hashRe = me.hashRe,
+            loc = me.win.location;
+
+        // may or may not already be prefixed with # or #! already
+        hash = hash.replace(hashRe, me.hashbang ? '#!' : '#');
+
         try {
-            this.win.location.hash = hash;
-            this.currentToken = hash;
+            if (replace) {
+                loc.replace(hash);
+            } else {
+                loc.hash = hash;
+            }
+
+            //need to make sure currentToken is not prefixed
+            me.currentToken = hash.replace(hashRe, '');
         } catch (e) {
             // IE can give Access Denied (esp. in popup windows)
         }
@@ -83,30 +109,23 @@ Ext.define('Ext.util.History', {
      * @private
      */
     handleStateChange: function(token) {
-        this.currentToken = token;
-        this.fireEvent('change', token);
+        // browser won't have # here but may have !
+        token = token.replace(this.hashRe, '');
+
+        this.fireEvent('change', this.currentToken = token);
     },
 
     /**
      * Bootstraps the initialization the location.hash.
-     * This will setup the {@link Ext.TaskManager} to poll for hash changes every 50ms.
      * @private
      */
-    startUp: function() {
+    startUp: function () {
         var me = this;
 
         me.currentToken = me.getHash();
 
-        if (Ext.supports.Hashchange) {
-            Ext.get(me.win).on('hashchange', me.onHashChange, me);
-        } else {
-            Ext.TaskManager.start({
-                fireIdleEvent: false,
-                run: me.onHashChange,
-                interval: 50,
-                scope: me
-            });
-        }
+        Ext.get(me.win).on('hashchange', me.onHashChange, me);
+
         me.ready = true;
         me.fireEvent('ready', me);
     },
@@ -166,6 +185,9 @@ Ext.define('Ext.util.History', {
      * @param {Boolean} [preventDuplicates=true] When true, if the passed token matches the current token
      * it will not save a new history step. Set to false if the same state can be saved more than once
      * at the same history stack location.
+     *
+     * @return {Boolean} Whether the token was set in the case if the current token matches the token
+     * passed.
      */
     add: function(token, preventDuplicates) {
         var me = this,
@@ -180,19 +202,40 @@ Ext.define('Ext.util.History', {
     },
 
     /**
+     * Replaces the current resource in history.
+     *
+     * @param {String} token The value that will replace the current resource in the history state.
+     * @param {Boolean} [preventDuplicates=true] When `true`, if the passed token matches the current token
+     * it will not save a new history step. Set to `false` if the same state can be saved more than once
+     * at the same history stack location.
+     *
+     * @return {Boolean} Whether the token was set in the case if the current token matches the token
+     * passed.
+     */
+    replace: function(token, preventDuplicates) {
+        var me = this,
+            set = false;
+
+        if (preventDuplicates === false || me.getToken() !== token) {
+            this.setHash(token, true);
+            set = true;
+        }
+
+        return set;
+    },
+
+    /**
      * Programmatically steps back one step in browser history (equivalent to the user pressing the Back button).
      */
     back: function() {
-        var win = this.useTopWindow ? window.top : window;
-        win.history.go(-1);
+        this.win.history.go(-1);
     },
 
     /**
      * Programmatically steps forward one step in browser history (equivalent to the user pressing the Forward button).
      */
     forward: function(){
-        var win = this.useTopWindow ? window.top : window;
-        win.history.go(1);
+        this.win.history.go(1);
     },
 
     /**

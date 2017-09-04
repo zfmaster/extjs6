@@ -11,6 +11,7 @@ Ext.define('Ext.draw.engine.Svg', {
 
     config: {
         /**
+         * @cfg {Boolean} highPrecision
          * Nothing needs to be done in high precision mode.
          */
         highPrecision: false
@@ -24,7 +25,7 @@ Ext.define('Ext.draw.engine.Svg', {
             },
             children: [
                 {
-                    reference: 'innerElement',
+                    reference: 'bodyElement',
                     style: {
                         width: '100%',
                         height: '100%',
@@ -222,13 +223,23 @@ Ext.define('Ext.draw.engine.Svg', {
         return svg;
     },
 
+    b64EncodeUnicode: function (str) {
+        // Since DOMStrings are 16-bit-encoded strings, in most browsers calling window.btoa
+        // on a Unicode string will cause a Character Out Of Range exception if a character
+        // exceeds the range of a 8-bit ASCII-encoded character. More information:
+        // https://developer.mozilla.org/en/docs/Web/API/WindowBase64/Base64_encoding_and_decoding
+        return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function (match, p1) {
+            return String.fromCharCode('0x' + p1);
+        }));
+    },
+
     flatten: function (size, surfaces) {
         var svg = '<?xml version="1.0" standalone="yes"?>';
 
         svg += this.toSVG(size, surfaces);
 
         return {
-            data: 'data:image/svg+xml;utf8,' + encodeURIComponent(svg),
+            data: 'data:image/svg+xml;base64,' + this.b64EncodeUnicode(svg),
             type: 'svg'
         };
     },
@@ -249,7 +260,7 @@ Ext.define('Ext.draw.engine.Svg', {
         if (node.attributes.length) {
             for (i = 0, n = node.attributes.length; i < n; i++) {
                 attr = node.attributes[i];
-                result += ' ' + attr.name + '="' + attr.value + '"';
+                result += ' ' + attr.name + '="' + Ext.String.htmlEncode(attr.value) + '"';
             }
         }
         result += '>';

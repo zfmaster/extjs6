@@ -1,4 +1,4 @@
-describe("Ext.slider.Widget", function() {
+topSuite("Ext.slider.Widget", ['Ext.Panel', 'Ext.app.ViewModel'], function() {
     var panel, slider, viewModel, data;
 
     afterEach(function () {

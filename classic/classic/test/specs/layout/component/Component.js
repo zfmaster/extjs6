@@ -1,4 +1,4 @@
-describe("Ext.layout.component.Component", function() {
+topSuite("Ext.layout.component.Component", ['Ext.Panel'], function() {
     var c;
 
     afterEach(function() {

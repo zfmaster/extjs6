@@ -1,5 +1,4 @@
-describe("Ext.app.ViewController", function() {
-
+topSuite("Ext.app.ViewController", ['Ext.app.ViewModel', 'Ext.Button', 'Ext.Container'], function() {
     var ct, controller, doInit, doBeforeInit;
     
     function makeContainer(cfg) {
@@ -172,6 +171,154 @@ describe("Ext.app.ViewController", function() {
                 ct.getViewModel();
                 expect(result).toBe(vm);
             });
+        });
+    });
+
+    describe("bindings", function() {
+        function defineBindController(bindings) {
+            Ext.define('spec.TestController4', {
+                extend: 'Ext.app.ViewController',
+                alias: 'controller.test4',
+
+                bindings: bindings,
+
+                method1: Ext.emptyFn,
+                method2: Ext.emptyFn
+            });
+        }
+
+        afterEach(function() {
+            Ext.undefine('spec.TestController4');
+        });
+
+        it("should bind to a viewmodel directly on the view", function() {
+            defineBindController({
+                method1: '{x}'
+            });
+
+            var ctrl = new spec.TestController4(),
+                vm = new Ext.app.ViewModel();
+
+            spyOn(ctrl, 'method1');
+
+            makeContainer({
+                renderTo: Ext.getBody(),
+                controller: ctrl,
+                viewModel: vm
+            });
+
+            expect(ctrl.method1).not.toHaveBeenCalled();
+            vm.set('x', 100);
+            vm.notify();
+            expect(ctrl.method1.callCount).toBe(1);
+        });
+
+        it("should bind to a viewmodel above the view", function() {
+            defineBindController({
+                method1: '{x}'
+            });
+
+            var ctrl = new spec.TestController4(),
+                vm = new Ext.app.ViewModel();
+
+            spyOn(ctrl, 'method1');
+
+            makeContainer({
+                renderTo: Ext.getBody(),
+                viewModel: vm,
+                items: {
+                    xtype: 'container',
+                    controller: ctrl
+                }
+            });
+
+            vm.set('x', 200);
+            vm.notify();
+            expect(ctrl.method1.callCount).toBe(1);
+        });
+
+        it("should bind to an object bind", function() {
+            defineBindController({
+                method1: {
+                    x: '{x}',
+                    y: '{y}'
+                }
+            });
+
+            var ctrl = new spec.TestController4(),
+                vm = new Ext.app.ViewModel();
+
+            spyOn(ctrl, 'method1');
+
+            makeContainer({
+                renderTo: Ext.getBody(),
+                viewModel: vm,
+                items: {
+                    xtype: 'container',
+                    controller: ctrl
+                }
+            });
+
+            vm.set('x', 200);
+            vm.set('y', 300);
+            vm.notify();
+            expect(ctrl.method1.callCount).toBe(1);
+        });
+
+        it("should be able to have multiple bindings", function() {
+            defineBindController({
+                method1: '{x}',
+                method2: '{y}'
+            });
+
+            var ctrl = new spec.TestController4(),
+                vm = new Ext.app.ViewModel();
+
+            spyOn(ctrl, 'method1');
+            spyOn(ctrl, 'method2');
+
+            makeContainer({
+                renderTo: Ext.getBody(),
+                controller: ctrl,
+                viewModel: vm
+            });
+
+            vm.set('x', 200);
+            vm.set('y', 300);
+            vm.notify();
+            expect(ctrl.method1.callCount).toBe(1);
+            expect(ctrl.method2.callCount).toBe(1);
+        });
+
+        it("should destroy bindings along with the controller", function() {
+            defineBindController({
+                method1: '{x}'
+            });
+
+            var ctrl = new spec.TestController4(),
+                vm = new Ext.app.ViewModel();
+
+            spyOn(ctrl, 'method1');
+
+            makeContainer({
+                renderTo: Ext.getBody(),
+                viewModel: vm,
+                items: {
+                    xtype: 'container',
+                    controller: ctrl
+                }
+            });
+
+            vm.set('x', 1);
+            vm.notify();
+            expect(ctrl.method1.callCount).toBe(1);
+            ctrl.method1.reset();
+
+            ct.items.first().destroy();
+
+            vm.set('x', 1);
+            vm.notify();
+            expect(ctrl.method1).not.toHaveBeenCalled();
         });
     });
     

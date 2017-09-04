@@ -1,4 +1,4 @@
-describe("Ext.data.Types", function() {
+topSuite("Ext.data.Types", function() {
     var conv = function(type, scope, value) {
         var cfg = Ext.apply(scope || {}, {
             getAllowNull: function() {

@@ -1,4 +1,4 @@
-describe("Ext.data.ErrorCollection", function() {
+topSuite("Ext.data.ErrorCollection", function() {
     var errors;
 
     beforeEach(function() {

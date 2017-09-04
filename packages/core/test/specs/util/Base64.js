@@ -1,4 +1,4 @@
-describe("Ext.util.Base64", function() {
+topSuite("Ext.util.Base64", function() {
     // https://www.base64encode.org was used as the reference for encoding
     var tests = [{
         name: 'lowercase Latin characters',

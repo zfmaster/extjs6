@@ -1,4 +1,9 @@
-describe('Ext.grid.plugin.RowEditing', function () {
+/* global Ext, expect, jasmine */
+
+topSuite("Ext.grid.plugin.RowEditing",
+    ['Ext.grid.Panel', 'Ext.grid.column.Widget', 'Ext.form.field.*',
+     'Ext.grid.selection.SpreadsheetModel', 'Ext.grid.feature.GroupingSummary'],
+function() {
     var store, plugin, grid, view, column,
         synchronousLoad = true,
         proxyStoreLoad = Ext.data.ProxyStore.prototype.load,
@@ -61,7 +66,6 @@ describe('Ext.grid.plugin.RowEditing', function () {
     afterEach(function () {
         // Undo the overrides.
         Ext.data.ProxyStore.prototype.load = proxyStoreLoad;
-
         store = plugin = grid = view = column = Ext.destroy(grid);
     });
 
@@ -132,6 +136,29 @@ describe('Ext.grid.plugin.RowEditing', function () {
 
             expect(plugin.editor).toBeDefined();
             expect(plugin.editing).toBe(true);
+        });
+
+        it('should work with spreadsheet selection', function() {
+            var selModel = selModel = new Ext.grid.selection.SpreadsheetModel({
+                dragSelect: true,
+                cellSelect: true,
+                columnSelect: true,
+                rowSelect: true,
+                checkboxSelect: false
+            }),
+            record, items;
+            makeGrid(undefined, {
+                selModel: selModel
+            });
+            
+            record = grid.store.getAt(0);
+            column = grid.columns[0];
+            expect(function() {
+                plugin.startEdit(record, column);
+            }).not.toThrow();
+
+            items = plugin.editor.items;
+            expect(items.getAt(1).getValue()).toBe('Lisa');
         });
     });
 
@@ -206,6 +233,8 @@ describe('Ext.grid.plugin.RowEditing', function () {
                 column = grid.columns[0];
 
                 plugin.startEdit(record, column);
+
+                waitsForFocus(plugin.getEditor(), null, 10000);
             });
 
             afterEach(function () {
@@ -475,7 +504,6 @@ describe('Ext.grid.plugin.RowEditing', function () {
 
         it('should display the row editor for the locked grid in editing mode', function () {
             node = grid.lockedGrid.view.getNode(0);
-
             jasmine.fireMouseEvent(Ext.fly(node).down('.x-grid-cell-inner', true), 'dblclick');
 
             plugin = grid.findPlugin('rowediting');
@@ -493,6 +521,38 @@ describe('Ext.grid.plugin.RowEditing', function () {
 
             expect(plugin.editor !== null).toBe(true);
             expect(plugin.editing).toBe(true);
+        });
+
+        describe('locking and unlocking columns', function() {
+            it("should move the editor from the locked to the normal side after unlocking a column", function() {
+                node = grid.lockedGrid.view.getNode(0);
+                jasmine.fireMouseEvent(Ext.fly(node).down('.x-grid-cell-inner', true), 'dblclick');
+                plugin = grid.findPlugin('rowediting');
+
+                expect(grid.columns[0].getEditor().ownerCt).toBe(plugin.editor.lockedColumnContainer);
+                plugin.cancelEdit();
+
+                grid.unlock(grid.columns[0], 0);
+                node = grid.normalGrid.view.getNode(0);
+                jasmine.fireMouseEvent(Ext.fly(node).down('.x-grid-cell-inner', true), 'dblclick');
+                
+                expect(grid.columns[0].getEditor().ownerCt).toBe(plugin.editor.normalColumnContainer);
+            });
+
+            it("should move the editor from the normal to the locked side after locking a column", function() {
+                node = grid.normalGrid.view.getNode(0);
+                jasmine.fireMouseEvent(Ext.fly(node).down('.x-grid-cell-inner', true), 'dblclick');
+                plugin = grid.findPlugin('rowediting');
+
+                expect(grid.columns[1].getEditor().ownerCt).toBe(plugin.editor.normalColumnContainer);
+                plugin.cancelEdit();
+
+                grid.lock(grid.columns[1], 0);
+                node = grid.lockedGrid.view.getNode(0);
+                jasmine.fireMouseEvent(Ext.fly(node).down('.x-grid-cell-inner', true), 'dblclick');
+                
+                expect(grid.columns[0].getEditor().ownerCt).toBe(plugin.editor.lockedColumnContainer);
+            });
         });
 
         describe('with grouping feature', function () {
@@ -605,7 +665,7 @@ describe('Ext.grid.plugin.RowEditing', function () {
             it('should begin editing when double-clicked', function () {
                 record = grid.store.getAt(0);
                 node = grid.view.getNodeByRecord(record);
-                jasmine.fireMouseEvent(Ext.fly(node).down('.x-grid-cell'), 'dblclick');
+                jasmine.fireMouseEvent(node.querySelector('.x-grid-cell'), 'dblclick');
 
                 expect(plugin.editor).not.toBeFalsy();
             });
@@ -613,7 +673,7 @@ describe('Ext.grid.plugin.RowEditing', function () {
             it('should not begin editing when single-clicked', function () {
                 record = grid.store.getAt(0);
                 node = grid.view.getNodeByRecord(record);
-                jasmine.fireMouseEvent(Ext.fly(node).down('.x-grid-cell'), 'click');
+                jasmine.fireMouseEvent(node.querySelector('.x-grid-cell'), 'click');
 
                 expect(plugin.editor).toBeFalsy();
             });
@@ -633,7 +693,7 @@ describe('Ext.grid.plugin.RowEditing', function () {
             it('should begin editing when single-clicked', function () {
                 record = grid.store.getAt(0);
                 node = grid.view.getNodeByRecord(record);
-                jasmine.fireMouseEvent(Ext.fly(node).down('.x-grid-cell'), 'click');
+                jasmine.fireMouseEvent(node.querySelector('.x-grid-cell'), 'click');
 
                 expect(plugin.editor).not.toBeFalsy();
             });
@@ -641,7 +701,7 @@ describe('Ext.grid.plugin.RowEditing', function () {
             it('should not begin editing when double-clicked', function () {
                 record = grid.store.getAt(0);
                 node = grid.view.getNodeByRecord(record);
-                jasmine.fireMouseEvent(Ext.fly(node).down('.x-grid-cell'), 'dblclick');
+                jasmine.fireMouseEvent(node.querySelector('.x-grid-cell'), 'dblclick');
 
                 expect(plugin.editor).not.toBeFalsy();
             });

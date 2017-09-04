@@ -1,5 +1,5 @@
 // Tests only the behaviours specific to our default implementation of the list item
-describe("Ext.list.TreeItem", function() {
+topSuite("Ext.list.TreeItem", ['Ext.data.TreeStore', 'Ext.list.Tree'], function() {
 
     var root, list, store, sampleData;
 

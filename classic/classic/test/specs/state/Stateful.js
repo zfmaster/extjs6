@@ -1,4 +1,4 @@
-describe("Ext.state.Stateful", function(){
+topSuite("Ext.state.Stateful", ['Ext.Component'], function(){
     var origManager, makeComponent, comp,
         stateData = {};
 

@@ -2,7 +2,7 @@
  * FieldContainer is a derivation of {@link Ext.container.Container Container} that implements the
  * {@link Ext.form.Labelable Labelable} mixin. This allows it to be configured so that it is rendered with
  * a {@link #fieldLabel field label} and optional {@link #msgTarget error message} around its sub-items.
- * This is useful for arranging a group of fields or other components within a single item in a form, so
+ * This is useful for arranging a group of fields within a single item in a form, so
  * that it lines up nicely with other fields. A common use is for grouping a set of related fields under
  * a single label in a form.
  * 
@@ -123,14 +123,13 @@ Ext.define('Ext.form.FieldContainer', {
      */
     combineLabels: false,
 
-    //<locale>
     /**
      * @cfg {String} labelConnector
      * The string to use when joining the labels of individual sub-fields, when {@link #combineLabels} is
      * set to true. Defaults to ', '.
+     * @locale
      */
     labelConnector: ', ',
-    //</locale>
 
     /**
      * @cfg {Boolean} combineErrors
@@ -167,12 +166,7 @@ Ext.define('Ext.form.FieldContainer', {
         me.callParent();
         me.initMonitor();
     },
-    
-    /**
-     * @protected
-     * Called when a {@link Ext.form.Labelable} instance is added to the container's subtree.
-     * @param {Ext.form.Labelable} labelItem The instance that was added
-     */
+
     onAdd: function(labelItem) {
         var me = this;
 
@@ -190,11 +184,6 @@ Ext.define('Ext.form.FieldContainer', {
         me.updateLabel();
     },
 
-    /**
-     * @protected
-     * Called when a {@link Ext.form.Labelable} instance is removed from the container's subtree.
-     * @param {Ext.form.Labelable} labelItem The instance that was removed
-     */
     onRemove: function(labelItem, isDestroying) {
         var me = this;
         me.callParent(arguments);

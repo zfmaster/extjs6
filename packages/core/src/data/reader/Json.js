@@ -268,23 +268,17 @@ Ext.define('Ext.data.reader.Json', {
         }
     },
 
-    buildExtractors : function() {
+    buildExtractors : function(force) {
         var me = this,
-            metaProp, rootProp;
+            emptyFn = Ext.emptyFn,
+            prop;
 
         // Will only return true if we need to build
-        if (me.callParent(arguments)) {
-            metaProp = me.getMetaProperty();
-            rootProp = me.getRootProperty();
-            if (rootProp) {
-                me.getRoot = me.getAccessor(rootProp);
-            } else {
-                me.getRoot = Ext.identityFn;
-            }
-        
-            if (metaProp) {
-                me.getMeta = me.getAccessor(metaProp);
-            }
+        if (me.callParent([force])) {
+            me.getRoot = me.setupExtractor(me.getRootProperty(), Ext.identityFn);
+            me.getGroupRoot = me.setupExtractor(me.getGroupRootProperty(), emptyFn);
+            me.getSummaryRoot = me.setupExtractor(me.getSummaryRootProperty(), emptyFn);
+            me.getMeta = me.setupExtractor(me.getMetaProperty(), emptyFn);
         }
     },
 
@@ -339,8 +333,7 @@ Ext.define('Ext.data.reader.Json', {
         var re = /[\[\.]/;
 
         return function(expr) {
-            var me = this,
-                simple = me.getUseSimpleAccessors(),
+            var simple = this.getUseSimpleAccessors(),
                 operatorIndex, result,
                 current, parts, part, inExpr,
                 isDot, isLeft, isRight,
@@ -444,8 +437,8 @@ Ext.define('Ext.data.reader.Json', {
             
         if (hasMap) {
             if (typeof map === 'function') {
-                return function(raw) {
-                    return field.mapping(raw, me);
+                return function(raw, self) {
+                    return field.mapping(raw, self);
                 };
             } else {
                 return me.createAccessor(map);
@@ -455,13 +448,17 @@ Ext.define('Ext.data.reader.Json', {
 
     getAccessorKey: function(prop) {
         var simple = this.getUseSimpleAccessors() ? 'simple' : '';
-        return this.$className + simple + prop;
+        return this.callParent([simple + prop]);
     },
 
     privates: {
         copyFrom: function(reader) {
             this.callParent([reader]);
             this.getRoot = reader.getRoot;
+        },
+
+        setupExtractor: function(prop, defaultFn) {
+            return prop ? this.getAccessor(prop) : defaultFn;
         }
     }
 });

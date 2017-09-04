@@ -26,7 +26,9 @@
  *         height: 250,
  *         width: 250,
  *         store: shows,
- *         plugins: 'gridfilters',
+ *         plugins: {
+ *             gridfilters: true
+ *         },
  *         columns: [{
  *             dataIndex: 'id',
  *             text: 'ID',
@@ -127,13 +129,12 @@ Ext.define('Ext.grid.filters.Filters', {
      */
     filterCls: Ext.baseCSSPrefix + 'grid-filters-filtered-column',
 
-    //<locale>
     /**
-     * @cfg {String} [menuFilterText="Filters"]
+     * @cfg {String} [menuFilterText]
      * The text for the filters menu.
+     * @locale
      */
     menuFilterText: 'Filters',
-    //</locale>
 
     /**
      * @cfg {Boolean} showMenu

@@ -5,7 +5,7 @@
  *
  * ## Example
  *
- *     @example miniphone
+ *     @example
  *     Ext.Viewport.add({
  *         masked: {
  *            xtype: 'loadmask'
@@ -14,7 +14,7 @@
  *
  * You can customize the loading {@link #message} and whether or not you want to show the {@link #indicator}:
  *
- *     @example miniphone
+ *     @example
  *     Ext.Viewport.add({
  *         masked: {
  *            xtype: 'loadmask',

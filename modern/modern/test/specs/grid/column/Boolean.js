@@ -1,5 +1,8 @@
-describe('Ext.grid.column.Boolean', function () {
-    var panel, container, store,
+topSuite("Ext.grid.column.Boolean",
+    ['Ext.grid.Grid', 'Ext.data.ArrayStore', 'Ext.layout.Fit',
+     'Ext.app.ViewModel', 'Ext.app.ViewController'],
+function() {
+    var panel, store,
         synchronousLoad = true,
         proxyStoreLoad = Ext.data.ProxyStore.prototype.load,
         loadStore, Controller;
@@ -27,8 +30,6 @@ describe('Ext.grid.column.Boolean', function () {
             height: 200,
             width: 400
         }, gridCfg));
-        container = panel.container;
-        panel.onContainerResize(container, { height: container.element.getHeight() });
     }
 
     function getCell(row, column) {
@@ -72,10 +73,10 @@ describe('Ext.grid.column.Boolean', function () {
                 renderTo: Ext.getBody()
             });
 
-            expect(getCell(0, 0).el.down('.x-inner-el', true).innerHTML).toBe('False');
-            expect(getCell(1, 0).el.down('.x-inner-el', true).innerHTML).toBe('False');
-            expect(getCell(2, 0).el.down('.x-inner-el', true).innerHTML).toBe('True');
-            expect(getCell(3, 0).el.down('.x-inner-el', true).innerHTML).toBe('True');
+            expect(getCell(0, 0).el.down('.x-body-el', true).innerHTML).toBe('False');
+            expect(getCell(1, 0).el.down('.x-body-el', true).innerHTML).toBe('False');
+            expect(getCell(2, 0).el.down('.x-body-el', true).innerHTML).toBe('True');
+            expect(getCell(3, 0).el.down('.x-body-el', true).innerHTML).toBe('True');
         });
 
         it('should apply the trueText/falseText correctly', function () {
@@ -87,10 +88,10 @@ describe('Ext.grid.column.Boolean', function () {
                 renderTo: Ext.getBody()
             });
 
-            expect(getCell(0, 0).el.down('.x-inner-el', true).innerHTML).toBe('Falsch');
-            expect(getCell(1, 0).el.down('.x-inner-el', true).innerHTML).toBe('Falsch');
-            expect(getCell(2, 0).el.down('.x-inner-el', true).innerHTML).toBe('Wahr');
-            expect(getCell(3, 0).el.down('.x-inner-el', true).innerHTML).toBe('Wahr');
+            expect(getCell(0, 0).el.down('.x-body-el', true).innerHTML).toBe('Falsch');
+            expect(getCell(1, 0).el.down('.x-body-el', true).innerHTML).toBe('Falsch');
+            expect(getCell(2, 0).el.down('.x-body-el', true).innerHTML).toBe('Wahr');
+            expect(getCell(3, 0).el.down('.x-body-el', true).innerHTML).toBe('Wahr');
         });
 
         it('should apply the cell trueText/falseText correctly from a VM', function () {
@@ -116,10 +117,10 @@ describe('Ext.grid.column.Boolean', function () {
             });
 
             vm.notify();
-            expect(getCell(0, 0).el.down('.x-inner-el', true).innerHTML).toBe('Fals');
-            expect(getCell(1, 0).el.down('.x-inner-el', true).innerHTML).toBe('Fals');
-            expect(getCell(2, 0).el.down('.x-inner-el', true).innerHTML).toBe('Adevarat');
-            expect(getCell(3, 0).el.down('.x-inner-el', true).innerHTML).toBe('Adevarat');
+            expect(getCell(0, 0).el.down('.x-body-el', true).innerHTML).toBe('Fals');
+            expect(getCell(1, 0).el.down('.x-body-el', true).innerHTML).toBe('Fals');
+            expect(getCell(2, 0).el.down('.x-body-el', true).innerHTML).toBe('Adevarat');
+            expect(getCell(3, 0).el.down('.x-body-el', true).innerHTML).toBe('Adevarat');
         });
 
     });

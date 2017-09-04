@@ -16,10 +16,6 @@ Ext.define('Ext.viewport.Ios', {
     constructor: function() {
         this.callParent(arguments);
 
-        if (this.getAutoMaximize() && !this.isFullscreen()) {
-            this.addWindowListener('touchstart', this.onTouchStart.bind(this));
-        }
-
         // Chrome on iOS has a bug whereby the body can be scrolled out of view.
         // Also fixes the "mysterious bug on iOS where double tapping on a sheet
         // being animated from the bottom shift the whole body up".
@@ -76,28 +72,6 @@ Ext.define('Ext.viewport.Ios', {
 
     getScreenHeight: function() {
         return window.screen[this.getOrientation() === this.PORTRAIT ? 'height' : 'width'];
-    },
-
-    onElementFocus: function() {
-        if (this.getAutoMaximize() && !this.isFullscreen()) {
-            clearTimeout(this.scrollToTopTimer);
-        }
-
-        this.callParent(arguments);
-    },
-
-    onElementBlur: function() {
-        if (this.getAutoMaximize() && !this.isFullscreen()) {
-            this.scrollToTopTimer = Ext.defer(this.scrollToTop, 500);
-        }
-
-        this.callParent(arguments);
-    },
-
-    onTouchStart: function() {
-        if (this.focusedElement === null) {
-            this.scrollToTop();
-        }
     },
 
     scrollToTop: function() {

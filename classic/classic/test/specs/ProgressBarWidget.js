@@ -1,5 +1,4 @@
-describe("Ext.ProgressBarWidget", function() {
-
+topSuite("Ext.ProgressBarWidget", function() {
     var c;
 
     function makeProgress(config) {

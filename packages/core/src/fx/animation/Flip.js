@@ -44,6 +44,7 @@ Ext.define('Ext.fx.animation.Flip', {
 
         switch (direction) {
             case this.DIRECTION_UP:
+            case this.DIRECTION_TOP:
                 if (out) {
                     toRotateX = rotate;
                 } else {
@@ -52,6 +53,7 @@ Ext.define('Ext.fx.animation.Flip', {
                 break;
 
             case this.DIRECTION_DOWN:
+            case this.DIRECTION_BOTTOM:
                 if (out) {
                     toRotateX = -rotate;
                 } else {

@@ -12,6 +12,8 @@ var MAX_FILE_SIZE = 5 * 1024 * 1024;
 var TMP_DIR_NAME = process.cwd() + '/' + 'tmp/';
 var SCRIPT = fs.readFileSync('./save_script_tpl.js', { encoding: 'utf8' });
 
+var PORT = 1337;
+
 if (!fs.existsSync(TMP_DIR_NAME)) {
     fs.mkdirSync(TMP_DIR_NAME);
 }
@@ -25,6 +27,11 @@ function respond(response, code, data, headers) {
     headers = helpers.apply({}, headers, defaultHeaders);
     response.writeHead(code, headers);
     response.end(data);
+    if (code !== 200) { // something's not OK, "tweet" the reason, if not too long
+        if (typeof data === 'string') {
+            console.warn(data.length > 140 ? data.substr(0, 140) : data);
+        }
+    }
 }
 
 var counter = (function () {
@@ -37,6 +44,8 @@ var counter = (function () {
         return value++;
     }
 })();
+
+console.log('Image server listening to requests on port ' + PORT + '.');
 
 http.createServer(function (request, response) {
     if (request.method === 'POST') {
@@ -70,6 +79,8 @@ http.createServer(function (request, response) {
                 respond(response, 400, "Bad request.");
                 return;
             }
+
+            console.log("Processing a request ...");
 
             var userFileName = (config.filename || 'chart') + '.' + config.format;
             var serverFileName = TMP_DIR_NAME + counter().toString() + '.' + config.format;
@@ -111,4 +122,4 @@ http.createServer(function (request, response) {
     } else {
         respond(response, 400, "Bad request.");
     }
-}).listen(1337, '0.0.0.0');
+}).listen(PORT);

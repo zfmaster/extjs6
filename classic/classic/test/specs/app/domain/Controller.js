@@ -1,4 +1,4 @@
-describe("Ext.app.domain.Controller", function() {
+topSuite("Ext.app.domain.Controller", ['Ext.app.Application'], function() {
     var ctrlFoo, ctrlBar, ctrlTest, handlerFoo, handlerBar;
     
     beforeEach(function() {

@@ -50,7 +50,7 @@
  * In this configuration we set `pie` as the type for the series, then set the `highlight` config
  * to `true` (we can also specify an object with specific style properties for highlighting options)
  * which is triggered when hovering or tapping elements.
- * We set `data1` as the value of the `angleField` to determine the angle span for each pie slice.
+ * We set `data1` as the value of the `angleField` to determine the angular span for each pie slice.
  * We also set a label configuration object where we set the name of the store field
  * to be rendered as text for the label. The labels will also be displayed rotated.
  * And finally, we specify the donut hole radius for the pie series in percentages of the series radius.
@@ -171,7 +171,8 @@ Ext.define('Ext.chart.series.Pie', {
             store = me.getStore(),
             items = store.getData().items,
             sprites = me.getSprites(),
-            labelField = me.getLabel().getTemplate().getField(),
+            label = me.getLabel(),
+            labelField = label && label.getTemplate().getField(),
             hidden = me.getHidden(),
             i, ln, labels, sprite;
 
@@ -203,7 +204,7 @@ Ext.define('Ext.chart.series.Pie', {
             totalAngle = me.getTotalAngle(),
             clockwise = me.getClockwise() ? 1 : -1,
             sprites = me.getSprites(),
-            chart, sprite;
+            sprite, labels;
 
         if (!sprites) {
             return;
@@ -236,35 +237,29 @@ Ext.define('Ext.chart.series.Pie', {
                 globalAlpha: 1
             });
         }
-        if (recordCount < me.sprites.length) {
-            for (i = recordCount; i < me.sprites.length; i++) {
-                sprite = me.sprites[i];
-                // Don't want the 'labels' Markers and its 'template' sprite to be destroyed
-                // with the PieSlice MarkerHolder, as it is also used by other pie slices.
-                // So we release 'labels' before destroying the PieSlice.
-                // But first, we have to clear the instances of the 'labels'
-                // Markers created by the PieSlice MarkerHolder.
-                sprite.getMarker('labels').clear(sprite.getId());
-                sprite.releaseMarker('labels');
+        if (recordCount < sprites.length) {
+            for (i = recordCount; i < sprites.length; i++) {
+                sprite = sprites[i];
+                labels = sprite.getMarker('labels');
+                if (labels) {
+                    // Don't want the 'labels' Markers and its 'template' sprite to be destroyed
+                    // with the PieSlice MarkerHolder, as it is also used by other pie slices.
+                    // So we release 'labels' before destroying the PieSlice.
+                    // But first, we have to clear the instances of the 'labels'
+                    // Markers created by the PieSlice MarkerHolder.
+                    labels.clear(sprite.getId());
+                    sprite.releaseMarker('labels');
+                }
                 sprite.destroy();
             }
-            me.sprites.length = recordCount;
+            sprites.length = recordCount;
         }
-        for (i = recordCount; i < me.sprites.length; i++) {
+        for (i = recordCount; i < sprites.length; i++) {
             sprites[i].setAttributes({
                 startAngle: totalAngle,
                 endAngle: totalAngle,
                 globalAlpha: 0
             });
-        }
-
-        chart = me.getChart();
-        // 'refreshLegendStore' will attemp to grab the 'series',
-        // which are still configuring at this point.
-        // The legend store will be refreshed inside the chart.series
-        // updater anyway.
-        if (!chart.isConfiguring) {
-            chart.refreshLegendStore();
         }
     },
 
@@ -315,7 +310,7 @@ Ext.define('Ext.chart.series.Pie', {
     },
 
     // Subtract 90 degrees from rotation, so that `rotation` config's default
-    // zero value makes first pie sector start at noon, rather than 3 o'clock.
+    // value of 0 makes first pie sector start at noon, rather than 3 o'clock.
     rotationOffset: -Math.PI / 2,
 
     updateRotation: function (rotation) {
@@ -335,7 +330,7 @@ Ext.define('Ext.chart.series.Pie', {
             store = me.getStore();
 
         if (!chart || !store) {
-            return [];
+            return Ext.emptyArray;
         }
         me.getColors();
         me.getSubStyle();
@@ -347,7 +342,7 @@ Ext.define('Ext.chart.series.Pie', {
             spriteCreated = false,
             spriteIndex = 0,
             label = me.getLabel(),
-            labelTpl = label.getTemplate(),
+            labelTpl = label && label.getTemplate(),
             i, rendererData;
 
         rendererData = {
@@ -366,11 +361,11 @@ Ext.define('Ext.chart.series.Pie', {
                     sprite.config.highlight = me.getHighlight();
                     sprite.addModifier('highlight', true);
                 }
-                if (labelTpl.getField()) {
+                if (labelTpl && labelTpl.getField()) {
                     labelTpl.setAttributes({
                         labelOverflowPadding: me.getLabelOverflowPadding()
                     });
-                    labelTpl.fx.setCustomDurations({'callout': 200});
+                    labelTpl.getAnimation().setCustomDurations({'callout': 200});
                 }
                 sprite.setAttributes(me.getStyleByIndex(i));
                 sprite.setRendererData(rendererData);

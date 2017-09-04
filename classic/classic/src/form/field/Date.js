@@ -71,135 +71,127 @@ Ext.define('Ext.form.field.Date', {
     requires: ['Ext.picker.Date'],
     alternateClassName: ['Ext.form.DateField', 'Ext.form.Date'],
 
-    //<locale>
     /**
      * @cfg {String} [format="m/d/Y"]
      * The default date format string which can be overriden for localization support. The format must be valid
      * according to {@link Ext.Date#parse}.
+     * @locale
      */
     format : "m/d/Y",
-    //</locale>
-    
-    //<locale>
+
     /**
      * @cfg {String} [ariaFormat="M j Y"]
      * This date format will be used to format ARIA attributes in the field and its Picker,
      * to provide Assistive Technologies such as screen readers with user friendly text.
      * The format must be valid {@link Ext.Date#format}.
+     * @locale
      */
     ariaFormat: 'M j Y',
-    //</locale>
-    
-    //<locale>
+
     /**
      * @cfg {String} altFormats
      * Multiple date formats separated by "|" to try when parsing a user input value and it does not match the defined
      * format.
+     * @locale
      */
     altFormats : "m/d/Y|n/j/Y|n/j/y|m/j/y|n/d/y|m/j/Y|n/d/Y|m-d-y|m-d-Y|m/d|m-d|md|mdy|mdY|d|Y-m-d|n-j|n/j",
-    //</locale>
-    //<locale>
+
     /**
      * @cfg {String} disabledDaysText
      * The tooltip to display when the date falls on a disabled day of week.
+     * @locale
      */
     disabledDaysText : "Disabled",
-    //</locale>
-    
-    //<locale>
+
     /**
      * @cfg {String} ariaDisabledDaysText The text that Assistive Technologies such as screen readers
      * will announce when the date falls on a disabled day of week.
+     * @locale
      */
     ariaDisabledDaysText: "This day of week is disabled",
-    //</locale>
-    
-    //<locale>
+
     /**
      * @cfg {String} disabledDatesText
      * The tooltip text to display when the date falls on a disabled date.
+     * @locale
      */
     disabledDatesText : "Disabled",
-    //</locale>
-    
-    //<locale>
+
     /**
      * @cfg {String} ariaDisabledDatesText The text that Assistive Technologies such as screen readers
      * will announce when the date falls on a disabled date.
+     * @locale
      */
     ariaDisabledDatesText: "This date cannot be selected",
-    //</locale>
-    
-    //<locale>
+
     /**
      * @cfg {String} minText
      * The error text to display when the date in the cell is before {@link #minValue}.
+     * @locale
      */
     minText : "The date in this field must be equal to or after {0}",
-    //</locale>
-    
-    //<locale>
+
     /**
      * @cfg {String} ariaMinText The text that Assistive Technologies such as screen readers
      * will announce when the date in the cell is before {@link #minValue}. The date substituted
      * for {0} will be formatted as per {@link #ariaFormat}.
+     * @locale
      */
     ariaMinText: "The date must be equal to or after {0}",
-    //</locale>
-    
-    //<locale>
+
     /**
      * @cfg {String} maxText
      * The error text to display when the date in the cell is after {@link #maxValue}.
+     * @locale
      */
     maxText : "The date in this field must be equal to or before {0}",
-    //</locale>
-    
-    //<locale>
+
     /**
      * @cfg {String} ariaMaxText The text that Assistive Technologies such as screen readers
      * will announce when the date in the cell is after {@link #maxValue}. The date substituted
      * for {0} will be formatted as per {@link #ariaFormat}.
+     * @locale
      */
     ariaMaxText: "The date must be equal to or before {0}",
-    //</locale>
-    
-    //<locale>
+
     /**
      * @cfg {String} invalidText
      * The error text to display when the date in the field is invalid.
+     * @locale
      */
     invalidText : "{0} is not a valid date - it must be in the format {1}",
-    //</locale>
-    
-    //<locale>
+
     /**
      * @cfg {String} formatText The format text to be announced by screen readers
      * when the field is focused.
+     * @locale
      */
     formatText: 'Expected date format {0}.',
-    //</locale>
-    
+
     /**
      * @cfg {String} [triggerCls='x-form-date-trigger']
      * An additional CSS class used to style the trigger button. The trigger will always get the class 'x-form-trigger'
      * and triggerCls will be **appended** if specified (default class displays a calendar icon).
      */
     triggerCls : Ext.baseCSSPrefix + 'form-date-trigger',
+
     /**
      * @cfg {Boolean} showToday
      * false to hide the footer area of the Date picker containing the Today button and disable the keyboard handler for
      * spacebar that selects the current date.
      */
     showToday : true,
+
     /**
      * @cfg {Date/String} minValue
      * The minimum allowed date. Can be either a Javascript date object or a string date in a valid format.
      */
+
     /**
      * @cfg {Date/String} maxValue
      * The maximum allowed date. Can be either a Javascript date object or a string date in a valid format.
      */
+
     /**
      * @cfg {Number[]} disabledDays
      * An array of days to disable, 0 based. Some examples:
@@ -209,6 +201,7 @@ Ext.define('Ext.form.field.Date', {
      *     // disable weekdays:
      *     disabledDays: [1,2,3,4,5]
      */
+
     /**
      * @cfg {String[]} disabledDates
      * An array of "dates" to disable, as strings. These strings will be used to build a dynamic regular expression so
@@ -253,18 +246,18 @@ Ext.define('Ext.form.field.Date', {
     initTimeFormat: 'H',
 
     matchFieldWidth: false,
-    //<locale>
+
     /**
      * @cfg {Number} [startDay=undefined]
      * Day index at which the week should begin, 0-based.
      *
      * Defaults to `0` (Sunday).
+     * @locale
      */
     startDay: 0,
-    //</locale>
 
     /**
-     * @cfg
+     * @cfg {String[]} valuePublishEvent
      * @inheritdoc
      */
     valuePublishEvent: ['select', 'blur'],
@@ -273,9 +266,14 @@ Ext.define('Ext.form.field.Date', {
     
     ariaRole: 'combobox',
 
-    /** @private */
+    /**
+     * @private
+     */
     rawDate: null,
-    /** @private */
+
+    /**
+     * @private
+     */
     rawDateText: '',
 
     initComponent: function() {
@@ -523,25 +521,30 @@ Ext.define('Ext.form.field.Date', {
      *     dateField.format = 'Y-m-d';
      *     dateField.setValue('2006-05-04');
      *
-     * @param {String/Date} date The date or valid date string
+     * @param {String/Date} v The date or valid date string
      * @return {Ext.form.field.Date} this
      */
     setValue: function(v) {
-        var me = this;
+        var me = this,
+            utilDate = Ext.Date,
+            rawDate;
 
         me.lastValue = me.rawDateText;
         me.lastDate = me.rawDate;
         if (Ext.isDate(v)) {
-            me.rawDate  = v;
+            rawDate = me.rawDate  = v;
             me.rawDateText = me.formatDate(v);
         }
         else {
-            me.rawDate = me.rawToValue(v);
+            rawDate = me.rawDate = me.rawToValue(v);
             me.rawDateText = me.formatDate(v);
-            if (me.rawDate === v) {
-                me.rawDate = null;
+            if (rawDate === v) {
+                rawDate = me.rawDate = null;
                 me.rawDateText = '';
             }
+        }
+        if (rawDate && !utilDate.formatContainsHourInfo(me.format)) {
+            me.rawDate = utilDate.clearTime(rawDate, true);
         }
         me.callParent(arguments);
     },
@@ -705,6 +708,21 @@ Ext.define('Ext.form.field.Date', {
         });
     },
 
+    createInitialDate: function(value) {
+        var minValue = this.minValue, 
+            maxValue = this.maxValue;
+
+        value = value || new Date();
+
+        if (minValue && minValue > value) {
+            value = minValue;
+        } else if (maxValue && maxValue < value) {
+            value = maxValue;
+        }
+
+        return value;
+    },
+
     onSelect: function(m, d) {
         var me = this;
 
@@ -732,7 +750,8 @@ Ext.define('Ext.form.field.Date', {
      */
     onExpand: function() {
         var value = this.rawDate;
-        this.picker.setValue(Ext.isDate(value) ? value : new Date());
+
+        this.picker.setValue(Ext.isDate(value) ? value : this.createInitialDate());
     },
 
     /**

@@ -1,6 +1,6 @@
 /* global expect, Ext */
 
-describe("Ext.util.Region", function() {
+topSuite("Ext.util.Region", ['Ext.dom.Element'], function() {
     var region,
         region1,
         region2,
@@ -1746,6 +1746,105 @@ describe("Ext.util.Region", function() {
                     });
                 });
             });
+
+            describe('corner to corner alignment', function() {
+                it('should handle b100-t0', function() {
+                    target.setPosition(250, 250);
+                    result = testRegion.alignTo({
+                        target: target,
+                        align: 'b100-t0',
+                        anchorSize: 10,
+                        offset: 0
+                    });
+
+                    expectXYWH(result, 168, 150, 90, 90);
+                    expectXYWH(result.anchor, 246, 240, 10, 10);
+                });
+                it('should handle b0-t100', function() {
+                    target.setPosition(250, 250);
+                    result = testRegion.alignTo({
+                        target: target,
+                        align: 'b0-t100',
+                        anchorSize: 10,
+                        offset: 0
+                    });
+
+                    expectXYWH(result, 491, 150, 90, 90);
+                    expectXYWH(result.anchor, 493, 240, 10, 10);
+                });
+                it('should handle t100-b0', function() {
+                    target.setPosition(250, 250);
+                    result = testRegion.alignTo({
+                        target: target,
+                        align: 't100-b0',
+                        anchorSize: 10,
+                        offset: 0
+                    });
+
+                    expectXYWH(result, 168, 510, 90, 90);
+                    expectXYWH(result.anchor, 246, 500, 10, 10);
+                });
+                it('should handle t0-b100', function() {
+                    target.setPosition(250, 250);
+                    result = testRegion.alignTo({
+                        target: target,
+                        align: 't0-b100',
+                        anchorSize: 10,
+                        offset: 0
+                    });
+
+                    expectXYWH(result, 491, 510, 90, 90);
+                    expectXYWH(result.anchor, 493, 500, 10, 10);
+                });
+                it('should handle r100-l0', function() {
+                    target.setPosition(250, 250);
+                    result = testRegion.alignTo({
+                        target: target,
+                        align: 'r100-l0',
+                        anchorSize: 10,
+                        offset: 0
+                    });
+
+                    expectXYWH(result, 150, 168, 90, 90);
+                    expectXYWH(result.anchor, 240, 246, 10, 10);
+                });
+                it('should handle r0-l100', function() {
+                    target.setPosition(250, 250);
+                    result = testRegion.alignTo({
+                        target: target,
+                        align: 'r0-l100',
+                        anchorSize: 10,
+                        offset: 0
+                    });
+
+                    expectXYWH(result, 150, 491, 90, 90);
+                    expectXYWH(result.anchor, 240, 493, 10, 10);
+                });
+                it('should handle l100-r0', function() {
+                    target.setPosition(250, 250);
+                    result = testRegion.alignTo({
+                        target: target,
+                        align: 'l100-r0',
+                        anchorSize: 10,
+                        offset: 0
+                    });
+
+                    expectXYWH(result, 510, 168, 90, 90);
+                    expectXYWH(result.anchor, 500, 246, 10, 10);
+                });
+                it('should handle l0-r100', function() {
+                    target.setPosition(250, 250);
+                    result = testRegion.alignTo({
+                        target: target,
+                        align: 'l0-r100',
+                        anchorSize: 10,
+                        offset: 0
+                    });
+
+                    expectXYWH(result, 510, 491, 90, 90);
+                    expectXYWH(result.anchor, 500, 493, 10, 10);
+                });
+            })
         });
     });
 

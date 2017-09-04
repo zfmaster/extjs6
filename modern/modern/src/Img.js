@@ -3,7 +3,7 @@
  * like any other component. This component typically takes between 1 and 3 configurations - a {@link #src}, and
  * optionally a {@link #height} and a {@link #width}:
  *
- *     @example miniphone
+ *     @example
  *     var img = Ext.create('Ext.Img', {
  *         src: 'http://www.sencha.com/assets/images/sencha-avatar-64x64.png',
  *         height: 64,
@@ -13,7 +13,7 @@
  *
  * It's also easy to add an image into a panel or other container using its xtype:
  *
- *     @example miniphone
+ *     @example
  *     Ext.create('Ext.Panel', {
  *         fullscreen: true,
  *         layout: 'hbox',
@@ -71,12 +71,6 @@ Ext.define('Ext.Img', {
         src: null,
 
         /**
-         * @cfg
-         * @inheritdoc
-         */
-        baseCls : Ext.baseCSSPrefix + 'img',
-
-        /**
          * @cfg {String} imageCls The CSS class to be used when {@link #mode} is not set to 'background'
          * @accessor
          */
@@ -95,10 +89,12 @@ Ext.define('Ext.Img', {
         mode: 'background'
     },
 
+    baseCls: Ext.baseCSSPrefix + 'img',
+
     beforeInitialize: function() {
         var me = this;
-        me.onLoad = Ext.Function.bind(me.onLoad, me);
-        me.onError = Ext.Function.bind(me.onError, me);
+        me.onLoad = me.onLoad.bind(me);
+        me.onError = me.onError.bind(me);
     },
 
     initialize: function() {
@@ -123,7 +119,7 @@ Ext.define('Ext.Img', {
         }
     },
 
-    show: function() {
+    afterShow: function() {
         this.callParent(arguments);
         if (this.hiddenSrc) {
             this.setSrc(this.hiddenSrc);
@@ -161,10 +157,6 @@ Ext.define('Ext.Img', {
 
     onTap: function(e) {
         this.fireEvent('tap', this, e);
-    },
-
-    onAfterRender: function() {
-        this.updateSrc(this.getSrc());
     },
 
     applySrc: function (src) {

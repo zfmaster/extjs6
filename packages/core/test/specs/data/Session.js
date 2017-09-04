@@ -1,4 +1,8 @@
-describe("Ext.data.Session", function() {
+topSuite("Ext.data.Session", [
+    'Ext.data.Connection',
+    'Ext.data.ArrayStore',
+    'Ext.data.identifier.*'
+], function() {
     function completeRequest(data, requestId) {
         Ext.Ajax.mockComplete({
             status: 200,
@@ -7,14 +11,6 @@ describe("Ext.data.Session", function() {
     }
 
     var session;
-
-    function idSort(a, b) {
-        if (Ext.isObject(a)) {
-            a = a.id;
-            b = b.id;
-        }
-        return a - b;
-    }
 
     var adminGroup, peonGroup;
     var rufusGroups, billGroups, tedGroups;
@@ -65,6 +61,7 @@ describe("Ext.data.Session", function() {
     afterEach(function() {
         MockAjaxManager.removeMethods();
         session = Ext.destroy(session);
+        Ext.data.Model.schema.clear(true);
     });
 
     describe("record access", function() {
@@ -88,7 +85,6 @@ describe("Ext.data.Session", function() {
             parent.destroy();
             User = rec = parent = null;
             Ext.undefine('spec.User');
-            Ext.data.Model.schema.clear(true);
         });
 
         describe("adopt", function() {
@@ -547,14 +543,6 @@ describe("Ext.data.Session", function() {
                     rec = session.createRecord('User');
                 }).not.toThrow();
                 expect(rec.phantom).toBe(true);
-            });
-            
-            it("should become dirty", function() {
-                rec = session.createRecord('User', {
-                    name: 'Foo'
-                });
-                
-                expect(session.isDirty()).toBe(true);
             });
 
             describe("with a parent", function() {
@@ -1294,7 +1282,6 @@ describe("Ext.data.Session", function() {
             Ext.undefine('spec.User');
             Ext.undefine('spec.Order');
             Ext.undefine('spec.Job');
-            Ext.data.Model.schema.clear(true);
             Job = Order = User = identifier = Ext.destroy(identifier);
 
             var Generator = Ext.data.identifier.Generator;
@@ -1412,7 +1399,7 @@ describe("Ext.data.Session", function() {
                     name: 'userId',
                     reference: 'User'
                 }]
-            })
+            });
         });
 
         afterEach(function() {
@@ -1420,7 +1407,6 @@ describe("Ext.data.Session", function() {
             Ext.undefine('spec.Address');
             Ext.undefine('spec.Post');
             Ext.undefine('spec.Group');
-            Ext.data.Model.schema.clear(true);
             User = null;
         });
 
@@ -1457,15 +1443,6 @@ describe("Ext.data.Session", function() {
                         }
                     });
                 });
-                
-                it("should become dirty with new phantom record", function() {
-                    var user = session.createRecord('User', {
-                        name: 'Foo',
-                        age: 34
-                    });
-                    
-                    expect(session.isDirty()).toBe(true);
-                });
 
                 it("should include the updated record state", function() {
                     var user = session.createRecord('User', {
@@ -1484,17 +1461,6 @@ describe("Ext.data.Session", function() {
                         }
                     });
                 });
-                
-                it("should still be dirty after updating record state", function() {
-                    var user = session.createRecord('User', {
-                        name: 'Foo',
-                        age: 34
-                    });
-                    user.set('name', 'Bar');
-                    user.set('age', 5000);
-                    
-                    expect(session.isDirty()).toBe(true);
-                });
 
                 it("should be able to create multiple records", function() {
                     var user1 = session.createRecord('User'),
@@ -1512,24 +1478,11 @@ describe("Ext.data.Session", function() {
                     var user = getAndComplete('User', 1);
                     expect(session.getChanges()).toBeNull();
                 });
-                
-                it("should not be dirty with non-phantoms", function() {
-                    var user = getAndComplete('User', 1);
-                    
-                    expect(session.isDirty()).toBeFalsy();
-                });
 
                 it("should not include phantom records that are dropped", function() {
                     var user = session.createRecord('User');
                     user.drop();
                     expect(session.getChanges()).toBeNull();
-                });
-                
-                it("should be dirty when phantoms were dropped", function() {
-                    var user = session.createRecord('User');
-                    user.drop();
-                    
-                    expect(session.isDirty()).toBe(true);
                 });
             });
 
@@ -1546,13 +1499,6 @@ describe("Ext.data.Session", function() {
                         }
                     });
                 });
-                
-                it("should become dirty after record is updated", function() {
-                    var user = getAndComplete('User', 1);
-                    user.set('name', 'Foo');
-                    
-                    expect(session.isDirty()).toBe(true);
-                });
 
                 it("should include the most recently updated state", function() {
                     var user = getAndComplete('User', 1);
@@ -1567,15 +1513,6 @@ describe("Ext.data.Session", function() {
                             }]
                         }
                     });
-                });
-                
-                it("should still be dirty after updating record multiple times", function() {
-                    var user = getAndComplete('User', 1);
-                    user.set('name', 'Foo');
-                    user.set('name', 'Bar');
-                    user.set('name', 'Baz');
-                    
-                    expect(session.isDirty()).toBe(true);
                 });
 
                 it("should be able to update many records", function() {
@@ -1609,28 +1546,12 @@ describe("Ext.data.Session", function() {
                     user.commit();
                     expect(session.getChanges()).toBeNull();
                 });
-                
-                it("should not be dirty after record was committed", function() {
-                    var user = getAndComplete('User', 1);
-                    user.set('name', 'Foo');
-                    user.commit();
-                    
-                    expect(session.isDirty()).toBe(false);
-                });
 
                 it("should not include a dropped record", function() {
                     var user = getAndComplete('User', 1);
                     user.set('name', 'Foo');
                     user.drop();
                     expect(session.getChanges().User.U).toBeUndefined();
-                });
-                
-                it("should be dirty when updated record was dropped", function() {
-                    var user = getAndComplete('User', 1);
-                    user.set('name', 'Foo');
-                    user.drop();
-                    
-                    expect(session.isDirty()).toBe(true);
                 });
 
                 it("should not include changes to phantoms", function() {
@@ -1650,13 +1571,6 @@ describe("Ext.data.Session", function() {
                         }
                     });
                 });
-                
-                it("should become dirty with record droppings", function() {
-                    var user = getAndComplete('User', 1);
-                    user.drop();
-                    
-                    expect(session.isDirty()).toBe(true);
-                });
 
                 it("should drop multiple records", function() {
                     var user1 = getAndComplete('User', 1),
@@ -1672,30 +1586,11 @@ describe("Ext.data.Session", function() {
                         }
                     });
                 });
-                
-                it("should get even dirtier with multiple record droppings", function() {
-                    var user1 = getAndComplete('User', 1),
-                        user2 = getAndComplete('User', 2),
-                        user3 = getAndComplete('User', 3);
-
-                    user1.drop();
-                    user2.drop();
-                    user3.drop();
-                    
-                    expect(session.isDirty()).toBe(true);
-                });
 
                 it("should not include phantom records", function() {
                     var user = session.createRecord('User');
                     user.drop();
                     expect(session.getChanges()).toBeNull();
-                });
-                
-                it("should be dirty when phantom was dropped", function() {
-                    var user = session.createRecord('User');
-                    user.drop();
-                    
-                    expect(session.isDirty()).toBe(true);
                 });
             });
         });
@@ -1800,7 +1695,7 @@ describe("Ext.data.Session", function() {
                                     addressId: 3
                                 }]
                             }
-                        })
+                        });
                     });
 
                     it("should read the non key holder when nulling out a reference", function() {
@@ -1812,7 +1707,7 @@ describe("Ext.data.Session", function() {
                                     addressId: null
                                 }]
                             }
-                        })
+                        });
                     });
                 });
 
@@ -1893,7 +1788,7 @@ describe("Ext.data.Session", function() {
                                     userId: 1
                                 }]
                             }
-                        })
+                        });
                     });
                 });
 
@@ -2154,10 +2049,6 @@ describe("Ext.data.Session", function() {
             Ext.data.Model.schema.setNamespace('spec');
             session = new Ext.data.Session();
         });
-
-        afterEach(function() {
-            Ext.data.Model.schema.clear(true);
-        }); 
 
         describe("basic operations", function() {
             var User;
@@ -2967,7 +2858,7 @@ describe("Ext.data.Session", function() {
                                 expect(posts.getAt(0)).toBe(session.peekRecord('Post', 102));
                                 expect(posts.getAt(1)).toBe(session.peekRecord('Post', 103));
                             });
-                        })
+                        });
                     }); 
                     
                 });
@@ -3530,7 +3421,6 @@ describe("Ext.data.Session", function() {
 
         afterEach(function() {
             Ext.undefine('spec.User');
-            Ext.data.Model.schema.clear(true);
         });
 
         it("should evict a phantom when it is dropped", function() {
@@ -3571,7 +3461,6 @@ describe("Ext.data.Session", function() {
         afterEach(function() {
             User = null;
             Ext.undefine('spec.User');
-            Ext.data.Model.schema.clear(true);
         });
 
         it("should call commit on created records", function() {
@@ -3694,7 +3583,6 @@ describe("Ext.data.Session", function() {
             Ext.destroy(parent);
             parent = null;
             Ext.undefine('spec.User');
-            Ext.data.Model.schema.clear(true);
         });
 
         it("should set the schema from the parent", function() {
@@ -3733,9 +3621,8 @@ describe("Ext.data.Session", function() {
                     }
                 });
                 store.load();
-                completeRequest([{id: 1, name: 'Bar'}]);
+                completeRequest([{id: 1}]);
                 expect(session.peekRecord('User', 1).get('name')).toBe('Foo');
-
             });
         });
 
@@ -3871,7 +3758,7 @@ describe("Ext.data.Session", function() {
                         getAndComplete('User', 1, parent);
                         getAndComplete('Post', 101, parent, {
                             userId: 1
-                        })
+                        });
 
                         session = parent.spawn();
 
@@ -3938,7 +3825,6 @@ describe("Ext.data.Session", function() {
 
         afterEach(function() {
             Ext.undefine('spec.User');
-            Ext.data.Model.schema.clear(true);
             Ext.destroy(child);
             child = null;
         });
@@ -4628,6 +4514,776 @@ describe("Ext.data.Session", function() {
                     });
                 });
 
+                describe("setting state", function() {
+                    it("should ignore a removal and add in the child", function() {
+                        group = getAndComplete('Group', 1, session, {
+                            id: 1,
+                            users: [{
+                                id: 101
+                            }, {
+                                id: 102
+                            }, {
+                                id: 103
+                            }]
+                        });
+                        child = session.spawn();
+
+                        var group = child.getRecord('Group', 1),
+                            users = group.users(),
+                            user = users.getById(102);
+
+                        users.remove(user);
+                        users.add(user);
+
+                        child.save();
+                        expect(session.getChanges()).toBeNull();
+                    });
+                });
+
+            });
+        });
+    });
+
+    describe("data collisions", function() {
+        var User;
+        beforeEach(function() {
+            Ext.data.Model.schema.setNamespace('spec');
+            User = Ext.define('spec.User', {
+                extend: 'Ext.data.Model',
+                fields: ['name']
+            });
+            session = new Ext.data.Session();
+        });
+
+        afterEach(function() {
+            User = null;
+            Ext.undefine('spec.User');
+        });
+
+        describe("via model load", function() {
+            describe("instance load", function() {
+                it("should not call the model mergeData method and pass the new data", function() {
+                    var rec = getAndComplete(User, 1, session, {
+                        id: 1,
+                        name: 'Foo'
+                    });
+
+                    rec.load();
+                    spyOn(rec, 'mergeData');
+                    completeRequest([{
+                        id: 1,
+                        name: 'Bar'
+                    }]);
+                    expect(rec.mergeData).not.toHaveBeenCalled();
+                });
+            });
+
+            describe("static load", function() {
+                it("should not call the model mergeData method and pass the new data", function() {
+                    var rec = User.load(1, null, session);
+                    spyOn(rec, 'mergeData');
+                    completeRequest([{
+                        id: 1,
+                        name: 'Bar'
+                    }]);
+                    expect(rec.mergeData).not.toHaveBeenCalled();
+                });
+            });
+        });
+
+        describe("via store load", function() {
+            it("should call the model mergeData method and pass the new data", function() {
+                var rec = getAndComplete(User, 1, session, {
+                    id: 1,
+                    name: 'Foo'
+                });
+
+                var store = new Ext.data.Store({
+                    model: User,
+                    asynchronousLoad: false,
+                    session: session
+                });
+                store.load();
+                spyOn(rec, 'mergeData');
+                completeRequest([{
+                    id: 1,
+                    name: 'Bar'
+                }]);
+                expect(rec.mergeData.callCount).toBe(1);
+                expect(rec.mergeData.mostRecentCall.args[0]).toEqual({
+                    id: 1,
+                    name: 'Bar'
+                });
+            });
+        });
+    });
+
+    describe("dirty state", function() {
+        var spy;
+
+        function expectDirty() {
+            expect(session.getDirty()).toBe(true);
+        }
+
+        function expectNotDirty() {
+            expect(session.getDirty()).toBe(false);
+        }
+
+        function expectDirtySpy(dirty) {
+            expect(spy.callCount).toBe(1);
+            expect(spy.mostRecentCall.args[0]).toBe(session);
+            expect(spy.mostRecentCall.args[1]).toBe(dirty);
+        }
+
+        beforeEach(function() {
+            session = new Ext.data.Session();
+            expect(session.getDirty()).toBe(false);
+            Ext.data.Model.schema.setNamespace('spec');
+
+            Ext.define('spec.User', {
+                extend: 'Ext.data.Model',
+                fields: ['name']
+            });
+
+            spy = jasmine.createSpy();
+        });
+
+        afterEach(function() {
+            Ext.undefine('spec.User');
+            spy = null;
+        });
+
+        function createUser(data) {
+            return session.createRecord('User', Ext.apply({ name: 'X' }, data || {}));
+        }
+
+        describe("record operations", function() {
+            describe("create", function() {
+                it("should be dirty after creating a record", function() {
+                    createUser();
+                    expectDirty();
+                });
+
+                it("should not be dirty if the create is reverted", function() {
+                    var rec = createUser();
+                    rec.drop();
+                    expectNotDirty();
+                });
+
+                it("should be dirty if only some creates are reverted", function() {
+                    var rec = createUser();
+
+                    createUser();
+
+                    rec.drop();
+                    expectDirty();
+                });
+
+                it("should be dirty if encountering the record in a create state", function() {
+                    var rec = new spec.User();
+                    session.adopt(rec);
+                    expectDirty();
+                });
+
+                it("should be dirty when the store add handler is invoked", function () {
+                    var store = new Ext.data.Store({
+                        model: 'spec.User',
+                        session: session
+                    });
+
+                    store.on('add', function () {
+                        expectDirty();
+                    });
+
+                    store.add({
+                        name: 'Foo'
+                    });
+                });
+
+                describe("events", function() {
+                    var rec;
+
+                    beforeEach(function() {
+                        session.on('dirtychange', spy);
+                        rec = createUser();
+                    });
+
+                    afterEach(function() {
+                        rec = null;
+                    });
+
+                    it("should fire the event when the first record is created", function() {
+                        expectDirtySpy(true);
+                    });
+
+                    it("should not fire on subsequent creates", function() {
+                        spy.reset();
+                        createUser();
+                        createUser();
+                        createUser();
+                        expect(spy).not.toHaveBeenCalled();
+                    });
+
+                    it("should fire if a create was reverted", function() {
+                        spy.reset();
+                        rec.drop();
+                        expectDirtySpy(false);
+                    });
+
+                    it("should not fire if only some creates are reverted", function() {
+                        spy.reset();
+                        createUser();
+                        rec.drop();
+                        expect(spy).not.toHaveBeenCalled();
+                    });
+                });
+            });
+
+            describe("update", function() {
+                it("should be dirty after updating a record", function() {
+                    var rec = getAndComplete('User', 1, session, { name: 'Foo' });
+                    expectNotDirty();
+                    rec.set('name', 'Bar');
+                    expectDirty();
+                });
+
+                it("should not be dirty if the update was reverted", function() {
+                    var rec = getAndComplete('User', 1, session, { name: 'Foo' });
+                    expectNotDirty();
+                    rec.set('name', 'Bar');
+                    rec.set('name', 'Foo');
+                    expectNotDirty();
+                });
+
+                it("should be dirty if only some updates are reverted", function() {
+                    var rec = getAndComplete('User', 1, session, { name: 'Foo' });
+                    var other = getAndComplete('User', 2, session, { name: 'Foo' });
+
+                    rec.set('name', 'Bar');
+                    other.set('name', 'Baz');
+                    rec.set('name', 'Foo');
+                    expectDirty();
+                });
+
+                it("should be dirty if encountering the record in an updated state", function() {
+                    var rec = new spec.User({
+                        id: 1
+                    });
+                    rec.set('name', 'Foo');
+                    session.adopt(rec);
+                    expectDirty();
+                });
+
+                it("should be dirty when the store update handler is invoked", function() {
+                    var rec = new spec.User({
+                        id: 1
+                    });
+
+                    var store = new Ext.data.Store({
+                        model: 'spec.User',
+                        session: session
+                    });
+
+                    store.add(rec);
+
+                    store.on('update', function() {
+                        expectDirty();
+                    });
+
+                    rec.set('name', 'Foo');
+                });
+
+                describe("events", function() {
+                    var rec;
+
+                    beforeEach(function() {
+                        session.on('dirtychange', spy);
+                        rec = getAndComplete('User', 1, session, {
+                            name: 'Foo'
+                        });
+                        rec.set('name', 'Bar');
+                    });
+
+                    afterEach(function() {
+                        rec = null;
+                    });
+
+                    it("should fire the event when the record is first updated", function() {
+                        expectDirtySpy(true);
+                    });
+
+                    it("should not fire on subsequent updates", function() {
+                        spy.reset();
+                        rec.set('name', 'A');
+                        rec.set('name', 'B');
+                        rec.set('name', 'C');
+                        rec.set('name', 'D');
+                        expect(spy).not.toHaveBeenCalled();
+                    });
+
+                    it("should fire if the update is reverted", function() {
+                        spy.reset();
+                        rec.set('name', 'Foo');
+                        expectDirtySpy(false);
+                    });
+
+                    it("should not fire if only some updates are reverted", function() {
+                        var other = getAndComplete('User', 2, session, { name: 'Foo' });
+                        spy.reset();
+                        other.set('name', 'Baz');
+                        rec.set('name', 'Foo');
+                        expect(spy).not.toHaveBeenCalled();
+                    });
+                });
+            });
+
+            describe("drop", function() {
+                it("should not be dirty if a phantom is dropped", function() {
+                    var rec = createUser();
+                    rec.drop();
+                    expectNotDirty();
+                });
+
+                it("should be dirty after dropping a record", function() {
+                    var rec = getAndComplete('User', 1);
+                    rec.drop();
+                    expectDirty();
+                });
+
+                it("should not be dirty if the drop is reverted", function() {
+                    var rec = getAndComplete('User', 1);
+                    rec.drop();
+                    rec.reject();
+                    expectNotDirty();
+                });
+
+                it("should be dirty if only some drops are reverted", function() {
+                    var rec = getAndComplete('User', 1),
+                        other = getAndComplete('User', 2);
+
+                    rec.drop();
+                    other.drop();
+
+                    rec.reject();
+                    expectDirty();
+                });
+
+                it("should be dirty if encountering the record in a dropped state", function() {
+                    var rec = new spec.User({
+                        id: 1
+                    });
+                    rec.drop();
+                    session.adopt(rec);
+                    expectDirty();
+                });
+
+                it("should be dirty when the store remove handler is invoked", function () {
+                    var rec = new spec.User({
+                        id: 1
+                    });
+
+                    var store = new Ext.data.Store({
+                        model: 'spec.User',
+                        session: session
+                    });
+
+                    store.add(rec);
+
+                    store.on('remove', function () {
+                        expectDirty();
+                    });
+
+                    rec.drop();
+                });
+                
+                describe("events", function() {
+                    var rec;
+
+                    beforeEach(function() {
+                        session.on('dirtychange', spy);
+                        rec = getAndComplete('User', 1);
+                        rec.drop();
+                    });
+
+                    afterEach(function() {
+                        rec = null;
+                    });
+
+                    it("should fire the event when the first record is dropped", function() {
+                        expectDirtySpy(true);
+                    });
+
+                    it("should not fire on subsequent drops", function() {
+                        spy.reset();
+                        getAndComplete('User', 2).drop();
+                        getAndComplete('User', 3).drop();
+                        expect(spy).not.toHaveBeenCalled();
+                    });
+
+                    it("should fire if a drop was reverted", function() {
+                        spy.reset();
+                        rec.reject();
+                        expectDirtySpy(false);
+                    });
+
+                    it("should not fire if only some drops are reverted", function() {
+                        spy.reset();
+                        getAndComplete('User', 2).drop();
+                        rec.reject();
+                        expect(spy).not.toHaveBeenCalled();
+                    });
+                });
+            });
+        });
+
+        describe("associations", function() {
+            beforeEach(function() {
+                Ext.define('spec.AssocUser', {
+                    extend: 'Ext.data.Model',
+                    fields: ['name', {
+                        name: 'passportId',
+                        unique: true,
+                        reference: 'Passport',
+                        defaultValue: null
+                    }]
+                });
+
+                Ext.define('spec.Order', {
+                    extend: 'Ext.data.Model',
+                    fields: [{
+                        name: 'userId',
+                        reference: {
+                            type: 'AssocUser',
+                            inverse: {
+                                role: 'orders'
+                            }
+                        }
+                    }]
+                });
+
+                Ext.define('spec.Passport', {
+                    extend: 'Ext.data.Model'
+                });
+            });
+
+            afterEach(function() {
+                Ext.undefine('spec.AssocUser');
+                Ext.undefine('spec.Order');
+                Ext.undefine('spec.Passport');
+            });
+
+            describe("many to one", function() {
+                it("should not be dirty after dropping a phantom associated record", function() {
+                    var user = getAndComplete('AssocUser', 1);
+                    var rec = user.orders().add({})[0];
+                    rec.drop();
+                    expectNotDirty();
+                });
+            });
+
+            describe("one to one", function() {
+                it("should not be dirty after dropping a phantom associated record", function() {
+                    getAndComplete('Passport', 101);
+
+                    var user = session.createRecord('AssocUser', { passportId: 101 });
+
+                    user.drop();
+                    expectNotDirty();
+                });
+            });
+        });
+
+        describe("session operations", function() {
+            describe("commit", function() {
+                it("should not be dirty after a commit", function() {
+                    createUser();
+                    var rec1 = getAndComplete('User', 1, session, { name: 'Foo' }),
+                        rec2 = getAndComplete('User', 2);
+
+                    rec1.set('name', 'Bar');
+                    rec2.drop();
+
+                    expectDirty();
+                    session.commit();
+                    expectNotDirty();
+                });
+
+                describe("events", function() {
+                    it("should not fire an event if the session was not dirty", function() {
+                        getAndComplete('User', 1, session, { name: 'Foo' });
+                        session.on('dirtychange', spy);
+                        session.commit();
+                        expect(spy).not.toHaveBeenCalled();
+                    });
+
+                    it("should fire an event if the session was dirty", function() {
+                        getAndComplete('User', 1, session, { name: 'Foo' }).set('name', 'Bar');
+                        session.on('dirtychange', spy);
+                        session.commit();
+                        expectDirtySpy(false);
+                    });
+
+                    it("should fire the event after all changes have been completed", function() {
+                        var a = createUser(),
+                            b = getAndComplete('User', 1, session, { name: 'Foo' }),
+                            c = getAndComplete('User', 2);
+
+                        b.set('name', 'Bar');
+                        c.drop();
+
+                        var info;
+                        session.on('dirtychange', function() {
+                            info = [a.phantom, b.dirty, c.erased];
+                        });
+                        session.commit();
+                        expect(info).toEqual([false, false, true]);
+                    });
+                });
+            });
+
+            describe("save", function() {
+                it("should not be dirty if the save makes no changes", function() {
+                    var child = session.spawn();
+                    child.save();
+                    expectNotDirty();
+                });
+
+                it("should be dirty if the save introduces changes", function() {
+                    getAndComplete('User', 1);
+                    var child = session.spawn();
+                    child.getRecord('User', 1).set('name', 'Foo');
+                    child.save();
+                    expectDirty();
+                });
+
+                it("should remain dirty if the save has extra changes", function() {
+                    session.createRecord('User');
+                    var child = session.spawn();
+                    child.createRecord('User');
+                    child.save();
+                    expectDirty();
+                });
+
+                describe("single change", function() {
+                    it("should be dirty after doing a create", function() {
+                        var child = session.spawn();
+                        child.createRecord('User');
+                        child.save();
+
+                        expectDirty();
+                    });
+
+                    it("should be dirty after doing an update", function() {
+                        getAndComplete('User', 1);
+                        var child = session.spawn();
+                        child.getRecord('User', 1).set('name', 'Foo');
+                        child.save();
+
+                        expectDirty();
+                    });
+
+                    it("should be dirty after doing a drop", function() {
+                        getAndComplete('User', 1);
+                        var child = session.spawn();
+                        child.getRecord('User', 1).drop();
+                        child.save();
+
+                        expectDirty();
+                    });
+                });
+
+                describe("undoing changes", function() {
+                    it("should not be dirty after undoing a create", function() {
+                        var child = session.spawn();
+                        var id = createUser().id;
+                        child.save();
+                        expectDirty();
+                        session.getRecord('User', id).drop();
+                        expectNotDirty();
+                    });
+
+                    it("should not be dirty after undoing an update", function() {
+                        var rec = getAndComplete('User', 1, session, { name: 'Foo' });
+                        var child = session.spawn();
+                        child.getRecord('User', 1).set('name', 'Bar');
+                        child.save();
+                        expectDirty();
+                        rec.set('name', 'Foo');
+                        expectNotDirty();
+                    });
+
+                    it("should not be dirty after undoing a drop", function() {
+                        var rec = getAndComplete('User', 1);
+                        var child = session.spawn();
+                        child.getRecord('User', 1).drop();
+                        child.save();
+                        expectDirty();
+                        rec.reject();
+                        expectNotDirty();
+                    });
+                });
+
+                describe("events", function() {
+                    beforeEach(function() {
+                        session.on('dirtychange', spy);
+                    });
+
+                    it("should not fire if the save doesn't trigger changes", function() {
+                        var child = session.spawn();
+                        child.save();
+                        expect(spy).not.toHaveBeenCalled();
+                    });
+
+                    it("should not fire if the state is already dirty", function() {
+                        getAndComplete('User', 1).set('name', 'Foo');
+                        spy.reset();
+                        var child = session.spawn();
+                        child.getRecord('User', 1).set('name', 'Bar');
+                        child.save();
+                        expect(spy).not.toHaveBeenCalled();
+                    });
+
+                    it("should fire if the state is made to be dirty", function() {
+                        getAndComplete('User', 1);
+                        var child = session.spawn();
+                        child.getRecord('User', 1).set('name', 'Foo');
+                        child.save();
+                        expectDirtySpy(true);
+                    });
+
+                    it("should fire the event after all changes are completed", function() {
+                        function g(id) {
+                            return child.getRecord('User', id);
+                        }
+
+                        getAndComplete('User', 1);
+                        getAndComplete('User', 2);
+                        var child = session.spawn(),
+                            info;
+
+                        var id = child.createRecord('User', { passportId: null }).id;
+
+                        g(1).set('name', 'Foo');
+                        g(2).drop();
+
+                        session.on('dirtychange', function() {
+                            info = [g(id).phantom, g(1).dirty, g(2).dropped];
+                        });
+                        child.save();
+                        expect(info).toEqual([true, true, true]);
+                    });
+                });
+            });
+
+            describe("update", function() {
+                it("should not be dirty if the update only contained reads", function() {
+                    session.update({
+                        User: {
+                            R: [{id: 1}]
+                        }
+                    });
+                    expectNotDirty();
+                });
+
+                it("should be dirty if the update includes changes", function() {
+                    getAndComplete('User', 1);
+                    getAndComplete('User', 2);
+                    session.update({
+                        User: {
+                            C: [{}],
+                            U: [{
+                                id: 1,
+                                name: 'Foo'
+                            }],
+                            D: [2]
+                        }
+                    });
+                    expectDirty();
+                });
+
+                describe("events", function() {
+                    beforeEach(function() {
+                        session.on('dirtychange', spy);
+                    });
+
+                    it("should not fire an event if the session was not dirty and the update contained reads", function() {
+                        session.update({
+                            User: {
+                                R: [{id: 1}]
+                            }
+                        });
+                        expect(spy).not.toHaveBeenCalled();
+                    });
+
+                    it("should not fire if the session was dirty and new changes were added", function() {
+                        getAndComplete('User', 1, session, { name: 'Foo' }).set('name', 'Bar');
+                        getAndComplete('User', 2);
+
+                        spy.reset();
+                        session.update({
+                            User: {
+                                U: [{
+                                    id: 2,
+                                    name: 'Baz'
+                                }]
+                            }
+                        });
+                        expect(spy).not.toHaveBeenCalled();
+                    });
+
+                    it("should fire if the session was not dirty and changes are included", function() {
+                        getAndComplete('User', 1);
+
+                        spy.reset();
+                        session.update({
+                            User: {
+                                U: [{
+                                    id: 1,
+                                    name: 'Baz'
+                                }]
+                            }
+                        });
+                        expectDirtySpy(true);
+                    });
+
+                    it("should fire if the update causes the session to not be dirty", function() {
+                        getAndComplete('User', 1, session, { name: 'Foo' }).set('name', 'Bar');
+
+                        spy.reset();
+                        session.update({
+                            User: {
+                                U: [{
+                                    id: 1,
+                                    name: 'Foo'
+                                }]
+                            }
+                        });
+                        expectDirtySpy(false);
+                    });
+
+                    it("should defer firing the event until all updates are complete", function() {
+                        var a = getAndComplete('User', 1),
+                            b = getAndComplete('User', 2);
+
+                        var info;
+                        session.on('dirtychange', function() {
+                            info = [session.peekRecord('User', 3) !== null, a.dirty, b.dropped];
+                        });
+
+                        session.update({
+                            User: {
+                                C: [{id: 3}],
+                                U: [{
+                                    id: 1,
+                                    name: 'Foo'
+                                }],
+                                D: [2]
+                            }
+                        });
+
+                        expect(info).toEqual([true, true, true]);
+                    });
+                });
             });
         });
     });
@@ -4639,6 +5295,7 @@ describe("Ext.data.Session", function() {
 
                 beforeEach(function() {
                     schema.setNamespace('spec');
+                    // @define Base
                     Base = Ext.define('spec.Base', {
                         extend: Ext.data.Model,
 
@@ -4990,6 +5647,145 @@ describe("Ext.data.Session", function() {
         }); // loading a many-to-many
     }); // Many-to-many associations
 
+    describe("getSaveBatch", function() {
+        beforeEach(function() {
+            Ext.data.Model.schema.setNamespace('spec');
+
+            Ext.define('spec.User', {
+                extend: 'Ext.data.Model',
+                fields: ['name'],
+                proxy: {
+                    type: 'ajax',
+                    url: 'a',
+                    batchActions: true
+                }
+            });
+
+            Ext.define('spec.Office', {
+                extend: 'Ext.data.Model',
+                fields: ['name'],
+                proxy: {
+                    type: 'ajax',
+                    url: 'b',
+                    batchActions: false
+                }
+            });
+
+            session = new Ext.data.Session();
+        });
+
+        afterEach(function() {
+            Ext.undefine('spec.User');
+            Ext.undefine('spec.Office');
+        });
+
+        function sortFn(o1, o2) {
+            var r1 = o1.getRecords(),
+                r2 = o2.getRecords();
+
+            r1 = r1.isModel ? 1 : r1.length;
+            r2 = r2.isModel ? 1 : r2.length;
+
+            return r2 - r1;
+        }
+
+        it("should respect batchActions on the proxy for creates", function() {
+            session.createRecord(spec.User, { name: 'Foo1' });
+            session.createRecord(spec.User, { name: 'Foo2' });
+
+            session.createRecord(spec.Office, { name: 'Bar1' });
+            session.createRecord(spec.Office, { name: 'Bar2' });
+
+            var batch = session.getSaveBatch(),
+                operations = Ext.Array.clone(batch.getOperations());
+
+            operations.sort(sortFn);
+
+            expect(operations.length).toBe(3);
+
+            expect(operations[0].getRecords().length).toBe(2);
+            expect(operations[0].isCreateOperation).toBe(true);
+            expect(operations[0].getRecords()[0].$className).toBe('spec.User');
+            expect(operations[0].getRecords()[0].get('name')).toBe('Foo1');
+            expect(operations[0].getRecords()[1].$className).toBe('spec.User');
+            expect(operations[0].getRecords()[1].get('name')).toBe('Foo2');
+
+            var r = operations[1].getRecords()[0];
+            expect(operations[1].isCreateOperation).toBe(true);
+            expect(r.$className).toBe('spec.Office');
+            expect(r.get('name')).toBe('Bar1');
+
+            r = operations[2].getRecords()[0];
+            expect(operations[2].isCreateOperation).toBe(true);
+            expect(r.$className).toBe('spec.Office');
+            expect(r.get('name')).toBe('Bar2');
+        });
+
+        it("should respect batchActions on the proxy for updates", function() {
+            session.createRecord(spec.User, { id: 1 }).set('name', 'Foo1');
+            session.createRecord(spec.User, { id: 2 }).set('name', 'Foo2');
+
+            session.createRecord(spec.Office, { id: 1 }).set('name', 'Bar1');
+            session.createRecord(spec.Office, { id: 2 }).set('name', 'Bar2');
+
+            var batch = session.getSaveBatch(),
+                operations = Ext.Array.clone(batch.getOperations());
+
+            operations.sort(sortFn);
+
+            expect(operations.length).toBe(3);
+
+            expect(operations[0].isUpdateOperation).toBe(true);
+            expect(operations[0].getRecords().length).toBe(2);
+            expect(operations[0].getRecords()[0].$className).toBe('spec.User');
+            expect(operations[0].getRecords()[0].id).toBe(1);
+            expect(operations[0].getRecords()[1].$className).toBe('spec.User');
+            expect(operations[0].getRecords()[1].id).toBe(2);
+
+            var r = operations[1].getRecords()[0];
+            expect(operations[1].isUpdateOperation).toBe(true);
+            expect(r.$className).toBe('spec.Office');
+            expect(r.id).toBe(1);
+
+            r = operations[2].getRecords()[0];
+            expect(operations[2].isUpdateOperation).toBe(true);
+            expect(r.$className).toBe('spec.Office');
+            expect(r.id).toBe(2);
+        });
+
+        it("should respect batchActions on the proxy for deletes", function() {
+            session.createRecord(spec.User, { id: 1 }).drop();
+            session.createRecord(spec.User, { id: 2 }).drop();
+
+            session.createRecord(spec.Office, { id: 1 }).drop();
+            session.createRecord(spec.Office, { id: 2 }).drop();
+
+            var batch = session.getSaveBatch(),
+                operations = Ext.Array.clone(batch.getOperations());
+
+            operations.sort(sortFn);
+
+            expect(operations.length).toBe(3);
+
+            expect(operations[0].getRecords().length).toBe(2);
+            expect(operations[0].isDestroyOperation).toBe(true);
+            expect(operations[0].getRecords()[0].$className).toBe('spec.User');
+            expect(operations[0].getRecords()[0].id).toBe(1);
+            expect(operations[0].getRecords()[1].$className).toBe('spec.User');
+            expect(operations[0].getRecords()[1].id).toBe(2);
+
+            var r = operations[1].getRecords()[0];
+            expect(operations[1].isDestroyOperation).toBe(true);
+            expect(r.$className).toBe('spec.Office');
+            expect(r.id).toBe(1);
+
+            r = operations[2].getRecords()[0];
+            expect(operations[2].isDestroyOperation).toBe(true);
+            expect(r.$className).toBe('spec.Office');
+            expect(r.id).toBe(2);
+        });
+    });
+
     describe('transactions', function () {
         var Base, Parent, Child, GrandChild, Group, User;
         var parentData, childData, grandChildData;
@@ -5080,8 +5876,6 @@ describe("Ext.data.Session", function() {
             Ext.undefine('spec.GrandChild');
             Ext.undefine('spec.Group');
             Ext.undefine('spec.User');
-
-            Ext.data.Model.schema.clear(true);
 
             session = null;
             Base = Parent = Child = GrandChild = Group = User = null;

@@ -9,6 +9,7 @@ Ext.define('Ext.grid.feature.AbstractSummary', {
     alias: 'feature.abstractsummary',
 
     summaryRowCls: Ext.baseCSSPrefix + 'grid-row-summary',
+    summaryRowSelector: '.' + Ext.baseCSSPrefix + 'grid-row-summary',
 
     readDataOptions: {
         recordCreator: Ext.identityFn
@@ -19,7 +20,7 @@ Ext.define('Ext.grid.feature.AbstractSummary', {
     summaryRowTpl: {
         fn: function(out, values, parent) {
             // If a summary record comes through the rendering pipeline, render it simply instead of proceeding through the tplchain
-            if (values.record.isSummary && this.summaryFeature.showSummaryRow) {
+            if (values.record.isSummary) {
                 this.summaryFeature.outputSummaryRecord(values.record, values, out, parent);
             } else {
                 this.nextTpl.applyOut(values, out, parent);
@@ -54,7 +55,10 @@ Ext.define('Ext.grid.feature.AbstractSummary', {
             me.summaryTableCls = Ext.baseCSSPrefix + 'grid-item';
         }
 
-        me.summaryRowSelector = '.' + me.summaryRowCls;
+        // We have been configured with another class. Revert to building the selector
+        if (me.hasOwnProperty('summaryRowCls')) {
+            me.summaryRowSelector = '.' + me.summaryRowCls;
+        }
     },
     
     bindStore: function(grid, store) {
@@ -80,8 +84,9 @@ Ext.define('Ext.grid.feature.AbstractSummary', {
     /**
      * Toggle whether or not to show the summary row.
      * @param {Boolean} visible True to show the summary row
+     * @param fromLockingPartner (private)
      */
-    toggleSummaryRow: function(visible /* private */, fromLockingPartner) {
+    toggleSummaryRow: function(visible, fromLockingPartner) {
         var me = this,
             prev = me.showSummaryRow,
             doRefresh;
@@ -135,7 +140,7 @@ Ext.define('Ext.grid.feature.AbstractSummary', {
                 view: view,
                 record: summaryRecord,
                 rowStyle: '',
-                rowClasses: [ this.summaryRowCls ],
+                rowClasses: [ this.summaryRowCls, this.summaryItemCls ],
                 itemClasses: [],
                 recordIndex: -1,
                 rowId: view.getRowId(summaryRecord),
@@ -174,7 +179,7 @@ Ext.define('Ext.grid.feature.AbstractSummary', {
      * @param {String/Function} type The type of aggregation. If a function is specified it will
      * be passed to the stores aggregate function.
      * @param {String} field The field to aggregate on
-     * @param {Boolean} group True to aggregate in grouped mode
+     * @param {Ext.util.Group} group The group from which to calculate the value
      * @return {Number/String/Object} See the return type for the store functions.
      * if the group parameter is `true` An object is returned with a property named for each group who's
      * value is the summary value.

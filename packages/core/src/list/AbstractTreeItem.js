@@ -262,7 +262,7 @@ Ext.define('Ext.list.AbstractTreeItem', {
     /**
      * Handle this node being collapsed.
      * @param {Ext.data.TreeModel} node  The node being collapsed.
-     *
+     * @param collapsingForExpand
      * @protected
      */
     nodeCollapse: function (node, collapsingForExpand) {
@@ -287,7 +287,7 @@ Ext.define('Ext.list.AbstractTreeItem', {
     },
 
     nodeCollapseEnd: function (collapsingForExpand) {
-        if (!collapsingForExpand) {
+        if (!collapsingForExpand && !this.destroying) {
             this.getOwner().updateLayout();
         }
     },
@@ -321,7 +321,9 @@ Ext.define('Ext.list.AbstractTreeItem', {
     },
 
     nodeExpandEnd: function () {
-        this.getOwner().updateLayout();
+        if (!this.destroying) {
+            this.getOwner().updateLayout();
+        }
     },
 
     /**
@@ -405,6 +407,59 @@ Ext.define('Ext.list.AbstractTreeItem', {
     },
 
     /**
+     * Handle a click on this item.
+     * @param {Ext.event.Event} e The event
+     *
+     * @protected
+     */
+    onClick: function (e) {
+        var me = this,
+            owner = me.getOwner(),
+            node = me.getNode(),
+            info = {
+                event: e,
+                item: me,
+                node: node,
+                tree: owner,
+                select: node.get('selectable') !== false && me.isSelectionEvent(e),
+                toggle: me.isToggleEvent(e)
+            };
+
+        /**
+         * @event itemclick
+         * @member Ext.list.Tree
+         *
+         * @param {Ext.list.Tree} sender The `treelist` that fired this event.
+         *
+         * @param {Object} info
+         * @param {Ext.event.Event} info.event The DOM event that precipitated this
+         * event.
+         * @param {Ext.list.AbstractTreeItem} info.item The tree node that was clicked.
+         * @param {Ext.list.Tree} info.tree The `treelist` that fired this event.
+         * @param {Boolean} info.select On input this is value is the result of the
+         *   {@link #isSelectionEvent} method. On return from event handlers (assuming a
+         *   `false` return does not cancel things) this property is used to determine
+         *   if the clicked node should be selected.
+         * @param {Boolean} info.toggle On input this is value is the result of the
+         *   {@link #isToggleEvent} method. On return from event handlers (assuming a
+         *   `false` return does not cancel things) this property is used to determine
+         *   if the clicked node's expand/collapse state should be toggled.
+         *
+         * @since 6.0.1
+         */
+        if (owner.fireEvent('itemclick', owner, info) !== false) {
+            if (info.toggle) {
+                me.toggleExpanded();
+                e.preventDefault();
+            }
+
+            if (info.select) {
+                owner.setSelection(me.getNode());
+            }
+        }
+    },
+
+    /**
      * @method
      *
      * Remove a child item from the DOM.
@@ -451,7 +506,7 @@ Ext.define('Ext.list.AbstractTreeItem', {
          *
          * @private
          */
-        doNodeUpdate: function (node) {
+        doNodeUpdate: function (node, modifiedFieldNames) {
             var me = this,
                 textProperty = this.getTextProperty(),
                 iconClsProperty = this.getIconClsProperty();
@@ -472,58 +527,6 @@ Ext.define('Ext.list.AbstractTreeItem', {
         doUpdateExpandable: function () {
             var node = this.getNode();
             this.setExpandable(node.isExpandable());
-        },
-
-        /**
-         * Handle a click on this item.
-         * @param {Ext.event.Event} e The event
-         *
-         * @private
-         */
-        onClick: function (e) {
-            var me = this,
-                owner = me.getOwner(),
-                node = me.getNode(),
-                info = {
-                    event: e,
-                    item: me,
-                    node: node,
-                    tree: owner,
-                    select: node.get('selectable') !== false && me.isSelectionEvent(e),
-                    toggle: me.isToggleEvent(e)
-                };
-
-            /**
-             * @event itemclick
-             *
-             * @param {Ext.list.Tree} sender The `treelist` that fired this event.
-             *
-             * @param {Object} info
-             * @param {Ext.event.Event} info.event The DOM event that precipitated this
-             * event.
-             * @param {Ext.list.AbstractTreeItem} info.item The tree node that was clicked.
-             * @param {Ext.list.Tree} info.tree The `treelist` that fired this event.
-             * @param {Boolean} info.select On input this is value is the result of the
-             *   {@link #isSelectionEvent} method. On return from event handlers (assuming a
-             *   `false` return does not cancel things) this property is used to determine
-             *   if the clicked node should be selected.
-             * @param {Boolean} info.toggle On input this is value is the result of the
-             *   {@link #isToggleEvent} method. On return from event handlers (assuming a
-             *   `false` return does not cancel things) this property is used to determine
-             *   if the clicked node's expand/collapse state should be toggled.
-             *
-             * @since 6.0.1
-             */
-            if (owner.fireEvent('itemclick', owner, info) !== false) {
-                if (info.toggle) {
-                    me.toggleExpanded();
-                    e.preventDefault();
-                }
-
-                if (info.select) {
-                    owner.setSelection(me.getNode());
-                }
-            }
         },
 
         toggleExpanded: function() {

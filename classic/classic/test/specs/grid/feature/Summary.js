@@ -1,7 +1,10 @@
-/* global expect, Ext, MockAjaxManager */
+/* global expect, Ext, MockAjaxManager, xit */
 
-describe('Ext.grid.feature.Summary', function () {
-    var synchronousLoad = true,
+topSuite("Ext.grid.feature.Summary",
+    ['Ext.grid.Panel', 'Ext.grid.feature.*'],
+function() {
+    var itNotIE8 = Ext.isIE8 ? xit : it,
+        synchronousLoad = true,
         proxyStoreLoad = Ext.data.ProxyStore.prototype.load,
         loadStore = function() {
             proxyStoreLoad.apply(this, arguments);
@@ -84,7 +87,7 @@ describe('Ext.grid.feature.Summary', function () {
                     renderTo: Ext.getBody()
                 }, gridCfg));
 
-                view = grid.view;
+                view = grid.getView();
                 selector = summary.summaryRowSelector;
                 if (withLocking) {
                     lockedGrid = grid.lockedGrid;
@@ -168,6 +171,7 @@ describe('Ext.grid.feature.Summary', function () {
             describe('No data', function() {
                 it('should size the columns in the summary', function () {
                     var row;
+                    
                     createGrid(null, null, null, []);
 
                     // TableLayout should also flush when no data, just summary rows.
@@ -258,11 +262,11 @@ describe('Ext.grid.feature.Summary', function () {
                     var rec = store.getAt(0);
                     // For the comparison, just grab the first table cell in the view and compare it to the first table cell within the feature.
                     if (withLocking) {
-                        expect(getSummary(lockedView).firstChild.offsetWidth).toBe(lockedView.getCell(rec, grid.down('#studentColumn')).dom.offsetWidth);
-                        expect(getSummary(normalView).firstChild.offsetWidth).toBe(normalView.getCell(rec, grid.down('#markColumn')).dom.offsetWidth);
+                        expect(getSummary(lockedView).firstChild.offsetWidth).toBe(lockedView.getCell(rec, grid.down('#studentColumn')).offsetWidth);
+                        expect(getSummary(normalView).firstChild.offsetWidth).toBe(normalView.getCell(rec, grid.down('#markColumn')).offsetWidth);
                     } else {
-                        expect(getSummary().firstChild.offsetWidth).toBe(view.getCell(rec, grid.down('#studentColumn')).dom.offsetWidth);
-                        expect(getSummary().lastChild.offsetWidth).toBe(view.getCell(rec, grid.down('#markColumn')).dom.offsetWidth);
+                        expect(getSummary().firstChild.offsetWidth).toBe(view.getCell(rec, grid.down('#studentColumn')).offsetWidth);
+                        expect(getSummary().lastChild.offsetWidth).toBe(view.getCell(rec, grid.down('#markColumn')).offsetWidth);
                     }
                 });
             });
@@ -399,12 +403,13 @@ describe('Ext.grid.feature.Summary', function () {
 
 
                         cellSelector = grid.down('#markColumn').getCellSelector();
+                        
                         if (withLocking) {
-                            cell = Ext.fly(getSummary(normalView)).down(cellSelector);
-                            content = cell.down(normalView.innerSelector).dom.innerHTML;
+                            cell = getSummary(normalView).querySelector(cellSelector);
+                            content = cell.querySelector(normalView.innerSelector).innerHTML;
                         } else {
-                            cell = Ext.fly(getSummary()).down(cellSelector);
-                            content = cell.down(view.innerSelector).dom.innerHTML;
+                            cell = getSummary().querySelector(cellSelector, true);
+                            content = cell.querySelector(view.innerSelector).innerHTML;
                         }
 
                         expect(content).toBe('59');
@@ -476,13 +481,13 @@ describe('Ext.grid.feature.Summary', function () {
 
                         cellSelector = grid.down('#markColumn').getCellSelector();
                         if (withLocking) {
-                            cell = normalGrid.features[0].summaryBar.getEl().down(cellSelector);
-                            content = cell.down(normalView.innerSelector).dom.innerHTML;
+                            cell = normalGrid.features[0].summaryBar.getEl().down(cellSelector, true);
+                            content = cell.querySelector(normalView.innerSelector).innerHTML;
                         } else {
-                            cell = summary.summaryBar.getEl().down(cellSelector);
-                            content = cell.down(grid.getView().innerSelector).dom.innerHTML;
+                            cell = summary.summaryBar.getEl().down(cellSelector, true);
+                            content = cell.querySelector(grid.getView().innerSelector).innerHTML;
                         }
-                        
+
                         expect(content).toBe('59');
                     });
                 });
@@ -855,9 +860,10 @@ describe('Ext.grid.feature.Summary', function () {
             });
 
             describe("buffered rendering", function() {
-                it("should not render the summary row until the last row is in the view", function() {
+                itNotIE8("should not render the summary row until the last row is in the view", function() {
                     var data = [],
-                        i;
+                        i,
+                        summaryErroreouslyRendered = false;
 
                     for (i = 1; i <= 1000; ++i) {
                         data.push({
@@ -873,32 +879,29 @@ describe('Ext.grid.feature.Summary', function () {
                     }, null, null, data);
 
                     var theView = withLocking ? lockedView : view,
-                        scrollingView = withLocking ? normalView : view;
+                        scroller = withLocking ? grid.getScrollable() : view.getScrollable();
 
-                    expect(theView.getEl().down(selector)).toBeNull();
+                    expect(theView.getEl().down(selector, true)).toBeNull();
                     
                     // Scroll downwards 100px at a time
                     // While the last row is not present, there should be no summary el.
                     // As soon as it is present, check that the summary is there and quit.
                     // N.B. This latch function accepts done callback and because of this
                     // it will be called only ONCE, not in a loop!
-                    waitsFor(function(done) {
-                        grid.getScrollable().on('scroll', function() {
-                            if (view.all.endIndex === store.getCount() - 1) {
-                                done();
-                            }
-                            else {
-                                expect(theView.getEl().down(selector)).toBeNull();
-                                grid.getScrollable().scrollBy(0, 100);
-                            }
-                        });
-                        
-                        grid.getScrollable().scrollBy(0, 100);
-                    // 15 seconds should be enough even for IE8
-                    }, 'downward scrolling to complete', 15000);
+                    jasmine.waitsForScroll(scroller, function() {
+                        if (view.all.endIndex === store.getCount() - 1 || summaryErroreouslyRendered) {
+                            return true;
+                        }
+                        else {
+                            summaryErroreouslyRendered = !!theView.getEl().down(selector, true);
+                            scroller.scrollBy(0, 200);
+                        }
+                    // 30 seconds should be enough even for IE8
+                    }, 'downward scrolling to complete', 30000);
                     
                     runs(function() {
-                        expect(theView.getEl().down(selector)).not.toBeNull();
+                        expect(summaryErroreouslyRendered).toBe(false);
+                        expect(theView.getEl().down(selector, true)).not.toBeNull();
                     });
                 });
             });
@@ -913,6 +916,31 @@ describe('Ext.grid.feature.Summary', function () {
                         });
                         expect(getSummaryContent()).toBe('4students80');
                     });
+                });
+            });
+
+            describe('with groupsummary', function() {
+                it('should coexist with groupsummary feature', function() {
+                    createGrid({
+                        features: [{
+                            ftype: 'groupingsummary'
+                        }]
+                    }, null, {
+                        groupField: 'subject'
+                    });
+
+                    // Depending upon whether locking used...
+                    var testEl = view.body || view.el,
+                        expectText = withLocking ? "subject:MathStudent1Student22studentssubject:ScienceStudent1Student22students4studentssubject:Math849690subject:Science72687080" : "subject:MathStudent184Student2962students90subject:ScienceStudent172Student2682students704students80";
+
+                    expect((testEl.dom.textContent || testEl.dom.innerText).replace(/\r\n?|\n|\s/g, '')).toBe(expectText);
+
+                    // Change the mark scored by first student.
+                    store.getAt(0).set('mark', 64);
+
+                    // Just the changed marks should have changed.
+                    expectText = withLocking ? "subject:MathStudent1Student22studentssubject:ScienceStudent1Student22students4studentssubject:Math649680subject:Science72687075" : "subject:MathStudent164Student2962students80subject:ScienceStudent172Student2682students704students75";
+                    expect((testEl.dom.textContent || testEl.dom.innerText).replace(/\r\n?|\n|\s/g, '')).toBe(expectText);
                 });
             });
         });

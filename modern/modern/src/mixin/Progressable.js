@@ -1,5 +1,5 @@
 /**
- * A Traversable mixin.
+ * A Progressable mixin.
  * @private
  */
 Ext.define('Ext.mixin.Progressable', {

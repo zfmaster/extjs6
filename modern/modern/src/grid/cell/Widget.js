@@ -10,6 +10,8 @@ Ext.define('Ext.grid.cell.Widget', {
     extend: 'Ext.grid.cell.Base',
     xtype: 'widgetcell',
 
+    isWidgetCell: true,
+
     config: {
         /**
          * @cfg {Boolean} forceWidth
@@ -32,83 +34,137 @@ Ext.define('Ext.grid.cell.Widget', {
 
     classCls: Ext.baseCSSPrefix + 'widgetcell',
 
-    updateColumn: function(column, oldColumn) {
+    /**
+     * @cfg {Boolean} selectable
+     * @inheritdoc
+     */
+    selectable: false,
+
+    getRefItems: function(deep) {
+        var result = [],
+            widget = this.getWidget();
+
+        if (widget) {
+            result.push(widget);
+            if (deep && widget.getRefItems) {
+                result.push.apply(result, widget.getRefItems(deep));
+            }
+        }
+
+        return result;
+    },
+
+    setValue: function (value) {
+        // If it's an object, its internals may have changed, but the simple
+        // equality test of the config's setter will reject it, so
+        // go directly to the updater.
+        if (value && typeof value === 'object') {
+            // we still need to update _value otherwise the Base cell refresh() will ignore us.
+            this._value = value;
+            this.updateValue(value);
+        } else {
+            if (value === undefined) {
+                // The config system doesn't do well w/setFoo(undefined)
+                value = null;
+            }
+
+            this.callParent([value]);
+        }
+
+        return this;
+    },
+
+    updateValue: function (value) {
         var me = this,
-            parent, firstCell;
+            widget = me.getWidget(), // this may create the widget & set defaultBindCfg
+            defaultBindCfg = me.defaultBindCfg;
 
-        me.callParent([column, oldColumn]);
-
-        if (!column || !me.getForceWidth()) {
-            return;
-        }
-
-        // We need to be able to measure some dimensions of the cells
-        // to be able to size the widgets if forceWidth is true. We can
-        // only do this once we hit the DOM. However, we only want to do this
-        // for the first cell because it can be expensive. If we've already
-        // done it, no need to do so again.
-
-        firstCell = column.firstCell;
-        if (firstCell && firstCell.measured) {
-            me.measured = true;
-            return;
-        }
-
-        parent = me.getParent();
-        if (parent && !parent.isSpecialRow && !column.firstCell) {
-            column.firstCell = me;
-            me.element.on('resize', 'handleFirstResize', me, {single: true});
+        if (defaultBindCfg && widget) {
+            widget[defaultBindCfg.names.set](value);
         }
     },
 
-    updateValue: function(value) {
-        var widget = this.getWidget(),
-            defaultBindProperty;
-            
+    applyWidget: function (widget) {
+        var me = this;
+
         if (widget) {
-            defaultBindProperty = widget.defaultBindProperty;
+            widget = Ext.apply({
+                ownerCmp: me
+            }, widget);
 
-            if (defaultBindProperty) {
-                widget.setConfig(defaultBindProperty, value);
-            }
+            widget = Ext.create(widget);
         }
-    },
 
-    applyWidget: function(widget) {
-        if (widget) {
-            var parent = this.getParent();
-
-            if (parent && !parent.isSpecialRow) {
-                widget = Ext.apply({
-                    parent: this
-                }, widget);
-                widget = Ext.widget(widget);
-            } else {
-                widget = undefined;
-            }
-        }
         return widget;
     },
 
     updateWidget: function(widget, oldWidget) {
-        var me = this;
+        var me = this,
+            defaultBindCfg;
 
         if (oldWidget) {
+            me.widgetChangeListener = Ext.destroy(me.widgetChangeListener);
             oldWidget.measurer = null;
             oldWidget.destroy();
         }
 
         if (widget) {
-            me.innerElement.appendChild(widget.element);
+            // in FF/Edge the cell body should only contain the widget canvas and nothing else
+            // otherwise the widget is not visible
+            me.bodyElement.setHtml('');
+            me.bodyElement.appendChild(widget.element);
+
             if (me.getForceWidth()) {
                 me.setWidgetWidth(me.getWidth());
+            }
+
+            defaultBindCfg = widget.defaultBindProperty;
+            defaultBindCfg = widget.self.getConfigurator().configs[defaultBindCfg];
+            me.defaultBindCfg = defaultBindCfg || null;
+
+            //<debug>
+            if (!defaultBindCfg || !widget[defaultBindCfg.names.get] ||
+                    !widget[defaultBindCfg.names.set]) {
+                Ext.raise('Invalid config "' + widget.defaultBindProperty + '" for ' +
+                    widget.$className);
+            }
+            //</debug>
+
+            if (me.dataIndex) {
+                me.widgetChangeListener = widget.on({
+                    change: 'onWidgetChange',
+                    scope: me
+                });
+            }
+        }
+    },
+
+    onWidgetChange: function (widget) {
+        if (!this.refreshContext) {
+            var me = this,
+                record = me.getRecord(),
+                defaultBindCfg = me.defaultBindCfg,
+                dataIndex = me.dataIndex;
+
+            if (record && !record.isSummaryRecord && dataIndex && defaultBindCfg) {
+                record.set(dataIndex, widget[defaultBindCfg.names.get]());
             }
         }
     },
 
     updateWidth: function(width, oldWidth) {
         this.callParent([width, oldWidth]);
-        this.setWidgetWidth(width);
+        if (this.getForceWidth()) {
+            this.setWidgetWidth(width);
+        }
+    },
+
+    onRender: function() {
+        var me = this;
+
+        if (me.getForceWidth()) {
+            me.setWidgetWidth(me.getWidth());
+        }
     },
 
     doDestroy: function() {
@@ -117,28 +173,12 @@ Ext.define('Ext.grid.cell.Widget', {
     },
 
     privates: {
-        handleFirstResize: function() {
-            var me = this,
-                width = me.getWidth(),
-                cells, len, i, cell;
-
-            // Once we have the measurement available for the first cell, 
-            // go and cascade it for other cells.
-            cells = me.getColumn().getCells();
-
-            for (i = 0, len = cells.length; i < len; ++i) {
-                cell = cells[i];
-                cell.measured = true;
-                cell.setWidgetWidth(width);
-            }
-        },
-
         setWidgetWidth: function(width) {
             var me = this,
-                el = me.innerElement,
+                el = me.bodyElement,
                 widget, column, leftPad, rightPad;
 
-            if (!me.measured) {
+            if (!me.rendered) {
                 return;
             }
 
@@ -150,7 +190,6 @@ Ext.define('Ext.grid.cell.Widget', {
                 // Give the widget a reference to ourself to allow it to do any extra measuring
                 widget.measurer = column;
                 widget.setWidth(width - leftPad - rightPad);
-                widget.redraw();
             }
         }
     }

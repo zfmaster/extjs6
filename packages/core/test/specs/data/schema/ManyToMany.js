@@ -1,4 +1,4 @@
-describe("Ext.data.schema.ManyToMany", function() {
+topSuite("Ext.data.schema.ManyToMany", ['Ext.data.ArrayStore', 'Ext.data.Session'], function() {
     describe("configuring", function() {
         var SimpleUser, SimpleGroup, FooBarThing, FooGoo,
             User2, Group2, User3, Group3, User4, Group4, User5, Group5,
@@ -729,6 +729,32 @@ describe("Ext.data.schema.ManyToMany", function() {
                 expect(groups.getAt(1).getId()).toBe(102);
                 expect(groups.getAt(2).getId()).toBe(103);
             });
+
+            it("should load records if the store has already been referenced", function() {
+                var user = new User({
+                        id: 1
+                    }),
+                    groups = user.groups();
+
+                user.load();
+                complete({
+                    id: 1,
+                    groups: [{
+                        id: 101,
+                        name: 'Group1'
+                    }, {
+                        id: 102,
+                        name: 'Group2'
+                    }, {
+                        id: 103,
+                        name: 'Group3'
+                    }]
+                });
+                expect(groups.getCount()).toBe(3);
+                expect(groups.getAt(0).getId()).toBe(101);
+                expect(groups.getAt(1).getId()).toBe(102);
+                expect(groups.getAt(2).getId()).toBe(103);
+            });
         });
 
         describe("with session", function() {
@@ -847,6 +873,32 @@ describe("Ext.data.schema.ManyToMany", function() {
                 users = groups.getAt(2).users();
                 expect(users.getCount()).toBe(1);
                 expect(users.getAt(0)).toBe(user);
+            });
+
+            it("should load records if the store has already been referenced", function() {
+                var user = new User({
+                        id: 1
+                    }, session),
+                    groups = user.groups();
+
+                user.load();
+                complete({
+                    id: 1,
+                    groups: [{
+                        id: 101,
+                        name: 'Group1'
+                    }, {
+                        id: 102,
+                        name: 'Group2'
+                    }, {
+                        id: 103,
+                        name: 'Group3'
+                    }]
+                });
+                expect(groups.getCount()).toBe(3);
+                expect(groups.getAt(0).getId()).toBe(101);
+                expect(groups.getAt(1).getId()).toBe(102);
+                expect(groups.getAt(2).getId()).toBe(103);
             });
         });
     });

@@ -1,6 +1,7 @@
 /**
  * @class Ext.sparkline.Base
  */
+
 Ext.define('Ext.override.sparkline.Base', {
     override: 'Ext.sparkline.Base',
 
@@ -18,19 +19,20 @@ Ext.define('Ext.override.sparkline.Base', {
 
     onMouseMove: function (e) {
         this.currentEvent = e;
-        this.tooltip.currentTarget.attach(this.element);
+        this.getSharedTooltip().currentTarget.attach(this.element);
         this.callParent([e]);
     },
 
     privates: {
         hideTip: function() {
-            var tip = this.tooltip;
-            // Will detach the currentTarget
-            tip.hide();
+            var tip = this.getSharedTooltip();
+            // Will detach the currentTarget and hide soon...
+            // unless we quickly attach to a new one.
+            tip.delayHide();
         },
 
         showTip: function() {
-            this.tooltip.forceTargetOver(this.currentEvent, this.element);
+            this.getSharedTooltip().handleTargetOver(this.currentEvent, this.element);
         }
     }
 });

@@ -14,7 +14,7 @@ Ext.define('Ext.drag.Constraint', {
 
     config: {
         /**
-         * @cfg {Boolean/String/HTMLELement/Ext.dom.Element} element
+         * @cfg {Boolean/String/HTMLElement/Ext.dom.Element} element
          *
          * The element to constrain to:
          * - `true` to constrain to the parent of the {@link Ext.drag.Source#element}.
@@ -26,7 +26,7 @@ Ext.define('Ext.drag.Constraint', {
          * @cfg {Boolean} horizontal
          * `true` to limit dragging to the horizontal axis.
          */
-        horizontal: false,
+        horizontal: null,
 
         /**
          * @cfg {Ext.util.Region} region
@@ -64,7 +64,7 @@ Ext.define('Ext.drag.Constraint', {
          * @cfg {Boolean} vertical
          * `true` to limit dragging to the vertical axis.
          */
-        vertical: false,
+        vertical: null,
 
         /**
          * @cfg {Number[]} x
@@ -92,12 +92,8 @@ Ext.define('Ext.drag.Constraint', {
     },
 
     applyElement: function(element) {
-        if (element) {
-            if (typeof element === 'boolean') {
-                element = this.getSource().getElement().parent();
-            } else {
-                element = Ext.get(element);
-            }
+        if (element && typeof element !== 'boolean') {
+            element = Ext.get(element);
         }
         return element || null;
     },
@@ -117,7 +113,7 @@ Ext.define('Ext.drag.Constraint', {
      *
      * @param {Number[]} xy The position.
      * @param {Ext.drag.Info} info The drag information.
-     * 
+     *
      * @return {Number[]} The xy position.
      */
     constrain: function(xy, info) {
@@ -193,7 +189,7 @@ Ext.define('Ext.drag.Constraint', {
     privates: {
         /**
          * Constrains 2 values, while taking into
-         * account nulls. 
+         * account nulls.
          * @param {Number} a The first value.
          * @param {Number} b The second value.
          * @param {Function} resolver The function to resolve the value if
@@ -223,7 +219,7 @@ Ext.define('Ext.drag.Constraint', {
         /**
          * Calculates the position to move the proxy element
          * to when using snapping.
-         * 
+         *
          * @param {Number} position The current mouse position.
          * @param {Number} initial The start position.
          * @param {Number} snap The snap position.
@@ -261,8 +257,8 @@ Ext.define('Ext.drag.Constraint', {
         onDragStart: function(info) {
             var me = this,
                 snap = me.getSnap(),
-                vertical = me.getVertical(),
-                horizontal = me.getHorizontal(),
+                vertical = !!me.getVertical(),
+                horizontal = !!me.getHorizontal(),
                 element = me.getElement(),
                 region = me.getRegion(),
                 proxy = info.proxy,
@@ -276,10 +272,24 @@ Ext.define('Ext.drag.Constraint', {
                 rminX = null,
                 rmaxX = null,
                 rminY = null,
-                rmaxY = null;
+                rmaxY = null,
+                pos, size;
 
             if (element) {
-                region = element.getRegion(true);
+                if (typeof element === 'boolean') {
+                    element = me.getSource().getElement().parent();
+                }
+                if (info.local) {
+                    pos = element.getStyle('position');
+                    if (pos === 'relative' || pos === 'absolute') {
+                        size = element.getSize();
+                        region = new Ext.util.Region(0, size.width, size.height, 0);
+                    } else {
+                        region = element.getRegion(true, true);
+                    }
+                } else {
+                    region = element.getRegion(true);
+                }
             }
 
             if (region) {
@@ -298,7 +308,7 @@ Ext.define('Ext.drag.Constraint', {
             // The following piece sets up the numeric values for our constraint.
             // If there is an axis constraint, don't bother calculating the values since
             // it is already explicitly constrained so we can shortcut that portion.
-            // 
+            //
             // Attempt to merge the appropriate min/max values (if needed). With:
             // a) A region and a minimum, the larger value is needed (stricter constraint)
             // b) A region and a maximum, the smaller value is needed (stricter constraint)
@@ -339,8 +349,8 @@ Ext.define('Ext.drag.Constraint', {
 
             me.constrainInfo = {
                 initial: info.element.initial,
-                vertical: me.getVertical(),
-                horizontal: me.getHorizontal(),
+                vertical: vertical,
+                horizontal: horizontal,
                 x: x,
                 y: y,
                 snap: snap

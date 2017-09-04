@@ -1,6 +1,83 @@
-describe("Ext.Number", function(){
+topSuite("Ext.Number", function(){
     var EN = Ext.Number;
-    
+
+    describe('parseFloat', function() {
+        function test (s) {
+            return Ext.Number.parseFloat(s) !== null;
+        }
+
+        it('should parse numbers', function() {
+            expect(test(        '-1')).toBe(true);
+            expect(test(        '+1')).toBe(true);
+            expect(test(         '1')).toBe(true);
+            expect(test(       '0.2')).toBe(true);
+            expect(test(     '0.4E4')).toBe(true);  // Java-style
+            expect(test(       '-55')).toBe(true);
+            expect(test(      '-0.6')).toBe(true);
+            expect(test(        '9.')).toBe(true);
+            expect(test(  '-0.77E77')).toBe(true);
+            expect(test(      '88E8')).toBe(true);
+            expect(test(     '1e+24')).toBe(true);  // JavaScript-style
+        });
+
+        it('should parse fractions with a leading decimal point', function() {
+            expect(test(        '.3')).toBe(true);
+            expect(test(       '-.3')).toBe(true);
+            expect(test(     '.3e-4')).toBe(true);
+        });
+
+        it('should reject non-numbers', function() {
+            expect(test(         '.')).toBe(false);
+            expect(test(          '')).toBe(false);
+            expect(test(         'E')).toBe(false);
+            expect(test(       'e24')).toBe(false);
+            expect(test(   '1e+24.5')).toBe(false);
+            expect(test(  'Infinity')).toBe(false);
+            expect(test(      '100a')).toBe(false);
+            expect(test(      'a100')).toBe(false);
+            expect(test(      'asdf')).toBe(false);
+        });
+    });
+
+    describe('parseInt', function() {
+        function test (s) {
+            return Ext.Number.parseInt(s) !== null;
+        }
+
+        it('should parse integers', function() {
+            expect(test(        '-1')).toBe(true);
+            expect(test(        '+1')).toBe(true);
+            expect(test(         '1')).toBe(true);
+            expect(test(       '-55')).toBe(true);
+            expect(test(      '88E8')).toBe(true);
+            expect(test(     '1e+24')).toBe(true);  // JavaScript-style
+        });
+
+        it('should reject fractions', function() {
+            expect(test(      '1e-4')).toBe(false);  // JavaScript-style
+            expect(test(      '-0.6')).toBe(false);
+            expect(test(  '-0.77E77')).toBe(false);
+            expect(test(       '0.2')).toBe(false);
+            expect(test(     '0.4E4')).toBe(false);  // Java-style
+            expect(test(        '.3')).toBe(false);
+            expect(test(       '-.3')).toBe(false);
+            expect(test(     '.3e-4')).toBe(false);
+        });
+
+        it('should reject non-numbers', function() {
+            expect(test(         '.')).toBe(false);
+            expect(test(        '9.')).toBe(false);
+            expect(test(          '')).toBe(false);
+            expect(test(         'E')).toBe(false);
+            expect(test(       'e24')).toBe(false);
+            expect(test(   '1e+24.5')).toBe(false);
+            expect(test(  'Infinity')).toBe(false);
+            expect(test(      '100a')).toBe(false);
+            expect(test(      'a100')).toBe(false);
+            expect(test(      'asdf')).toBe(false);
+        });
+    });
+
     describe("constraining a number", function(){
         describe("integers", function(){
             describe("if the number is within the constaints", function(){
@@ -814,6 +891,35 @@ describe("Ext.Number", function(){
 
         it('should return NaN for negative numbers as strings', function () {
             expect(Ext.Number.log10('-1')).toBeNaN();
+        });
+    });
+
+    describe('isInteger', function () {
+        it('should return true for an integer', function () {
+            expect(Ext.Number.isInteger(0)).toBe(true);
+            expect(Ext.Number.isInteger(0.0)).toBe(true);
+            expect(Ext.Number.isInteger(3)).toBe(true);
+            expect(Ext.Number.isInteger(3.0)).toBe(true);
+            expect(Ext.Number.isInteger(-5)).toBe(true);
+            expect(Ext.Number.isInteger(-5.0)).toBe(true);
+        });
+        it('should return false for an non-integer', function () {
+            expect(Ext.Number.isInteger(0.3)).toBe(false);
+            expect(Ext.Number.isInteger(3.5)).toBe(false);
+            expect(Ext.Number.isInteger(-5.7)).toBe(false);
+            expect(Ext.Number.isInteger(Infinity)).toBe(false);
+            expect(Ext.Number.isInteger(-Infinity)).toBe(false);
+            expect(Ext.Number.isInteger(NaN)).toBe(false);
+            expect(Ext.Number.isInteger(null)).toBe(false);
+            expect(Ext.Number.isInteger(undefined)).toBe(false);
+            expect(Ext.Number.isInteger(true)).toBe(false);
+            expect(Ext.Number.isInteger(false)).toBe(false);
+            expect(Ext.Number.isInteger([])).toBe(false);
+            expect(Ext.Number.isInteger([5, 7])).toBe(false);
+            expect(Ext.Number.isInteger({})).toBe(false);
+            expect(Ext.Number.isInteger({test: 8})).toBe(false);
+            expect(Ext.Number.isInteger("test")).toBe(false);
+            expect(Ext.Number.isInteger("10")).toBe(false);
         });
     });
 

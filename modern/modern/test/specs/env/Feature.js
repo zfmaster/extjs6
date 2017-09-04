@@ -1,4 +1,4 @@
-xdescribe("Ext.env.Feature", function(){
+xtopSuite("Ext.env.Feature", false, function(){
     describe("on created", function(){
         it("should create a default instance of itself in Ext.feature", function(){
             expect(Ext.feature).toBeDefined();

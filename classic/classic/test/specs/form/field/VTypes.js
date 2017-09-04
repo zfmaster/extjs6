@@ -1,13 +1,5 @@
-describe("Ext.form.field.VTypes", function() {
+topSuite("Ext.form.field.VTypes", function() {
     var VTYPES = Ext.form.field.VTypes;
-
-    beforeEach(function() {
-
-    });
-
-    afterEach(function() {
-
-    });
 
     describe('Ext.form.field.VTypes.url()', function() {
 

@@ -1,4 +1,9 @@
-describe("Ext.draw.sprite.Instancing", function () {
+topSuite("Ext.draw.sprite.Instancing", ['Ext.draw.*'], function() {
+    beforeEach(function() {
+        // Silence warnings regarding Sencha download server
+        spyOn(Ext.log, 'warn');
+    });
+    
     describe("'template' config", function () {
         it("should set the template's parent to the instancing sprite", function () {
             var template = new Ext.draw.sprite.Rect(),
@@ -19,7 +24,7 @@ describe("Ext.draw.sprite.Instancing", function () {
 
             instancing.destroy();
 
-            expect(instancing.isDestroyed).toBe(true);
+            expect(instancing.destroyed).toBe(true);
         });
     });
 
@@ -60,7 +65,7 @@ describe("Ext.draw.sprite.Instancing", function () {
 
             instancing.destroy();
 
-            expect(instancing.isDestroyed).toBe(true);
+            expect(instancing.destroyed).toBe(true);
         });
     });
 

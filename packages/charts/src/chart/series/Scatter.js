@@ -99,7 +99,7 @@ Ext.define('Ext.chart.series.Scatter', {
 
     config: {
         itemInstancing: {
-            fx: {
+            animation: {
                 customDurations: {
                     translationX: 0,
                     translationY: 0
@@ -115,6 +115,7 @@ Ext.define('Ext.chart.series.Scatter', {
     applyMarker: function (marker, oldMarker) {
         this.getItemInstancing();
         this.setItemInstancing(marker);
+
         return this.callParent(arguments);
     },
 

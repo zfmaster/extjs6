@@ -8,7 +8,9 @@
  *
  *          items: [{
  *              title: 'Some Title',
- *              plugins: 'responsive',
+ *              plugins: {
+ *                  responsive: true
+ *              },
  *
  *              responsiveConfig: {
  *                  'width < 800': {
@@ -31,14 +33,17 @@ Ext.define('Ext.plugin.Responsive', {
     id: 'responsive',
 
     isPlugin: true,
+    weight: -1000,
+
+    $configStrict: false,
 
     constructor: function (config) {
         var me = this,
             cmp = config.cmp,
-            c = Ext.apply({
+            c = {
                 responsiveConfig: cmp.responsiveConfig,
                 responsiveFormulas: cmp.responsiveFormulas
-            }, config);
+            };
 
         delete c.cmp;
 
@@ -50,6 +55,7 @@ Ext.define('Ext.plugin.Responsive', {
         //</debug>
 
         me.initConfig(c);
+        me.setConfig(config);
 
         // Push the evaluated responsiveConfig values back on to the component:
         if (me.transformed) {

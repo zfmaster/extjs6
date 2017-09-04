@@ -45,7 +45,7 @@
 Ext.define('Ext.field.TextArea', {
     extend: 'Ext.field.Text',
     xtype: 'textareafield',
-    requires: ['Ext.field.TextAreaInput'],
+    
     alternateClassName: 'Ext.form.TextArea',
 
     config: {
@@ -56,47 +56,33 @@ Ext.define('Ext.field.TextArea', {
         autoCapitalize: false,
 
         /**
-         * @cfg
-         * @inheritdoc
-         */
-        component: {
-            xtype: 'textareainput'
-        },
-
-        /**
          * @cfg {Number} maxRows The maximum number of lines made visible by the input.
-         * @accessor
          */
         maxRows: null,
 
-        clearIcon: false
+        clearable: false
     },
+
+    tag: 'textarea',
 
     classCls: Ext.baseCSSPrefix + 'textareafield',
 
-    /**
-     * @private
-     */
+    //<debug>
+    applyMaxRows: function(maxRows) {
+        if (maxRows !== null && typeof maxRows !== 'number') {
+            throw new Error("Ext.field.TextArea: [applyMaxRows] trying to pass a value which is not a number");
+        }
+
+        return maxRows;
+    },
+    //</debug>
+
     updateMaxRows: function(newRows) {
-        this.getComponent().setMaxRows(newRows);
+        this.setInputAttribute('rows', newRows);
     },
 
-    updateHeight: function(height, oldHeight) {
-        this.callParent([height, oldHeight]);
-        this.getComponent().inputElement.setHeight(height);
-    },
-
-    updateWidth: function(width, oldWidth) {
-        this.callParent([width, oldWidth]);
-        this.getComponent().inputElement.setWidth(width);
-    },
-
-    /**
-     * Called when a key has been pressed in the `<input>`
-     * @private
-     */
     doKeyUp: function(me) {
-        // getValue to ensure that we are in sync with the dom
-        this.toggleClearTrigger(this.getValue());
+        // Do not call parent - we don't want to fire action on enter key press
+        this.syncEmptyState();
     }
 });

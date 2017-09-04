@@ -1,4 +1,6 @@
-describe("Ext.event.Event", function() {
+/* global Ext, expect, jasmine */
+
+topSuite("Ext.event.Event", function() {
     var E = Ext.event.Event,
         e;
     
@@ -538,6 +540,41 @@ describe("Ext.event.Event", function() {
         makeSuite(true);
     });
 
+    describe("within", function() {
+        var target;
+
+        beforeEach(function() {
+            target = Ext.getBody().createChild();
+        });
+
+        afterEach(function() {
+            target.destroy();
+            target = null;
+        });
+
+        it("should return true by default if e.target === el.dom", function() {
+            target.on({
+                mousedown: function(e) {
+                    expect(e.within(target)).toBe(true);
+                }
+            });
+
+            jasmine.fireMouseEvent(target, 'mousedown');
+            jasmine.fireMouseEvent(target, 'mouseup');
+        });
+
+        it("should return false if allowEl is false and e.target === el.dom", function() {
+            target.on({
+                mousedown: function(e) {
+                    expect(e.within(target, null, false)).toBe(false);
+                }
+            });
+
+            jasmine.fireMouseEvent(target, 'mousedown');
+            jasmine.fireMouseEvent(target, 'mouseup');
+        });
+    });
+
     describe("time stamp", function() {
         describe("delegated", function() {
             var target, event;
@@ -557,8 +594,9 @@ describe("Ext.event.Event", function() {
 
             it("should be the current date in milliseconds", function() {
                 var start = +new Date();
-                jasmine.fireMouseEvent(target,'mousedown');
+                jasmine.fireMouseEvent(target, 'mousedown');
                 var end = +new Date();
+                jasmine.fireMouseEvent(target, 'mouseup');
 
                 expect(event.time >= start && event.time <= end).toBe(true);
             });
@@ -566,6 +604,7 @@ describe("Ext.event.Event", function() {
             it("should set both time and timeStamp", function() {
                 jasmine.fireMouseEvent(target,'mousedown');
                 expect(event.time).toBe(event.timeStamp);
+                jasmine.fireMouseEvent(target, 'mouseup');
             });
         });
 
@@ -592,6 +631,7 @@ describe("Ext.event.Event", function() {
                 var start = +new Date();
                 jasmine.fireMouseEvent(target,'mousedown');
                 var end = +new Date();
+                jasmine.fireMouseEvent(target, 'mouseup');
 
                 expect(event.time >= start && event.time <= end).toBe(true);
             });
@@ -599,7 +639,56 @@ describe("Ext.event.Event", function() {
             it("should set both time and timeStamp", function() {
                 jasmine.fireMouseEvent(target,'mousedown');
                 expect(event.time).toBe(event.timeStamp);
+                jasmine.fireMouseEvent(target, 'mouseup');
             });
         });
+    });
+
+    describe('which', function () {
+        var target, event;
+
+        beforeEach(function() {
+            target = Ext.getBody().createChild();
+        });
+
+        afterEach(function() {
+            target.destroy();
+            target = null;
+        });
+
+        if (!Ext.isIE8) {
+            /**
+             * IE8 will not set keyCode param on the event.
+             * e.keyCode will always be 0
+             */
+            describe('key event', function () {
+                beforeEach(function() {
+                    target.on({
+                        delegated: false,
+                        keydown: function (e) {
+                            event = e;
+                        }
+                    });
+                });
+
+                it('should recognize key code', function () {
+                    jasmine.fireKeyEvent(target, 'keydown', 'a');
+                    jasmine.fireKeyEvent(target, 'keyup', 'a');
+
+                    var which = event.which();
+
+                    expect(which).toBe('a');
+                });
+
+                it('should recognize key code with modifier', function () {
+                    jasmine.fireKeyEvent(target, 'keydown', 'B', true);
+                    jasmine.fireKeyEvent(target, 'keyup', 'B', true);
+
+                    var which = event.which();
+
+                    expect(which).toBe('B');
+                });
+            });
+        }
     });
 });

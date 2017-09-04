@@ -1,4 +1,9 @@
-describe("Ext.Component", function(){
+/* global expect, Ext, jasmine, spyOn, xdescribe */
+
+topSuite("Ext.Component",
+    ['Ext.Container', 'Ext.layout.container.*', 'Ext.Panel', 'Ext.form.FieldSet', 'Ext.form.field.*',
+     'Ext.data.Model', 'Ext.app.ViewModel', 'Ext.app.ViewController', 'Ext.plugin.Viewport'],
+function() {
     var Component = Ext.Component,
         proto = Component.prototype,
         compIdAttr = 'data-componentid',
@@ -7,7 +12,7 @@ describe("Ext.Component", function(){
     function makeComponent(cfg, isConfiguredEl) {
         c = new Ext.Component(cfg || {});
 
-        // Note that els not created by the component need an extra step to inform fromElement what its
+        // Note that els not created by the component need an extra step to inform from what its
         // owning component is.
         if (isConfiguredEl) {
             c.el.dom.setAttribute(compIdAttr, c.id);
@@ -32,7 +37,7 @@ describe("Ext.Component", function(){
         spyOn(Ext.Logger, 'warn');
     });
 
-    afterEach(function(){
+    afterEach(function() {
         if (c) {
             c.destroy();
         }
@@ -536,14 +541,14 @@ describe("Ext.Component", function(){
             expect(called).toBe(false);
         });
 
-        it("should not create an instance during render", function() {
+        it("should initialize if there are no binds/publishes", function() {
             makeComponent({
                 renderTo: Ext.getBody(),
                 viewModel: {
                     type: 'test'
                 }
             });
-            expect(called).toBe(false);
+            expect(called).toBe(true);
         });
 
         it("should not create an instance while constructing with binds", function() {
@@ -1157,7 +1162,7 @@ describe("Ext.Component", function(){
                     config: {
                         test: null
                     }
-                })
+                });
             });
 
             afterEach(function() {
@@ -4857,6 +4862,7 @@ describe("Ext.Component", function(){
                             '<span id="{id}-spanEl" data-ref="spanEl">foo bar</span>',
                         '</div>'
                     ],
+                    scrollable: false,
                     getFocusEl: function() {
                         return this.el;
                     }
@@ -4864,26 +4870,26 @@ describe("Ext.Component", function(){
             });
             
             it("should add " + compIdAttr + " attribute to the focusable element", function() {
-                var cmpId = c.getFocusEl().getAttribute(compIdAttr);
+                var cmpId = c.getFocusEl().dom.getAttribute(compIdAttr);
                 
                 expect(cmpId).toBe(c.id);
             });
             
             it("should be able to look Component up by " + compIdAttr + " attribute", function() {
-                var cmp = Ext.Component.fromElement(c.getFocusEl());
+                var cmp = Ext.Component.from(c.getFocusEl());
                 
                 expect(cmp).toEqual(c);
             });
             
             it("should be able to look Component up by its inner element", function() {
-                var cmp = Ext.Component.fromElement(c.spanEl);
+                var cmp = Ext.Component.from(c.spanEl);
                 
                 expect(cmp).toEqual(c);
             });
             
             // We don't have a Viewport here, so lookup on the body element should fail
             it("should return null if no Component is found", function() {
-                var cmp = Ext.Component.fromElement(Ext.getBody());
+                var cmp = Ext.Component.from(Ext.getBody());
                 
                 expect(cmp).toBe(null);
             });
@@ -4909,13 +4915,13 @@ describe("Ext.Component", function(){
             });
             
             it("should be able to look Component up by its main element", function() {
-                var cmp = Ext.Component.fromElement(c.el);
+                var cmp = Ext.Component.from(c.el);
                 
                 expect(cmp).toEqual(c);
             });
             
             it("should be able to look Component up by its inner elements", function() {
-                var cmp = Ext.Component.fromElement(c.divEl);
+                var cmp = Ext.Component.from(c.divEl);
                 
                 expect(cmp).toEqual(c);
             });
@@ -4992,6 +4998,7 @@ describe("Ext.Component", function(){
             inner21FocusLeaveSpy = spyOn(inner21, 'onFocusLeave').andCallThrough();
             textfield2FocusLeaveSpy = spyOn(textfield2, 'onFocusLeave').andCallThrough();
         });
+        
         it('should fire focusEnter on the whole tree into which focus enters, and focusleave on the whole tree from which focus leaves', function() {
             expect(c.containsFocus).toBeFalsy();
             expect(inner1.containsFocus).toBeFalsy();
@@ -5003,9 +5010,8 @@ describe("Ext.Component", function(){
             textfield1.focus();
 
             // Some browsers deliver the focus event asynchronously
-            waitsFor(function() {
-                return c.containsFocus;
-            });
+            waitForSpy(cFocusEnterSpy);
+
             runs(function() {
                 // Focus has entered "c" and inner1 (and all inner1's descendants)
                 expect(cFocusEnterSpy.callCount).toBe(1);
@@ -5029,9 +5035,8 @@ describe("Ext.Component", function(){
             });
 
             // Some browsers deliver the focus event asynchronously
-            waitsFor(function() {
-                return inner2.containsFocus;
-            });
+            waitForSpy(inner2FocusEnterSpy);
+
             runs(function() {
                 expect(cFocusEnterSpy.callCount).toBe(1);
                 expect(inner1FocusEnterSpy.callCount).toBe(1);
@@ -5475,7 +5480,7 @@ describe("Ext.Component", function(){
             });
         });
 
-        afterEach(function(){
+        afterEach(function() {
             Ext.undefine('MyPlugin');
         });   
 
@@ -6332,6 +6337,22 @@ describe("Ext.Component", function(){
                 ct.destroy();
             });
         });
+
+        describe("floating", function() {
+            it("should not destroy a previous align target", function() {
+                var el = Ext.getBody().createChild();
+                makeComponent({
+                    floating: true,
+                    width: 100,
+                    height: 100
+                });
+                c.show();
+                c.alignTo(el);
+                c.destroy();
+                expect(el.dom.parentNode).toBe(Ext.getBody().dom);
+                el.destroy();
+            });
+        });
     });
 
     describe("afterRender", function() {
@@ -7104,7 +7125,7 @@ describe("Ext.Component", function(){
         });
     });
 
-    (Ext.supports.Touch ? xdescribe : describe)("scroll template methods", function() {
+    (jasmine.supportsTouch ? xdescribe : describe)("scroll template methods", function() {
         var startSpy, moveSpy, endSpy;
 
         beforeEach(function() {
@@ -7130,22 +7151,27 @@ describe("Ext.Component", function(){
             // scroll twice, make sure onScrollStart only ran once
             c.scrollTo(10, 20);
 
-            waitsFor(function() {
-                return startSpy.callCount === 1;
-            }, 'startSpy to fire', 1000);
+            // onScrollMove is called afteronScrollStart, so both will be done and testable after this
+            // But the buffered scroll end timer will not have expired, so the next scroll impulse
+            // will not call onScrollStart
+            waitsForSpy(moveSpy);
 
             runs(function() {
+                expect(startSpy.callCount).toBe(1);
                 expect(startSpy.mostRecentCall.args).toEqual([10, 20]);
                 c.scrollTo(20, 30);
             });
 
-            waitsFor(function() {
-                return moveSpy.callCount === 2;
-            }, 'moveSpy to fire', 1000);
+            waitsForSpy(moveSpy);
 
             runs(function() {
+                // Because we moved through with no waiting, the scroll end timer has not fired, so this
+                // will be part of one scroll sequence
                 expect(startSpy.callCount).toBe(1);
             });
+
+            // This is still due
+            waitsForSpy(endSpy);
         });
 
         it("should call onScrollMove during scrolling", function() {
@@ -7181,7 +7207,7 @@ describe("Ext.Component", function(){
             });
 
             waitsFor(function() {
-                return endSpy.callCount === 1;
+                return endSpy.callCount === 2;
             }, 'endSpy to fire', 1000);
 
             runs(function() {
@@ -8237,6 +8263,41 @@ describe("Ext.Component", function(){
             });
         });
         
+        describe("maskDefaults", function() {
+            var c;
+            
+            afterEach(function() {
+                c = Ext.destroy(c);
+            });
+            
+            it("should display default message if no maskDefaults is used", function() {
+                c = new Ext.Component({
+                    height: 100,
+                    width: 100,
+                    renderTo: document.body
+                });
+                
+                c.setLoading(true);
+                
+                expect(c.loadMask.msgTextEl.dom.innerHTML).toBe('Loading...');
+            });
+            
+            it("should not display message if supplied with maskDefaults", function() {
+                c = new Ext.Component({
+                    height: 100,
+                    width: 100,
+                    renderTo: document.body,
+                    maskDefaults: {
+                        useMsg: false
+                    }
+                });
+                
+                c.setLoading(true);
+                
+                expect(c.loadMask.msgWrapEl.isVisible(true)).toBe(false);
+            });
+        });
+        
         describe('function args', function () {
             var c, loadMask;
 
@@ -8954,7 +9015,10 @@ describe("Ext.Component", function(){
 
                 jasmine.fireMouseEvent(foo.childEl, 'mousedown');
 
-                expect(result).toEqual(['pdc', 'cdc', 'cd', 'pd', 'pc', 'cc', 'c', 'p'])
+                expect(result).toEqual(['pdc', 'cdc', 'cd', 'pd', 'pc', 'cc', 'c', 'p']);
+                
+                // Finish off active gestures
+                jasmine.fireMouseEvent(foo.childEl, 'mouseup');
             });
 
             it("should allow element options to be used as event names", function() {
@@ -9500,7 +9564,7 @@ describe("Ext.Component", function(){
         });
     });
 
-    describe('fromElement', function () {
+    describe('from', function () {
         var span;
 
         beforeEach(function () {
@@ -9517,7 +9581,7 @@ describe("Ext.Component", function(){
                 renderTo: document.body
             });
 
-            expect(Component.fromElement(span)).toBe(null);
+            expect(Component.from(span)).toBe(null);
         });
 
         it('should return the owner component when found', function () {
@@ -9529,7 +9593,7 @@ describe("Ext.Component", function(){
                 renderTo: document.body
             });
 
-            expect(Component.fromElement(c.el.dom)).toBe(c);
+            expect(Component.from(c.el.dom)).toBe(c);
         });
 
         describe('when the el is configured', function () {
@@ -9539,7 +9603,7 @@ describe("Ext.Component", function(){
                     renderTo: document.body
                 }, true);
 
-                expect(Component.fromElement(span)).toBe(c);
+                expect(Component.from(span)).toBe(c);
             });
 
             it('should find the component when the el is the document.body', function () {
@@ -9547,7 +9611,7 @@ describe("Ext.Component", function(){
                     plugins: 'viewport'
                 });
 
-                expect(Component.fromElement(document.body)).toBe(c);
+                expect(Component.from(document.body)).toBe(c);
             });
         });
     });
@@ -9656,7 +9720,7 @@ describe("Ext.Component", function(){
         });
     });
 
-    (Ext.supports.PointerEvents ? describe : xdescribe)("touchAction", function() {
+    (Ext.supports.TouchAction === 15 ? describe : xdescribe)("touchAction", function() {
         var Cmp, cmp;
 
         function makeCmpWithTouchAction(touchAction) {
@@ -9764,7 +9828,7 @@ describe("Ext.Component", function(){
                 doubleTapZoom: false
             });
 
-            expectTouchAction(cmp.el, 'manipulation');
+            expectTouchAction(cmp.el, 'pan-x pan-y pinch-zoom');
         });
 
         it("should disable panX and doubleTapZoom", function() {

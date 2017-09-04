@@ -1,4 +1,4 @@
-describe("Ext.app.domain.Global", function() {
+topSuite("Ext.app.domain.Global", function() {
     var ctrl, panel, spy;
     
     beforeEach(function() {
@@ -18,25 +18,6 @@ describe("Ext.app.domain.Global", function() {
         });
 
         Ext.GlobalEvents.fireEvent('FOO');
-        
-        expect(spy).toHaveBeenCalled();
-    });
-    
-    it("listens to global events by id", function() {
-        ctrl.listen({
-            global: {
-                afterlayout: spy
-            }
-        });
-        
-        panel = new Ext.panel.Panel({
-            height: 100,
-            width:  100,
-            
-            html: 'foo',
-            
-            renderTo: Ext.getBody()
-        });
         
         expect(spy).toHaveBeenCalled();
     });

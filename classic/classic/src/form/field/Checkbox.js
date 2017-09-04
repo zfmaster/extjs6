@@ -92,6 +92,22 @@ Ext.define('Ext.form.field.Checkbox', {
     alternateClassName: 'Ext.form.Checkbox',
     requires: ['Ext.XTemplate', 'Ext.form.CheckboxManager' ],
 
+    /**
+     * @cfg {Boolean/String/Number} modelValue
+     * The value to use for {@link #getModelData} when checked.
+     *
+     * @since 6.2.1
+     */
+    modelValue: true,
+
+    /**
+     * @cfg {Boolean/String/Number} modelValueUnchecked
+     * The value to use for {@link #getModelData} when unchecked.
+     *
+     * @since 6.2.1
+     */
+    modelValueUnchecked: false,
+
     // inputEl should always retain the same size, never stretch
     stretchInputElFixed: false,
 
@@ -121,7 +137,7 @@ Ext.define('Ext.form.field.Checkbox', {
                 '{afterBoxLabelTpl}',
             '</tpl>',
             '<span id="{cmpId}-displayEl" data-ref="displayEl" role="presentation" class="{fieldCls} {typeCls} ',
-                '{typeCls}-{ui} {inputCls} {inputCls}-{ui} {childElCls} {afterLabelCls}">',
+                '{typeCls}-{ui} {inputCls} {inputCls}-{ui} {fixCls} {childElCls} {afterLabelCls}">',
                 '<input type="{inputType}" id="{id}" name="{inputName}" data-ref="inputEl" {inputAttrTpl}',
                     '<tpl if="tabIdx != null"> tabindex="{tabIdx}"</tpl>',
                     '<tpl if="disabled"> disabled="disabled"</tpl>',
@@ -149,6 +165,10 @@ Ext.define('Ext.form.field.Checkbox', {
         }
     ],
 
+    /**
+     * @cfg
+     * @inheritdoc
+     */
     publishes: {
         checked: 1
     },
@@ -356,9 +376,11 @@ Ext.define('Ext.form.field.Checkbox', {
     },
 
     getModelData: function() {
-        var o = this.callParent(arguments);
+        var me = this,
+            o = me.callParent(arguments);
+
         if (o) {
-            o[this.getName()] = this.getSubmitValue();
+            o[me.getName()] = me.checked ? me.modelValue : me.modelValueUnchecked;
         }
         return o;
     },
@@ -446,7 +468,8 @@ Ext.define('Ext.form.field.Checkbox', {
     },
     
     /**
-     * @private Handle mousedown events on bodyEl. See explanations in initEvents().
+     * @private
+     * Handle mousedown events on bodyEl. See explanations in initEvents().
      */
     onBodyElMousedown: function(e) {
         if (e.target !== this.inputEl.dom) {
@@ -455,7 +478,8 @@ Ext.define('Ext.form.field.Checkbox', {
     },
     
     /**
-     * @private Handle mousedown events on boxLabelEl and inputEl.
+     * @private
+     * Handle mousedown events on boxLabelEl and inputEl.
      * See explanations in initEvents().
      */
     onBoxLabelOrInputMousedown: function(e) {

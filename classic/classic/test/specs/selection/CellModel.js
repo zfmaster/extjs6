@@ -1,12 +1,21 @@
-describe("Ext.selection.CellModel", function() {
-    
-    var grid, view, store, selModel, colRef;
-    
+/* global Ext, expect, jasmine, xit */
+
+topSuite("Ext.selection.CellModel",
+    ['Ext.grid.Panel', 'Ext.app.ViewModel', 'Ext.grid.plugin.DragDrop'],
+function() {
+    var itNotTouch = jasmine.supportsTouch ? xit : it,
+        grid, view, store, selModel, colRef;
+
     function triggerCellMouseEvent(type, rowIdx, cellIdx, button, x, y) {
         var target = findCell(rowIdx, cellIdx);
         jasmine.fireMouseEvent(target, type, x, y, button);
     }
-    
+    function triggerCellContextMenu(rowIdx, cellIdx) {
+        var target = findCell(rowIdx, cellIdx);
+        jasmine.fireMouseEvent(target, 'mousedown', 0, 0, 2);
+        jasmine.doFireMouseEvent(target, 'contextmenu');
+    }
+
     function findCell(rowIdx, cellIdx) {
         return grid.getView().getCellInclusive({
             row: rowIdx,
@@ -74,9 +83,9 @@ describe("Ext.selection.CellModel", function() {
         Ext.data.Model.schema.clear();
     });
 
-    it('should select when right-clicking', function () {
+    itNotTouch('should select when right-clicking', function () {
         makeGrid();
-        triggerCellMouseEvent('click', 0, 0, 3);
+        triggerCellContextMenu(0, 0);
 
         expect(selModel.getSelection().length).toBe(1);
     });
@@ -252,6 +261,14 @@ describe("Ext.selection.CellModel", function() {
 
             runs(function() {
                 triggerCellMouseEvent('mousedown', 0, 0, null, 10, 30);
+            });
+
+            // Longpress to drag on touch
+            if (jasmine.supportsTouch) {
+                waits(1500);
+            }
+            
+            runs(function() {
                 jasmine.fireMouseEvent(document.body, 'mousemove', 20, 20);
             });
 

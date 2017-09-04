@@ -1,4 +1,4 @@
-describe('Ext.util.ObjectTemplate', function () {
+topSuite('Ext.util.ObjectTemplate', function () {
     var tpl, output,
         context = Ext.Object.chain({
             direct: false,

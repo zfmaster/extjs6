@@ -1,4 +1,6 @@
-describe('Ext.layout.container.boxOverflow.Menu', function () {
+topSuite("Ext.layout.container.boxOverflow.Menu",
+    ['Ext.toolbar.Toolbar', 'Ext.Button', 'Ext.form.field.Text'],
+function() {
     var toolbar;
 
     function createToolbar(cfg) {

@@ -340,9 +340,10 @@ Ext.define('Ext.Editor', {
      * Starts the editing process and shows the editor.
      * @param {String/HTMLElement/Ext.dom.Element} el The element to edit
      * @param {String} value (optional) A value to initialize the editor with. If a value is not provided, it defaults
-      * to the innerHTML of el.
+     * to the innerHTML of el.
+     * @param doFocus (private)
      */
-    startEdit: function(el, value, /* private: false means don't focus*/ doFocus) {
+    startEdit: function(el, value, doFocus) {
         var me = this,
             field = me.field,
             dom, ownerCt, renderTo;
@@ -382,7 +383,7 @@ Ext.define('Ext.Editor', {
             field.resetOriginalValue();
             field.resumeEvents();
             if (doFocus !== false) {
-                field.focus(field.selectOnFocus ? true : [Number.MAX_VALUE]);
+                field.focus(field.selectOnFocus ? true : [Ext.Number.MAX_SAFE_INTEGER]);
             }
             if (field.autoSize) {
                 field.autoSize();

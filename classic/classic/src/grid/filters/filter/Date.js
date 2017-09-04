@@ -29,7 +29,9 @@
  *         height: 250,
  *         width: 375,
  *         store: shows,
- *         plugins: 'gridfilters',
+ *         plugins: {
+ *             gridfilters: true
+ *         },
  *         columns: [{
  *             dataIndex: 'id',
  *             text: 'ID',
@@ -62,7 +64,6 @@ Ext.define('Ext.grid.filters.filter.Date', {
     type: 'date',
 
     config: {
-        //<locale type="object">
         /**
          * @cfg {Object} [fields]
          * Configures field items individually. These properties override those defined
@@ -74,13 +75,13 @@ Ext.define('Ext.grid.filters.filter.Date', {
          *              width: 200
          *          }
          *      },
+         * @locale
          */
         fields: {
             lt: {text: 'Before'},
             gt: {text: 'After'},
             eq: {text: 'On'}
         },
-        //</locale>
 
         /**
          * @cfg {Object} pickerDefaults

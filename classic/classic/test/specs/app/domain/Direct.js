@@ -1,4 +1,4 @@
-describe("Ext.app.domain.Direct", function() {
+topSuite("Ext.app.domain.Direct", ['Ext.direct.*'], function() {
     var ctrl, provFoo, provBar, handlerFoo, handlerBar;
     
     beforeEach(function() {

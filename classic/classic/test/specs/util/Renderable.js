@@ -1,5 +1,6 @@
-describe('Ext.util.Renderable', function(){
-
+topSuite("Ext.util.Renderable",
+    ['Ext.Panel', 'Ext.container.Viewport', 'Ext.layout.container.Border'],
+function() {
     describe('framing', function() {
         var comp,
             styleEl;
@@ -75,7 +76,8 @@ describe('Ext.util.Renderable', function(){
 
     describe('Using existing el', function() {
         var viewport,
-            previousNodes;
+            previousNodes,
+            existingElement;
 
         beforeEach(function() {
             // The content of the body is being checked by this test so we have to empty it
@@ -92,6 +94,8 @@ describe('Ext.util.Renderable', function(){
         });
         afterEach(function() {
             viewport.destroy();
+            
+            existingElement = Ext.destroy(existingElement);
             
             // Restore previous state of document
             document.body.appendChild(previousNodes);
@@ -222,6 +226,12 @@ describe('Ext.util.Renderable', function(){
         
         afterEach(function() {
             if (c) {
+                Ext.destroy(
+                    Ext.get(c.id + '-labelEl'),
+                    Ext.get(c.id + '-descEl'),
+                    Ext.get(c.id + '-wrapEl')
+                );
+                
                 c.destroy();
             }
             
@@ -350,7 +360,7 @@ describe('Ext.util.Renderable', function(){
                                         'aria-disabled',
                                         'aria-label',
                                         'aria-expanded',
-                                        'aria-blerg'
+                                        'data-blerg'
                                     ],
                                     i, len, attr;
                                 
@@ -372,10 +382,10 @@ describe('Ext.util.Renderable', function(){
                                         ariaLabel: 'foo',
                                         region: 'north',
                                         ariaAttributes: {
-                                            'aria-foo': 'bar'
+                                            'data-foo': 'bar'
                                         },
                                         ariaRenderAttributes: {
-                                            'aria-blerg': 'qux'
+                                            'data-blerg': 'qux'
                                         }
                                     });
                                 });
@@ -440,8 +450,8 @@ describe('Ext.util.Renderable', function(){
                                     'aria-disabled': 'false',
                                     'aria-label': 'frogg',
                                     'aria-expanded': 'true',
-                                    'aria-baz': 'qux',
-                                    'aria-fred': 'frob'
+                                    'data-baz': 'qux',
+                                    'data-fred': 'frob'
                                 };
                             
                             beforeEach(function() {
@@ -450,10 +460,10 @@ describe('Ext.util.Renderable', function(){
                                     ariaRole: 'foo',
                                     ariaLabel: 'frogg',
                                     ariaAttributes: {
-                                        'aria-baz': 'qux'
+                                        'data-baz': 'qux'
                                     },
                                     ariaRenderAttributes: {
-                                        'aria-fred': 'frob'
+                                        'data-fred': 'frob'
                                     }
                                 });
                             });

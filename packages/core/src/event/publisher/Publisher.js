@@ -67,11 +67,11 @@ Ext.define('Ext.event.publisher.Publisher', {
      * @protected
      */
     registerEvents: function(events) {
-       var me = this,
-           publishersByEvent = Ext.event.publisher.Publisher.publishersByEvent,
-           handledEvents = events || me.handledEvents,
-           ln = handledEvents.length,
-           eventName, i;
+        var me = this,
+            publishersByEvent = Ext.event.publisher.Publisher.publishersByEvent,
+            handledEvents = events || me.handledEvents,
+            ln = handledEvents.length,
+            eventName, i;
 
         for (i = 0; i < ln; i++) {
             eventName = handledEvents[i];

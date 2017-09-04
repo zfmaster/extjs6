@@ -60,10 +60,12 @@ Ext.define('Ext.view.NodeCache', {
     },
 
     /**
-    * Clears this NodeCache and adds the elements passed.
-    * @param {HTMLElement[]} els An array of DOM elements from which to fill this NodeCache.
-    * @return {Ext.view.NodeCache} this
-    */
+     * Clears this NodeCache and adds the elements passed.
+     * @param {HTMLElement[]} newElements An array of DOM elements from which to fill this NodeCache.
+     * @param {Number} startIndex
+     * @param fixedNodes
+     * @return {Ext.view.NodeCache} this
+     */
     fill: function(newElements, startIndex, fixedNodes) {
         fixedNodes = fixedNodes || 0;
         var me = this,
@@ -330,7 +332,7 @@ Ext.define('Ext.view.NodeCache', {
 
     /**
     * Removes the specified element(s).
-    * @param {String/HTMLElement/Ext.dom.Element/Number} el The id of an element, the Element itself, the index of the
+    * @param {String/HTMLElement/Ext.dom.Element/Number} keys The id of an element, the Element itself, the index of the
     * element in this composite or an array of any of those.
     * @param {Boolean} [removeDom] True to also remove the element from the document
     */
@@ -410,7 +412,6 @@ Ext.define('Ext.view.NodeCache', {
     scroll: function(newRecords, direction, removeCount) {
         var me = this,
             view = me.view,
-            vm = view.lookupViewModel(),
             store = view.store,
             elements = me.elements,
             recCount = newRecords.length,
@@ -513,11 +514,6 @@ Ext.define('Ext.view.NodeCache', {
         // Keep count consistent.
         me.count = me.endIndex - me.startIndex + 1;
 
-        // The content height MUST be measurable by the caller (the buffered renderer), so data must be flushed to it immediately.
-        if (vm) {
-            vm.notify();
-        }
- 
         return children;
     },
 

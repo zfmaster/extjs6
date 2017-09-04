@@ -5,6 +5,8 @@
 Ext.define('Ext.app.bind.BaseBinding', {
     extend: 'Ext.util.Schedulable',
 
+    isBinding: true,
+
     calls: 0,
 
     kind: 20,

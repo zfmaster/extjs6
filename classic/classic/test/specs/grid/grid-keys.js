@@ -1,4 +1,6 @@
-describe("grid-keys", function(){
+topSuite("grid-keys",
+    [false, 'Ext.grid.Panel', 'Ext.data.ArrayStore'],
+function() {
     function createSuite(buffered) {
         describe(buffered ? "with buffered rendering" : "without buffered rendering", function() {
             var grid, view, store, GridEventModel = Ext.define(null, {
@@ -28,7 +30,7 @@ describe("grid-keys", function(){
                 DOWN = 40;
                 
             function clickAndKey(rowIdx, cellIdx, key, altKey) {
-                var visibleCellIdx = view.getHeaderByCell(view.getCellInclusive({row:rowIdx, column: cellIdx})).getVisibleIndex();
+                var visibleCellIdx = view.getHeaderByCell(view.getCellInclusive({row:rowIdx, column: cellIdx}, true)).getVisibleIndex();
 
                 view.getNavigationModel().setPosition(rowIdx, visibleCellIdx);
                 triggerCellMouseEvent('click',  rowIdx, cellIdx);
@@ -103,175 +105,181 @@ describe("grid-keys", function(){
                 view = grid.getView();
             }
             
-            afterEach(function(){
+            afterEach(function() {
                 Ext.destroy(grid, store);
                 grid = store = view = null;
                 Ext.data.Model.schema.clear();
             });
             
-            describe("row model", function(){
+            describe("row model", function() {
                 describe("nav keys", function() {
-                    beforeEach(function(){
+                    beforeEach(function() {
                         makeGrid();
                         grid.view.el.dom.focus();
                     });
                     describe("down", function() { 
-                        it("should move down a row when pressing the down key on the first row", function(){
+                        it("should move down a row when pressing the down key on the first row", function() {
                             clickAndKey(0, 0, DOWN);
                             expect(grid.getSelectionModel().getSelection()[0]).toBe(store.getAt(1));
                         });
                         
-                        it("should move down a row when pressing the down key on a middle row", function(){
+                        it("should move down a row when pressing the down key on a middle row", function() {
                             clickAndKey(2, 0, DOWN);
                             expect(grid.getSelectionModel().getSelection()[0]).toBe(store.getAt(3));
                         });
                         
-                        it("should not move down a row when pressing the down key on the last row", function(){
+                        it("should not move down a row when pressing the down key on the last row", function() {
                             clickAndKey(4, 0, DOWN);
                             expect(grid.getSelectionModel().getSelection()[0]).toBe(store.getAt(4));
                         });
                     });
                     
                     describe("up", function() { 
-                        it("should move up a row when pressing the up key on the last row", function(){
+                        it("should move up a row when pressing the up key on the last row", function() {
                             clickAndKey(4, 0, UP);
                             expect(grid.getSelectionModel().getSelection()[0]).toBe(store.getAt(3));
                         });
                         
-                        it("should move up a row when pressing the up key on a middle row", function(){
+                        it("should move up a row when pressing the up key on a middle row", function() {
                             clickAndKey(3, 0, UP);
                             expect(grid.getSelectionModel().getSelection()[0]).toBe(store.getAt(2));
                         });
                         
-                        it("should not move up a row when pressing the up key on the first row", function(){
+                        it("should not move up a row when pressing the up key on the first row", function() {
                             clickAndKey(0, 0, UP);
                             expect(grid.getSelectionModel().getSelection()[0]).toBe(store.getAt(0));
                         });
                     });
                 });
                 
-                describe("special keys", function(){
-                    beforeEach(function(){
+                describe("special keys", function() {
+                    // Selection via Ext.view.Table#ensureVisible is async so we need to
+                    // wait for a change in selection to match the desired record. This
+                    // is only necessary in this suite since these special keys will
+                    // trigger selection of a record not already in view, thus selection
+                    // will not immediately occur.
+                    var selectionChange = function (desiredRecord) {
+                        return function () {
+                            return grid.selModel.getSelection()[0] === desiredRecord;
+                        };
+                    };
+                    
+                    beforeEach(function() {
                         makeGrid(null, null, 50);
                     });
                     
-                    it("should move to the end of the visible rows on page down", function(){
-                        var sm = grid.getSelectionModel(),
-                            visible = grid.getNavigationModel().getRowsVisible();
+                    it("should move to the end of the visible rows on page down", function() {
+                        var visible = grid.getNavigationModel().getRowsVisible();
                             
                         clickAndKey(0, 0, PAGE_DOWN);
-                        expect(sm.getSelection()[0]).toBe(store.getAt(visible));
+                        waitsFor(selectionChange(store.getAt(visible)), 'last visible row to be selected');
                     });
                     
-                    it("should move to the top of the visible rows on page up", function(){
-                        var sm = grid.getSelectionModel(),
-                            visible = grid.getNavigationModel().getRowsVisible();
+                    it("should move to the top of the visible rows on page up", function() {
+                        var visible = grid.getNavigationModel().getRowsVisible();
                             
                         clickAndKey(49, 0, PAGE_UP);
-                        expect(sm.getSelection()[0]).toBe(store.getAt(49 - visible));
+                        waitsFor(selectionChange(store.getAt(49 - visible)), 'first visible row to be selected');
                     });
                     
-                    it("should move to the last cell on ALT+end", function(){
-                        var sm = grid.getSelectionModel();
-
+                    it("should move to the last cell on ALT+end", function() {
                         clickAndKey(0, 0, END, true);
-                        expect(sm.getSelection()[0]).toBe(store.getAt(49));
+                        waitsFor(selectionChange(store.getAt(49)), 'last cell to be selected');
+                        
                     });
                     
-                    it("should move to the first cell on ALT+home", function(){
-                        var sm = grid.getSelectionModel();
-
+                    it("should move to the first cell on ALT+home", function() {
                         clickAndKey(49, 0, HOME, true);
-                        expect(sm.getSelection()[0]).toBe(store.getAt(0));
+                        waitsFor(selectionChange(store.getAt(0)), 'first cell to be selected');
                     });
                 });
             });
             
-            describe("cell model", function(){
+            describe("cell model", function() {
                 function expectSelection(row, column) {
                     var pos = grid.getSelectionModel().getCurrentPosition(); 
                     expect(pos.row).toBe(row);
                     expect(pos.column).toBe(column);
                 }
                 
-                describe("simple movement", function(){
-                    beforeEach(function(){
+                describe("simple movement", function() {
+                    beforeEach(function() {
                         makeGrid('cellmodel');
                     });
                     
-                    describe("left", function(){
-                        it("should not move when at the first cell", function(){
+                    describe("left", function() {
+                        it("should not move when at the first cell", function() {
                             clickAndKey(0, 0, LEFT);
                             expectSelection(0, 0);
                         });
                         
-                        it("should move the position one to the left", function(){
+                        it("should move the position one to the left", function() {
                             clickAndKey(3, 2, LEFT);
                             expectSelection(3, 1);
                         });
                         
-                        it("should maintain vertical position if not wrapping", function(){
+                        it("should maintain vertical position if not wrapping", function() {
                             clickAndKey(2, 1, LEFT);
                             expectSelection(2, 0);
                         });
                         
-                        it("should wrap to the previous row where possible", function(){
+                        it("should wrap to the previous row where possible", function() {
                             clickAndKey(4, 0, LEFT);
                             expectSelection(3, 3);    
                         });
                     });
                     
-                    describe("up", function(){
-                        it("should not move when in the first row", function(){
+                    describe("up", function() {
+                        it("should not move when in the first row", function() {
                             clickAndKey(0, 2, UP);
                             expectSelection(0, 2);
                         });
                         
-                        it("should move the position one up", function(){
+                        it("should move the position one up", function() {
                             clickAndKey(3, 2, UP);
                             expectSelection(2, 2);
                         });
                         
-                        it("should maintain the vertical position", function(){
+                        it("should maintain the vertical position", function() {
                             clickAndKey(4, 1, UP);
                             expectSelection(3, 1);
                         });
                     });
                     
-                    describe("right", function(){
-                        it("should not move when at the last cell", function(){
+                    describe("right", function() {
+                        it("should not move when at the last cell", function() {
                             clickAndKey(4, 3, RIGHT);
                             expectSelection(4, 3);
                         });
                         
-                        it("should move the position one to the right", function(){
+                        it("should move the position one to the right", function() {
                             clickAndKey(3, 2, RIGHT);
                             expectSelection(3, 3);
                         });
                         
-                        it("should maintain vertical position if not wrapping", function(){
+                        it("should maintain vertical position if not wrapping", function() {
                             clickAndKey(2, 1, RIGHT);
                             expectSelection(2, 2);
                         });
                         
-                        it("should wrap to the next row where possible", function(){
+                        it("should wrap to the next row where possible", function() {
                             clickAndKey(2, 3, RIGHT);
                             expectSelection(3, 0);    
                         });
                     });
                     
-                    describe("down", function(){
-                        it("should not move when in the last row", function(){
+                    describe("down", function() {
+                        it("should not move when in the last row", function() {
                             clickAndKey(4, 1, DOWN);
                             expectSelection(4, 1);
                         });
                         
-                        it("should move the position one down", function(){
+                        it("should move the position one down", function() {
                             clickAndKey(3, 2, DOWN);
                             expectSelection(4, 2);
                         });
                         
-                        it("should maintain the vertical position", function(){
+                        it("should maintain the vertical position", function() {
                             clickAndKey(1, 2, DOWN);
                             expectSelection(2, 2);
                         });
@@ -279,8 +287,8 @@ describe("grid-keys", function(){
                 });
                 
                 describe("hidden columns", function() {
-                    describe("left", function(){
-                        it("should skip over a hidden first column (left key)", function(){
+                    describe("left", function() {
+                        it("should skip over a hidden first column (left key)", function() {
                             makeGrid('cellmodel', [{
                                 hidden: true,
                                 dataIndex: 'field1'
@@ -293,7 +301,7 @@ describe("grid-keys", function(){
                             expectSelection(0, 2);
                         });
                         
-                        it("should skip over multiple hidden first columns (left key)", function(){
+                        it("should skip over multiple hidden first columns (left key)", function() {
                             makeGrid('cellmodel', [{
                                 hidden: true,
                                 dataIndex: 'field1'
@@ -309,7 +317,7 @@ describe("grid-keys", function(){
                             expectSelection(0, 3);
                         });
                         
-                        it("should skip over hidden middle columns (left key)", function(){
+                        it("should skip over hidden middle columns (left key)", function() {
                             makeGrid('cellmodel', [{
                                 dataIndex: 'field1'
                             }, {
@@ -325,7 +333,7 @@ describe("grid-keys", function(){
                             expectSelection(0, 0);
                         });
                         
-                        it("should skip over a hidden last column (left key)", function(){
+                        it("should skip over a hidden last column (left key)", function() {
                             makeGrid('cellmodel', [{
                                 dataIndex: 'field1'
                             }, {
@@ -356,7 +364,7 @@ describe("grid-keys", function(){
                     });
                     
                     describe("right", function() {
-                        it("should skip over a hidden first column (right key)", function(){
+                        it("should skip over a hidden first column (right key)", function() {
                             makeGrid('cellmodel', [{
                                 hidden: true,
                                 dataIndex: 'field1'
@@ -369,7 +377,7 @@ describe("grid-keys", function(){
                             expectSelection(1, 1);
                         });
                         
-                        it("should skip over multiple hidden first columns (right key)", function(){
+                        it("should skip over multiple hidden first columns (right key)", function() {
                             makeGrid('cellmodel', [{
                                 hidden: true,
                                 dataIndex: 'field1'
@@ -385,7 +393,7 @@ describe("grid-keys", function(){
                             expectSelection(1, 2);
                         });
                         
-                        it("should skip over hidden middle columns (right key)", function(){
+                        it("should skip over hidden middle columns (right key)", function() {
                             makeGrid('cellmodel', [{
                                 dataIndex: 'field1'
                             }, {
@@ -401,7 +409,7 @@ describe("grid-keys", function(){
                             expectSelection(0, 3);
                         });
                         
-                        it("should skip over a hidden last column (right key)", function(){
+                        it("should skip over a hidden last column (right key)", function() {
                             makeGrid('cellmodel', [{
                                 dataIndex: 'field1'
                             }, {

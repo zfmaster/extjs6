@@ -40,14 +40,12 @@ Ext.define('Ext.field.Search', {
     extend: 'Ext.field.Text',
     xtype: 'searchfield',
     alternateClassName: 'Ext.form.Search',
-    
+
     requires: [
         'Ext.field.trigger.Search'
     ],
 
-    component: {
-        type: 'search'
-    },
+    inputType: 'search',
 
     triggers: {
         search: {

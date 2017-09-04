@@ -153,32 +153,32 @@ Ext.define('Ext.draw.sprite.AnimationParser', function () {
 
         data: {
             compute: function (from, to, delta, target) {
-                var lf = from.length - 1,
-                    lt = to.length - 1,
-                    len = Math.max(lf, lt),
-                    f, t, i;
+                var iMaxFrom = from.length - 1,
+                    iMaxTo = to.length - 1,
+                    iMax = Math.max(iMaxFrom, iMaxTo),
+                    i, start, end;
 
                 if (!target || target === from) {
                     target = [];
                 }
-                target.length = len + 1;
+                target.length = iMax + 1;
 
-                for (i = 0; i <= len; i++) {
-                    f = from[Math.min(i, lf)];
-                    t = to[Math.min(i, lt)];
-                    if (Ext.isNumber(f)) {
-                        if (!Ext.isNumber(t)) {
+                for (i = 0; i <= iMax; i++) {
+                    start = from[Math.min(i, iMaxFrom)];
+                    end = to[Math.min(i, iMaxTo)];
+                    if (Ext.isNumber(start)) {
+                        if (!Ext.isNumber(end)) {
                             // This may not give the desired visual result during
                             // animation (after all, we don't know what the target
                             // value should be, if it wasn't given to us), but it's
                             // better than spitting out a bunch of NaNs in the target
                             // array, when transitioning from a non-empty to an empty
                             // array.
-                            t = 0;
+                            end = 0;
                         }
-                        target[i] = (t - f) * delta + f;
+                        target[i] = start + (end - start) * delta;
                     } else {
-                        target[i] = t;
+                        target[i] = end;
                     }
                 }
 

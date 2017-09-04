@@ -1,8 +1,9 @@
 // Although Ext.form.field.Trigger is deprecated, these specs remain as they were in 4.x
 // so that we can have a reasonable assurance of compatibility
-describe("Ext.form.field.Trigger", function() {
+topSuite("Ext.form.field.Trigger", function() {
 
-    var component, makeComponent;
+    var itNotTouch = jasmine.supportsTouch ? xit : it,
+        component, makeComponent;
 
     beforeEach(function() {
         makeComponent = function(config) {
@@ -515,12 +516,12 @@ describe("Ext.form.field.Trigger", function() {
                 });
             });
             
-            it("should add the base overCls on mouseover", function() {
+            itNotTouch("should add the base overCls on mouseover", function() {
                 triggerEvent(overEvent, 0);
                 expect(hasCls(baseCls + '-over', 0)).toBe(true);
             });
         
-            it("should remove the base overCls on mouseout", function() {
+            itNotTouch("should remove the base overCls on mouseout", function() {
                 triggerEvent(overEvent, 0);
                 triggerEvent(outEvent, 0);
                 expect(hasCls(baseCls + '-over', 0)).toBe(false);
@@ -529,6 +530,7 @@ describe("Ext.form.field.Trigger", function() {
             it("should add the base clickCls on mousedown", function() {
                 triggerEvent('mousedown', 0);
                 expect(hasCls(baseCls + '-click', 0)).toBe(true);
+                triggerEvent('mouseup', 0);
             });
         
             it("should remove the base clickCls on mouseup", function() {
@@ -547,12 +549,12 @@ describe("Ext.form.field.Trigger", function() {
                 });
             });
             
-            it("should add the base overCls on mouseover to the 2nd trigger", function() {
+            itNotTouch("should add the base overCls on mouseover to the 2nd trigger", function() {
                 triggerEvent(overEvent, 1);
                 expect(hasCls(baseCls + '-over', 1)).toBe(true);
             });
         
-            it("should remove the base overCls on mouseout", function() {
+            itNotTouch("should remove the base overCls on mouseout", function() {
                 triggerEvent(overEvent, 1);
                 triggerEvent(outEvent, 1);
                 expect(hasCls(baseCls + '-over', 1)).toBe(false);
@@ -561,6 +563,7 @@ describe("Ext.form.field.Trigger", function() {
             it("should add the base clickCls on mousedown", function() {
                 triggerEvent('mousedown', 1);
                 expect(hasCls(baseCls + '-click', 1)).toBe(true);
+                triggerEvent('mouseup', 1);
             });
         
             it("should remove the base clickCls on mouseup", function() {
@@ -597,6 +600,7 @@ describe("Ext.form.field.Trigger", function() {
                 });    
                 triggerEvent('mousedown', 0);
                 expect(hasCls('bar-click', 0)).toBe(true);
+                triggerEvent('mouseup', 0);
             });
             
             it("should remove a custom clickCls on mouseup if specified", function() {
@@ -623,6 +627,7 @@ describe("Ext.form.field.Trigger", function() {
                 });    
                 triggerEvent('mousedown', 0);
                 expect(hasCls('undefined-over', 0)).toBe(false);
+                triggerEvent('mouseup', 0);
             });
         });
     });

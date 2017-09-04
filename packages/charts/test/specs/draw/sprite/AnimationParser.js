@@ -1,5 +1,4 @@
-describe('Ext.draw.sprite.AnimationParser', function () {
-
+topSuite("Ext.draw.sprite.AnimationParser", function() {
     var parser = Ext.draw.sprite.AnimationParser;
 
     describe("'data' (array) parser", function () {

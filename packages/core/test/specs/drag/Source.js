@@ -1,4 +1,4 @@
-describe("Ext.drag.Source", function() {
+topSuite("Ext.drag.Source", ['Ext.drag.*', 'Ext.dom.Element'], function() {
     var helper = Ext.testHelper,
         touchId = 0,
         cursorTrack, source, target,
@@ -1000,20 +1000,20 @@ describe("Ext.drag.Source", function() {
                 endDrag();
             });
 
-            it("should hide the proxy after drag", function() {
+            it("should destroy the proxy after drag", function() {
                 var spy = jasmine.createSpy(),
                     el;
 
                 source.on('dragmove', spy.andCallFake(function(source, info) {
                     spy.mostRecentCall.dragInfo = info.clone();
-                }));    
+                }));
                 startDrag();
                 // Go past threshhold
                 moveBy(10, 10);
                 endDrag();
                 runs(function() {
                     var el = spy.mostRecentCall.dragInfo.proxy.element;
-                    expect(el.isVisible()).toBe(false);
+                    expect(el.destroyed).toBe(true);
                 });
             });
 
@@ -1367,7 +1367,7 @@ describe("Ext.drag.Source", function() {
             it("should drag when the mouse is over a child element and there is no handle configured", function() {
                 makeDragElWithHandles();
                 makeSource();
-                var handle = dragEl.child('.foo');
+                var handle = Ext.fly(dragEl.child('.foo', true));
                 startHandleDrag(handle);
                 moveBy(100, 100, handle);
                 runsExpectXY(150, 150);
@@ -1388,7 +1388,7 @@ describe("Ext.drag.Source", function() {
                 makeSource({
                     handle: '.foo'
                 });
-                var handle = dragEl.child('.bar');
+                var handle = Ext.fly(dragEl.child('.bar', true));
                 startHandleDrag(handle);
                 moveBy(200, 200, handle);
                 runsExpectXY(50, 50);
@@ -1400,7 +1400,7 @@ describe("Ext.drag.Source", function() {
                 makeSource({
                     handle: '.foo'
                 });
-                var handle = dragEl.child('.foo');
+                var handle = Ext.fly(dragEl.child('.foo', true));
                 startHandleDrag(handle);
                 moveBy(100, 100, handle);
                 runsExpectXY(150, 150);
@@ -1412,7 +1412,7 @@ describe("Ext.drag.Source", function() {
                 makeSource({
                     handle: '.foo'
                 });
-                var handle = dragEl.child('.foo');
+                var handle = Ext.fly(dragEl.child('.foo', true));
                 startHandleDrag(handle);
                 moveBy(100, 100, handle);
                 runsExpectXY(150, 150);
@@ -1439,11 +1439,11 @@ describe("Ext.drag.Source", function() {
                             cls: 'foo'
                         }]
                     }]
-                });
+                }, null, true);
                 makeSource({
                     handle: '.foo'
                 });
-                var handle = dragEl.down('.foo');
+                var handle = Ext.fly(dragEl.down('.foo', true));
                 startHandleDrag(handle);
                 moveBy(100, 100, handle);
                 runsExpectXY(150, 150);
@@ -1462,7 +1462,7 @@ describe("Ext.drag.Source", function() {
                         dragBy(100, 100);
                         // Shouldn't move
                         runsExpectXY(50, 50);
-                        var handle = dragEl.child('.foo');
+                        var handle = Ext.fly(dragEl.child('.foo', true));
                         startHandleDrag(handle);
                         moveBy(100, 100, handle);
                         runsExpectXY(150, 150);
@@ -1489,11 +1489,16 @@ describe("Ext.drag.Source", function() {
                         endHandleDrag(handle);
                         // Shouldn't move
                         runsExpectXY(50, 50);
-                        handle = dragEl.child('.bar');
-                        startHandleDrag(handle);
-                        moveBy(100, 100, handle);
-                        endHandleDrag(handle);
+                        var handle2 = dragEl.child('.bar');
+                        startHandleDrag(handle2);
+                        moveBy(100, 100, handle2);
+                        endHandleDrag(handle2);
                         runsExpectXY(150, 150);
+                        
+                        runs(function() {
+                            handle.destroy();
+                            handle2.destroy();
+                        });
                     });
                 });
 
@@ -1508,7 +1513,7 @@ describe("Ext.drag.Source", function() {
                         dragBy(100, 100);
                         // Shouldn't move
                         runsExpectXY(150, 150);
-                        var handle = dragEl.child('.foo');
+                        var handle = Ext.fly(dragEl.child('.foo', true));
                         startHandleDrag(handle);
                         moveBy(100, 100, handle);
                         runsExpectXY(250, 250);
@@ -1519,7 +1524,7 @@ describe("Ext.drag.Source", function() {
                         makeSource({
                             handle: '.foo'
                         });
-                        var handle = dragEl.child('.foo');
+                        var handle = Ext.fly(dragEl.child('.foo', true));
                         startHandleDrag(handle);
                         moveBy(100, 100, handle);
                         runsExpectXY(150, 150);
@@ -1548,11 +1553,16 @@ describe("Ext.drag.Source", function() {
                         // Shouldn't move
                         runsExpectXY(150, 150);
                         endHandleDrag(handle);
-                        handle = dragEl.child('.bar');
-                        startHandleDrag(handle);
-                        moveBy(100, 100, handle);
-                        endHandleDrag(handle);
+                        var handle2 = dragEl.child('.bar');
+                        startHandleDrag(handle2);
+                        moveBy(100, 100, handle2);
+                        endHandleDrag(handle2);
                         runsExpectXY(250, 250);
+                        
+                        runs(function() {
+                            handle.destroy();
+                            handle2.destroy();
+                        });
                     });
                 });
             });
@@ -2623,6 +2633,7 @@ describe("Ext.drag.Source", function() {
                             });
                             moveBy(30, 0);
                             runs(function() {
+                                endDrag();
                                 expect(spy.callCount).toBe(5);
                                 expect(spy.mostRecentCall.args[0] instanceof Ext.drag.Info).toBe(true);
                                 expect(spy.mostRecentCall.args[1]).toBe(190);
@@ -2657,6 +2668,7 @@ describe("Ext.drag.Source", function() {
                             runsExpectXY(150, 50);
                             moveBy(200, 0);
                             runsExpectXY(400, 50);
+                            endDrag();
                         });
                     });
                 });
@@ -2799,6 +2811,7 @@ describe("Ext.drag.Source", function() {
                             });
                             moveBy(0, 30);
                             runs(function() {
+                                endDrag();
                                 expect(spy.callCount).toBe(5);
                                 expect(spy.mostRecentCall.args[0] instanceof Ext.drag.Info).toBe(true);
                                 expect(spy.mostRecentCall.args[1]).toBe(190);
@@ -2833,6 +2846,7 @@ describe("Ext.drag.Source", function() {
                             runsExpectXY(50, 150);
                             moveBy(0, 200);
                             runsExpectXY(50, 400);
+                            endDrag();
                         });
                     });
                 });

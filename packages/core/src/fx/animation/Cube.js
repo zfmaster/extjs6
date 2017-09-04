@@ -8,7 +8,7 @@ Ext.define('Ext.fx.animation.Cube', {
 
     config: {
         /**
-         * @cfg
+         * @cfg {Object}
          * @inheritdoc
          */
         before: {

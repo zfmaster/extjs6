@@ -1,5 +1,4 @@
-describe("Ext.Editor", function() {
-
+topSuite("Ext.Editor", ['Ext.form.field.*'], function() {
     var editor, field, target;
 
     function makeEditor(cfg) {
@@ -97,7 +96,6 @@ describe("Ext.Editor", function() {
                 expect(editor.editing).toBe(true);
             });
 
-            // Only Webkit focusing is reliable in the test runner
             it("should focus the field", function() {
                 makeEditor();
                 startEditWithTarget();

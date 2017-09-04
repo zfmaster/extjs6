@@ -1,4 +1,4 @@
-describe("Ext.data.Batch", function() {
+topSuite("Ext.data.Batch", ['Ext.data.operation.*', 'Ext.data.Request'], function() {
     var batch, op1, op2, op3, ops;
     
     function makeOperation(type, cfg) {

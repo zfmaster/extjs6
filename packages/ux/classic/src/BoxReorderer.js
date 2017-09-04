@@ -72,15 +72,18 @@ Ext.define('Ext.ux.BoxReorderer', {
     },
 
     init: function(container) {
-        var me = this;
+        var me = this,
+            layout = container.getLayout();
 
         me.container = container;
 
+        // We must use LTR method names and properties.
+        // The underlying Element APIs normalize them.
+        me.names = layout._props[layout.type].names;
+
         // Set our animatePolicy to animate the start position (ie x for HBox, y for VBox)
         me.animatePolicy = {};
-        me.animatePolicy[container.getLayout().names.x] = true;
-
-
+        me.animatePolicy[me.names.x] = true;
 
         // Initialize the DD on first layout, when the innerCt has been created.
         me.container.on({
@@ -105,7 +108,7 @@ Ext.define('Ext.ux.BoxReorderer', {
     onBoxReady: function() {
         var me = this,
             layout = me.container.getLayout(),
-            names = layout.names,
+            names = me.names,
             dd;
 
         // Create a DD instance. Poke the handlers in.
@@ -126,7 +129,8 @@ Ext.define('Ext.ux.BoxReorderer', {
             endDrag: me.endDrag,
             getNewIndex: me.getNewIndex,
             doSwap: me.doSwap,
-            findReorderable: me.findReorderable
+            findReorderable: me.findReorderable,
+            names: names
         });
 
         // Decide which dimension we are measuring, and which measurement metric defines
@@ -254,16 +258,16 @@ Ext.define('Ext.ux.BoxReorderer', {
         var me = this,
             items = me.container.items,
             container = me.container,
-            wasRoot = me.container._isLayoutRoot,
             orig, dest, tmpIndex;
 
         newIndex = me.findReorderable(newIndex);
 
-        if (newIndex === -1) {
+        if (newIndex === -1 || newIndex === me.curIndex) {
             return;
         }
 
         me.reorderer.fireEvent('ChangeIndex', me, container, me.dragCmp, me.startIndex, newIndex);
+
         orig = items.getAt(me.curIndex);
         dest = items.getAt(newIndex);
         items.remove(orig);
@@ -273,9 +277,9 @@ Ext.define('Ext.ux.BoxReorderer', {
         items.insert(me.curIndex, dest);
 
         // Make the Box Container the topmost layout participant during the layout.
-        container._isLayoutRoot = true;
-        container.updateLayout();
-        container._isLayoutRoot = wasRoot;
+        container.updateLayout({
+            isRoot: true
+        });
         me.curIndex = newIndex;
     },
 
@@ -288,7 +292,6 @@ Ext.define('Ext.ux.BoxReorderer', {
             me.reorderer.fireEvent('Drag', me, me.container, me.dragCmp, me.startIndex, me.curIndex);
             me.doSwap(newIndex);
         }
-
     },
 
     endDrag: function(e) {
@@ -307,12 +310,12 @@ Ext.define('Ext.ux.BoxReorderer', {
             me.dragCmp.animate = true;
 
             // Ensure the lastBox is correct for the animation system to restore to when it creates the "from" animation frame
-            me.dragCmp.lastBox[layout.names.x] = me.dragCmp.getPosition(true)[layout.names.widthIndex];
+            me.dragCmp.lastBox[me.names.x] = me.dragCmp.getPosition(true)[me.names.widthIndex];
 
             // Make the Box Container the topmost layout participant during the layout.
-            me.container._isLayoutRoot = true;
-            me.container.updateLayout();
-            me.container._isLayoutRoot = undefined;
+            me.container.updateLayout({
+                isRoot: true
+            });
 
             // Attempt to hook into the afteranimate event of the drag Component to call the cleanup
             temp = Ext.fx.Manager.getFxQueue(me.dragCmp.el.id)[0];
@@ -324,7 +327,7 @@ Ext.define('Ext.ux.BoxReorderer', {
             }
             // If not animated, clean up after the mouseup has happened so that we don't click the thing being dragged
             else {
-                Ext.Function.defer(me.reorderer.afterBoxReflow, 1, me);
+                Ext.asap(me.reorderer.afterBoxReflow, me);
             }
 
             if (me.animate) {
@@ -368,7 +371,8 @@ Ext.define('Ext.ux.BoxReorderer', {
             targetEl = it[i].getEl();
 
             // Only look for a drop point if this found item is an item according to our selector
-            if (targetEl.is(me.reorderer.itemSelector)) {
+            // and is not the item being dragged
+            if (targetEl.dom !== dragEl && targetEl.is(me.reorderer.itemSelector)) {
                 targetBox = targetEl.getBox();
                 targetMidpoint = targetBox[me.startAttr] + (targetBox[me.dim] >> 1);
                 if (i < me.curIndex) {

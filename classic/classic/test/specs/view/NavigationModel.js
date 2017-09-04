@@ -1,5 +1,4 @@
-describe("Ext.view.NavigationModel", function() {
-
+topSuite("Ext.view.NavigationModel", ['Ext.data.ArrayStore', 'Ext.view.View'], function() {
     var view, navModel, store;
 
     var Model = Ext.define(null, {

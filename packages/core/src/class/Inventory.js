@@ -64,7 +64,7 @@ Ext.Inventory.prototype = {
 
                 if (toName[a] !== cls) {
                     //<debug>
-                    if (!update && toName[a]) {
+                    if (!update && toName[a] && ('Ext.Gadget' !== a)) {
                         Ext.log.warn("Overriding existing mapping: '" + a + "' From '" +
                             toName[a] + "' to '" + cls + "'. Is this intentional?");
                     }
@@ -298,7 +298,7 @@ Ext.Inventory.prototype = {
                 // Aliases can be reassigned so if this class is the current mapping of
                 // the alias, remove it. Since there is no chain to restore what was
                 // removed this is not perfect.
-                if (name === (a = aliases[i])) {
+                if (name === aliasToName[a = aliases[i]]) {
                     delete aliasToName[a];
                 }
             }
@@ -307,7 +307,7 @@ Ext.Inventory.prototype = {
         if (alternates) {
             for (i = alternates.length; i--; ) {
                 // Like aliases, alternate class names can also be remapped.
-                if (name === (a = alternates[i])) {
+                if (name === alternateToName[a = alternates[i]]) {
                     delete alternateToName[a];
                 }
             }
@@ -365,7 +365,7 @@ Ext.Inventory.prototype = {
                 excludes: excludes,
 
                 exclude: function () {
-                    me.getNamesByExpression(arguments, excludes, true);
+                    me.getNamesByExpression(arguments[0], excludes, true);
                     return this;
                 }
             },

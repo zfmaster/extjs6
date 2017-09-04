@@ -12,7 +12,7 @@
  *
  * ## Examples
  *
- *     @example miniphone preview
+ *     @example
  *     var picker = Ext.create('Ext.Picker', {
  *         slots: [
  *             {
@@ -32,7 +32,7 @@
  *
  * You can also customize the top toolbar on the {@link Ext.picker.Picker} by changing the {@link #doneButton} and {@link #cancelButton} configurations:
  *
- *     @example miniphone preview
+ *     @example
  *     var picker = Ext.create('Ext.Picker', {
  *         doneButton: 'I\'m done!',
  *         cancelButton: false,
@@ -54,7 +54,7 @@
  *
  * Or by passing a custom {@link #toolbar} configuration:
  *
- *     @example miniphone preview
+ *     @example
  *     var picker = Ext.create('Ext.Picker', {
  *         doneButton: false,
  *         cancelButton: false,
@@ -110,12 +110,6 @@ Ext.define('Ext.picker.Picker', {
 
     config: {
         /**
-         * @cfg
-         * @inheritdoc
-         */
-        baseCls: Ext.baseCSSPrefix + 'picker',
-
-        /**
          * @cfg {String/Mixed} doneButton
          * Can be either:
          *
@@ -158,7 +152,27 @@ Ext.define('Ext.picker.Picker', {
         slots: null,
 
         /**
-         * @cfg {String/Number} value The value to initialize the picker with.
+         * @cfg {Object} value The value to initialize the picker with. The value must be an object
+         * with the key being the name of the slot to set the value to.
+         *
+         *     Ext.create('Ext.picker.Picker', {
+         *         displayed: true,
+         *         side: 'bottom',
+         *         value: {
+         *             limit_speed: 100
+         *         },
+         *         slots: [{
+         *             name: 'limit_speed',
+         *             title: 'Speed',
+         *             data: [
+         *                 {text: '50 KB/s', value: 50},
+         *                 {text: '100 KB/s', value: 100},
+         *                 {text: '200 KB/s', value: 200},
+         *                 {text: '300 KB/s', value: 300}
+         *             ]
+         *         }]
+         *     });
+         *
          * @accessor
          */
         value: null,
@@ -253,68 +267,83 @@ Ext.define('Ext.picker.Picker', {
          */
         toolbar: {
             xtype: 'titlebar'
-        }
+        },
+
+        /**
+         * @cfg
+         * @inheritdoc
+         */
+        side: 'bottom'
     },
 
+    baseCls: Ext.baseCSSPrefix + 'picker',
+
     floated: true,
+    focusable: true,
+    tabIndex: -1,
 
     initialize: function() {
-        var me = this,
-            clsPrefix = Ext.baseCSSPrefix,
-            innerElement = this.innerElement;
+        this.callParent();
 
-        //insert the mask, and the picker bar
-        this.mask = innerElement.insertFirst({
-            cls: clsPrefix + 'picker-mask'
-        });
-
-        this.bar = this.mask.createChild({
-            cls: clsPrefix + 'picker-bar'
-        });
-
-        me.on({
+        this.on({
             scope   : this,
             delegate: 'pickerslot',
             slotpick: 'onSlotPick'
         });
     },
 
-    /**
-     * @private
-     */
-    applyToolbar: function(config) {
-        if (config === true) {
-            config = {};
-        }
+    getTemplate: function() {
+        var me = this,
+            clsPrefix = Ext.baseCSSPrefix,
+            template = me.callParent();
 
-        Ext.applyIf(config, {
-            docked: this.getToolbarPosition()
-        });
+        template[0].children[0].children = [{
+            reference: 'mask',
+            cls: clsPrefix + 'picker-mask',
+            children: [{
+                reference: 'bar',
+                cls: clsPrefix + 'picker-bar'
+            }]
+        }];
 
-        return Ext.factory(config, 'Ext.TitleBar', this.getToolbar());
+        return template;
     },
 
     /**
      * @private
      */
-    updateToolbar: function(newToolbar, oldToolbar) {
-        if (newToolbar) {
-            this.add(newToolbar);
+    applyToolbar: function(config, oldToolbar) {
+        if (config) {
+            if (config === true) {
+                config = {};
+            }
+
+            Ext.applyIf(config, {
+                docked: this.getToolbarPosition()
+            });
         }
 
-        if (oldToolbar) {
-            this.remove(oldToolbar);
+        return Ext.factory(config, 'Ext.TitleBar', oldToolbar);
+    },
+
+    /**
+     * @private
+     */
+    updateToolbar: function(newToolbar) {
+        if (newToolbar) {
+            this.add(newToolbar);
         }
     },
 
     /**
      * Updates the {@link #doneButton} configuration. Will change it into a button when appropriate, or just update the text if needed.
      * @param {Object} config
+     * @param {Object} oldButton
      * @return {Object}
      */
-    applyDoneButton: function(config) {
+    applyDoneButton: function(config, oldButton) {
         if (config) {
-            if (Ext.isBoolean(config)) {
+            if (config === true) {
                 config = {};
             }
 
@@ -325,32 +354,30 @@ Ext.define('Ext.picker.Picker', {
             }
 
             Ext.applyIf(config, {
-                ui: 'action',
                 align: 'right',
                 text: 'Done'
             });
         }
 
-        return Ext.factory(config, 'Ext.Button', this.getDoneButton());
+        return Ext.factory(config, 'Ext.Button', oldButton);
     },
 
-    updateDoneButton: function(newDoneButton, oldDoneButton) {
+    updateDoneButton: function(newDoneButton) {
         var toolbar = this.getToolbar();
 
         if (newDoneButton) {
             toolbar.add(newDoneButton);
             newDoneButton.on('tap', this.onDoneButtonTap, this);
-        } else if (oldDoneButton) {
-            toolbar.remove(oldDoneButton);
         }
     },
 
     /**
      * Updates the {@link #cancelButton} configuration. Will change it into a button when appropriate, or just update the text if needed.
      * @param {Object} config
+     * @param {Object} oldButton
      * @return {Object}
      */
-    applyCancelButton: function(config) {
+    applyCancelButton: function(config, oldButton) {
         if (config) {
             if (Ext.isBoolean(config)) {
                 config = {};
@@ -368,17 +395,15 @@ Ext.define('Ext.picker.Picker', {
             });
         }
 
-        return Ext.factory(config, 'Ext.Button', this.getCancelButton());
+        return Ext.factory(config, 'Ext.Button', oldButton);
     },
 
-    updateCancelButton: function(newCancelButton, oldCancelButton) {
+    updateCancelButton: function(newCancelButton) {
         var toolbar = this.getToolbar();
 
         if (newCancelButton) {
             toolbar.add(newCancelButton);
             newCancelButton.on('tap', this.onCancelButtonTap, this);
-        } else if (oldCancelButton) {
-            toolbar.remove(oldCancelButton);
         }
     },
 
@@ -427,22 +452,25 @@ Ext.define('Ext.picker.Picker', {
      * @private
      */
     updateSlots: function(newSlots) {
-        var bcss = Ext.baseCSSPrefix,
+        var me = this,
+            bcss = Ext.baseCSSPrefix,
             innerItems;
 
-        this.removeAll();
+        me.removeAll();
 
         if (newSlots) {
-            this.add(newSlots);
+            me.add(newSlots);
         }
 
-        innerItems = this.getInnerItems();
+        innerItems = me.getInnerItems();
+
         if (innerItems.length > 0) {
             innerItems[0].addCls(bcss + 'first');
             innerItems[innerItems.length - 1].addCls(bcss + 'last');
         }
 
-        this.updateUseTitles(this.getUseTitles());
+        me.updateUseTitles(me.getUseTitles());
+        me.setValue(me.getValue());
     },
 
     /**
@@ -450,14 +478,17 @@ Ext.define('Ext.picker.Picker', {
      * Called when the done button has been tapped.
      */
     onDoneButtonTap: function() {
-        var oldValue = this._value,
-            newValue = this.getValue(true);
+        var me = this,
+            oldValue = me._value,
+            newValue = me.getValue(true);
 
         if (newValue != oldValue) {
-            this.fireEvent('change', this, newValue);
+            me._values = me._value = newValue;
+
+            me.fireEvent('change', me, newValue);
         }
 
-        this.hide();
+        me.hide();
         Ext.util.InputBlocker.unblockInputs();
     },
 
@@ -479,16 +510,19 @@ Ext.define('Ext.picker.Picker', {
         this.fireEvent('pick', this, this.getValue(true), slot);
     },
 
-    show: function() {
-        if (this.getParent() === undefined) {
-            Ext.Viewport.add(this);
+    afterShow: function(me) {
+        me.callParent([me]);
+
+        if (!me.isHidden()) {
+            me.setValue(me._value);
         }
 
-        this.callParent(arguments);
+        Ext.util.InputBlocker.blockInputs();
+    },
 
-        if (!this.isHidden()) {
-            this.setValue(this._value);
-        }
+    updateDisplayed: function (displayed, oldDisplayed) {
+        this.callParent([displayed, oldDisplayed]);
+
         Ext.util.InputBlocker.blockInputs();
     },
 
@@ -502,32 +536,27 @@ Ext.define('Ext.picker.Picker', {
         var me = this,
             slots = me.getInnerItems(),
             ln = slots.length,
-            key, slot, loopSlot, i, value;
+            key, slot, i, value;
 
         if (!values) {
             values = {};
             for (i = 0; i < ln; i++) {
                 //set the value to false so the slot will return null when getValue is called
-                values[slots[i].config.name] = null;
+                values[slots[i].getName()] = null;
             }
         }
 
         for (key in values) {
-            slot = null;
             value = values[key];
             for (i = 0; i < slots.length; i++) {
-                loopSlot = slots[i];
-                if (loopSlot.config.name == key) {
-                    slot = loopSlot;
+                slot = slots[i];
+                if (slot.getName() == key) {
+                    if (animated) {
+                        slot.setValueAnimated(value);
+                    } else {
+                        slot.setValue(value);
+                    }
                     break;
-                }
-            }
-
-            if (slot) {
-                if (animated) {
-                    slot.setValueAnimated(value);
-                } else {
-                    slot.setValue(value);
                 }
             }
         }
@@ -573,11 +602,18 @@ Ext.define('Ext.picker.Picker', {
         return this.getValue();
     },
 
-    doDestroy: function() {
-        var me = this;
+    privates: {
+        /**
+         * This override always reverts focus back to its ownerField on hide, as long
+         * as that field still owns focus. We always need to focus the field on picker hide.
+         * If we are hiding because the focus has left the ownerField, we do nothing.
+         */
+        _revertFocus: function() {
+            var ownerField = this.ownerField;
 
-        me.mask = me.bar = Ext.destroy(me.mask, me.bar);
-        
-        me.callParent();
+            if (this.rendered && ownerField && ownerField.containsFocus) {
+                ownerField.revertFocusTo(ownerField.ariaEl);
+            }
+        }
     }
 });

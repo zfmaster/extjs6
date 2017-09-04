@@ -1,5 +1,6 @@
-describe("Ext.layout.component.field.HtmlEditor", function() {
-
+topSuite("Ext.layout.component.field.HtmlEditor",
+    ['Ext.form.Panel', 'Ext.form.field.HtmlEditor'],
+function() {
     var htmlEditor;
 
     afterEach(function() {

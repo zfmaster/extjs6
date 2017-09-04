@@ -65,7 +65,9 @@ Ext.define('ExecDashboard.view.profitloss.ProfitLoss', {
         groupable: false,
         locked: true,
 
-        plugins: 'responsive',
+        plugins: {
+            responsive: true
+        },
         responsiveConfig: {
             'width < 600': {
                 width: 150

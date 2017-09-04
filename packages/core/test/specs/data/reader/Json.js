@@ -1,4 +1,4 @@
-describe("Ext.data.reader.Json", function() {
+topSuite("Ext.data.reader.Json", ['Ext.data.ArrayStore', 'Ext.data.proxy.Rest'], function() {
     var reader, data1, data2, result1, result2, result3;
 
     beforeEach(function() {
@@ -192,21 +192,13 @@ describe("Ext.data.reader.Json", function() {
     });
     
     describe("extractors", function() {
-        var createReader;
-        
-        beforeEach(function(){
-            createReader = function(cfg){
-                cfg = cfg || {};
-                reader = new Ext.data.reader.Json(Ext.applyIf({
-                    model: 'spec.JsonReader'
-                }, cfg));
-                reader.buildExtractors(true);
-            };
-        });
-        
-        afterEach(function(){
-            createReader = null;
-        });
+        function createReader(cfg) {
+            cfg = cfg || {};
+            reader = new Ext.data.reader.Json(Ext.apply({
+                model: 'spec.JsonReader'
+            }, cfg));
+            reader.buildExtractors(true);
+        }
         
         it("should run function extractors in the reader scope", function(){
             var actual;
@@ -615,25 +607,322 @@ describe("Ext.data.reader.Json", function() {
                 });
             });
         });
+
+        describe("groupRootProperty", function() {
+            function makeSuite(asSummaryModel) {
+                var M = Ext.define(null, {
+                    extend: 'Ext.data.Model',
+                    fields: ['city', {
+                        name: 'income',
+                        type: 'int',
+                        summary: 'avg'
+                    }, {
+                        name: 'aField',
+                        mapping: 'fieldMapped',
+                        type: 'int'
+                    }],
+                    summary: asSummaryModel ? {
+                        maxIncome: {
+                            field: 'avg',
+                            type: 'int'
+                        },
+                        aSummaryField: {
+                            type: 'int',
+                            mapping: 'summaryMapped'
+                        }
+                    } : null
+                });
+
+                var expectedType = asSummaryModel ? M.getSummaryModel() : M;
+
+                describe("defaults", function() {
+                    it("should not read anything with no root", function() {
+                        createReader({
+                            model: M
+                        });
+                        var resultSet = reader.read([]);
+                        expect(resultSet.getGroupData()).toBeNull();
+                    });
+
+                    it("should not read anything with a root", function() {
+                        createReader({
+                            model: M,
+                            rootProperty: 'data'
+                        });
+                        var resultSet = reader.read({
+                            data: []
+                        });
+                        expect(resultSet.getGroupData()).toBeNull();
+                    });
+                });
+
+                // This is not meant to be exhaustive of all the parse options,
+                // since this uses the same logic as the root
+                describe("parsing", function() {
+                    var groupData;
+
+                    beforeEach(function() {
+                        groupData = [{
+                            city: 'City1',
+                            income: 100,
+                            maxIncome: 200
+                        }, {
+                            city: 'City2',
+                            income: 101,
+                            maxIncome: 201
+                        }, {
+                            city: 'City3',
+                            income: 102,
+                            maxIncome: 202
+                        }];
+                    });
+
+                    function expectData(resultSet) {
+                        var groups = resultSet.getGroupData();
+                        expect(groups.length).toBe(3);
+                        expect(groups[0] instanceof expectedType).toBe(true);
+                        expect(groups[1] instanceof expectedType).toBe(true);
+                        expect(groups[2] instanceof expectedType).toBe(true);
+
+                        expect(groups[0].get('income')).toBe(100);
+                        expect(groups[1].get('income')).toBe(101);
+                        expect(groups[2].get('income')).toBe(102);
+
+                        expect(groups[0].get('maxIncome')).toBe(200);
+                        expect(groups[1].get('maxIncome')).toBe(201);
+                        expect(groups[2].get('maxIncome')).toBe(202);
+                    }
+
+                    it("should read the specified property name", function(){
+                        createReader({
+                            model: M,
+                            groupRootProperty: 'groups'
+                        });
+                        expectData(reader.read({
+                            groups: groupData
+                        }));
+                    });
+                    
+                    it("should accept a function configuration", function(){
+                        createReader({
+                            model: M,
+                            groupRootProperty: function(data){
+                                return data.groups;
+                            }
+                        });
+                        expectData(reader.read({
+                            groups: groupData
+                        }));
+                    });
+
+                    it("should accept a simple JSON expression", function(){
+                        createReader({
+                            model: M,
+                            groupRootProperty: 'chain.forThe.groups'
+                        });
+
+                        expectData(reader.read({
+                            chain: {
+                                forThe: {
+                                    groups: groupData
+                                }
+                            }
+                        }));
+                    });
+
+                    it("should respect mapped fields", function() {
+                        createReader({
+                            model: M,
+                            groupRootProperty: 'groups'
+                        });
+
+                        var resultSet = reader.read({
+                            groups: [{
+                                fieldMapped: 1,
+                                summaryMapped: 2
+                            }]
+                        });
+
+                        var rec = resultSet.getGroupData()[0];
+                        expect(rec.get('aField')).toBe(1);
+                        if (asSummaryModel) {
+                            expect(rec.get('aSummaryField')).toBe(2);
+                        }
+                    });
+                });
+            }
+
+            describe("with no summary model", function() {
+                makeSuite(false);
+            });
+
+            describe("with a summary model", function() {
+                makeSuite(true);
+            });
+        });
+
+        describe("summaryRootProperty", function() {
+            function makeSuite(asSummaryModel) {
+                var M = Ext.define(null, {
+                    extend: 'Ext.data.Model',
+                    fields: ['city', {
+                        name: 'income',
+                        type: 'int',
+                        summary: 'avg'
+                    }, {
+                        name: 'aField',
+                        mapping: 'fieldMapped',
+                        type: 'int'
+                    }],
+                    summary: asSummaryModel ? {
+                        maxIncome: {
+                            field: 'avg',
+                            type: 'int'
+                        },
+                        aSummaryField: {
+                            type: 'int',
+                            mapping: 'summaryMapped'
+                        }
+                    } : null
+                });
+
+                var expectedType = asSummaryModel ? M.getSummaryModel() : M;
+
+                describe("defaults", function() {
+                    it("should not read anything with no root", function() {
+                        createReader({
+                            model: M
+                        });
+                        var resultSet = reader.read([]);
+                        expect(resultSet.getSummaryData()).toBeNull();
+                    });
+
+                    it("should not read anything with a root", function() {
+                        createReader({
+                            model: M,
+                            rootProperty: 'data'
+                        });
+                        var resultSet = reader.read({
+                            data: []
+                        });
+                        expect(resultSet.getSummaryData()).toBeNull();
+                    });
+                });
+
+                // This is not meant to be exhaustive of all the parse options,
+                // since this uses the same logic as the root
+                describe("parsing", function() {
+                    var summaryData;
+
+                    beforeEach(function() {
+                        summaryData = {
+                            income: 100,
+                            maxIncome: 200
+                        };
+                    });
+
+                    function expectData(resultSet) {
+                        var data = resultSet.getSummaryData();
+                        expect(data instanceof expectedType).toBe(true);
+
+                        expect(data.get('income')).toBe(100);
+                        expect(data.get('maxIncome')).toBe(200);
+                    }
+
+                    it("should read the specified property name", function(){
+                        createReader({
+                            model: M,
+                            summaryRootProperty: 'summary'
+                        });
+                        expectData(reader.read({
+                            summary: summaryData
+                        }));
+                    });
+                    
+                    it("should accept a function configuration", function(){
+                        createReader({
+                            model: M,
+                            summaryRootProperty: function(data){
+                                return data.summary;
+                            }
+                        });
+                        expectData(reader.read({
+                            summary: summaryData
+                        }));
+                    });
+
+                    it("should accept a simple JSON expression", function(){
+                        createReader({
+                            model: M,
+                            summaryRootProperty: 'chain.forThe.summary'
+                        });
+
+                        expectData(reader.read({
+                            chain: {
+                                forThe: {
+                                    summary: summaryData
+                                }
+                            }
+                        }));
+                    });
+
+                    it("should be able to accept an array of data and transform it to a model", function() {
+                        createReader({
+                            model: M,
+                            summaryRootProperty: 'summary'
+                        });
+                        expectData(reader.read({
+                            summary: [summaryData]
+                        }));
+                    });
+
+                    it("should respect mapped fields", function() {
+                        createReader({
+                            model: M,
+                            summaryRootProperty: 'summary'
+                        });
+
+                        var resultSet = reader.read({
+                            summary: [{
+                                fieldMapped: 1,
+                                summaryMapped: 2
+                            }]
+                        });
+
+                        var rec = resultSet.getSummaryData();
+                        expect(rec.get('aField')).toBe(1);
+                        if (asSummaryModel) {
+                            expect(rec.get('aSummaryField')).toBe(2);
+                        }
+                    });
+                });
+            }
+
+            describe("with no summary model", function() {
+                makeSuite(false);
+            });
+
+            describe("with a summary model", function() {
+                makeSuite(true);
+            });
+        });
         
         describe("fields", function(){
             var rawOptions = {
                 recordCreator: Ext.identityFn
             };
-            
-            beforeEach(function(){
-                createReader = function(fields, simple){
-                    Ext.define('spec.JsonFieldTest', {
-                        extend: 'Ext.data.Model',
-                        fields: fields
-                    });
-                    reader = new Ext.data.reader.Json({
-                        model: 'spec.JsonFieldTest',
-                        fields: fields,
-                        useSimpleAccessors: simple || false
-                    });
-                };
-            });
+
+            function createReader(fields, simple) {
+                Ext.define('spec.JsonFieldTest', {
+                    extend: 'Ext.data.Model',
+                    fields: fields
+                });
+
+                reader = new Ext.data.reader.Json({
+                    model: 'spec.JsonFieldTest',
+                    useSimpleAccessors: simple || false
+                });
+            }
             
             afterEach(function() {
                 Ext.undefine('spec.JsonFieldTest');

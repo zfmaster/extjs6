@@ -30,7 +30,7 @@ Ext.define('Ext.layout.container.Fit', {
 
     /* Begin Definitions */
     extend: 'Ext.layout.container.Container',
-    alternateClassName: 'Ext.layout.FitLayout',
+    alternateClassName: ['Ext.layout.FitLayout', 'Ext.layout.Fit'],
 
     alias: 'layout.fit',
 

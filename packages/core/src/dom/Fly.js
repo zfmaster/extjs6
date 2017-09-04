@@ -33,17 +33,23 @@ Ext.define('Ext.dom.Fly', {
     },
 
     attach: function (dom) {
-        var me = this;
+        var me = this,
+            data;
 
         if (!dom) {
             return me.detach();
         }
-        me.dom = dom;
+        
+        // Sometimes we want to attach to the DOM of Ext.Element instance
+        me.dom = dom.isElement ? dom.dom : dom;
 
         // If the element is not being managed by an Ext.Element instance,
         // we have to assume that the classList/classMap in the data object are out of sync with reality.
         if (!Ext.cache[dom.id]) {
-            me.getData().isSynchronized = false;
+            data = me.peekData();
+            if (data) {
+                data.isSynchronized = false;
+            }
         }
 
         return me;
@@ -117,7 +123,7 @@ Ext.define('Ext.dom.Fly', {
             nodeType, data;
 
         // name the flyweight after the calling method name if possible.
-        named = named || (fn.caller && fn.caller.$name) || '_global';
+        named = named || (fn.caller && (fn.caller.$name || fn.caller.name)) || '_global';
 
         dom = Ext.getDom(dom);
 
@@ -136,7 +142,7 @@ Ext.define('Ext.dom.Fly', {
                 if (!fly || fly.dom !== dom) {
                     fly = flyweights[named] || (flyweights[named] = new Fly());
                     fly.dom = dom;
-                    data = fly.getData(true);
+                    data = fly.peekData();
                     if (data) {
                         data.isSynchronized = false;
                     }

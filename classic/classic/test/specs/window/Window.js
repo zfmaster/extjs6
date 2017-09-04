@@ -1,7 +1,11 @@
 /* global Ext, expect, jasmine, xit */
 
-describe("Ext.window.Window", function() {
-    var win, container;
+topSuite("Ext.window.Window",
+    ['Ext.Button', 'Ext.form.field.Text', 'Ext.layout.container.Fit',
+     'Ext.layout.container.Form'],
+function() {
+    var itNotIE8 = Ext.isIE8 ? xit : it,
+        win, container;
     
     function makeWindow(config, noShow) {
         config = Ext.apply({
@@ -59,6 +63,26 @@ describe("Ext.window.Window", function() {
             });
         });
     });
+
+    describe("closable", function() {
+        describe("esc key", function() {
+            it("should close on esc key with closable: true", function() {
+                makeWindow({
+                    closable: true
+                });
+                jasmine.fireKeyEvent(win.body, 'keydown', Ext.event.Event.ESC);
+                expect(win.destroyed).toBe(true);
+            });
+
+            it("should not close on esc key with closable: false", function() {
+                makeWindow({
+                    closable: false
+                });
+                jasmine.fireKeyEvent(win.body, 'keydown', Ext.event.Event.ESC);
+                expect(win.destroyed).toBe(false);
+            });
+        });
+    });
     
     describe("header", function() {
         var header;
@@ -75,19 +99,17 @@ describe("Ext.window.Window", function() {
             });
             
             it("should disable focusable container", function() {
-                expect(header.enableFocusableContainer).toBe(false);
+                expect(header.focusableContainer).toBe(false);
             });
             
             it("should have presentation role", function() {
                 expect(header).toHaveAttr('role', 'presentation');
             });
-            
-            it("should not be tabbable", function() {
-                expect(header.ariaEl.isTabbable()).toBe(false);
-            });
         });
         
         describe("with focusable tools", function() {
+            var tool;
+            
             beforeEach(function() {
                 makeWindow({
                     closable: true,
@@ -95,19 +117,19 @@ describe("Ext.window.Window", function() {
                 });
                 
                 header = win.header;
+                tool = header.down('tool');
             });
             
             it("should enable focusable container", function() {
-                expect(header.enableFocusableContainer).toBe(true);
+                expect(header.focusableContainer).toBe(true);
             });
             
             it("should have toolbar role", function() {
                 expect(header).toHaveAttr('role', 'toolbar');
             });
             
-            it("should have tabbable guards", function() {
-                expect(header.tabGuardBeforeEl.isTabbable()).toBe(true);
-                expect(header.tabGuardAfterEl.isTabbable()).toBe(true);
+            it("should have tabbable tool", function() {
+                expect(tool).toHaveAttr('tabIndex', 0);
             });
         });
     });
@@ -172,6 +194,8 @@ describe("Ext.window.Window", function() {
 
             // win should be at the front now
             expect(win1.zIndexManager.getActive() === win);
+            
+            jasmine.fireMouseEvent(win.header.el.dom, 'mouseup');
             Ext.destroy(win1);
         });
     });
@@ -1112,6 +1136,10 @@ describe("Ext.window.Window", function() {
         waitsFor(function() {
             return Ext.Element.getActiveElement() === ts[1].inputEl.dom;
         });
+        
+        runs(function() {
+            jasmine.fireMouseEvent(ts[1].inputEl, 'mouseup');
+        });
     });
 
     it("should correctly render the minimize/maximize tools when there is an iconCls present", function() {
@@ -1267,7 +1295,7 @@ describe("Ext.window.Window", function() {
                 expectFocused(cmp);
             });
 
-            it("should focus the window if the selector does not match", function() {
+            itNotIE8("should focus the window if the selector does not match", function() {
                 makeWindow({
                     defaultFocus: '#notthere',
                     defaultType: 'textfield',
@@ -1435,8 +1463,8 @@ describe("Ext.window.Window", function() {
                 it("should add tab guards when tool is added", function() {
                     win.addTool({ type: 'pin' });
                     
-                    // 2 window guards + 2 header guards
-                    expectTabbables(4);
+                    // 2 window guards + 1 tabbable tool
+                    expectTabbables(3);
                 });
                 
                 it("should add tab guards when an item is docked", function() {
@@ -1862,18 +1890,25 @@ describe("Ext.window.Window", function() {
             button1 = rootPanel.down('button[text=Open Window 1]');
 
             jasmine.fireMouseEvent(button1.el, 'click');
+            
+            waitsFor(function() {
+                return win1.containsFocus;
+            });
+            
+            runs(function() {
+                // Three buttons in the body, before and after tab guard.
+                expect(win1.el.findTabbableElements().length).toBe(5);
 
-            // Three buttons in the body, before and after tab guard.
-            expect(win1.el.findTabbableElements().length).toBe(5);
+                button2 = win1.down('button[text=Open Window 2]');
+                jasmine.fireMouseEvent(button2.el, 'click');
+            });
+            
+            waitsFor(function(){
+                return win1.el.findTabbableElements().length === 0 &&
 
-            button2 = win1.down('button[text=Open Window 2]');
-            jasmine.fireMouseEvent(button2.el, 'click');
-
-            // Should all be untabbable now
-            expect(win1.el.findTabbableElements().length).toBe(0);
-
-            // Three buttons, two input fields in the body, before and after tab guard.
-            expect(win2.el.findTabbableElements().length).toBe(7);
+                // Three buttons, two input fields in the body, before and after tab guard.
+                win2.el.findTabbableElements().length === 7;
+            });
         });
     });
 
@@ -1890,10 +1925,15 @@ describe("Ext.window.Window", function() {
             win = makeWindow({
                 modal: true
             });
-            field = new Ext.form.field.Text({
-                renderTo: document.body
+            waitsFor(function() {
+                return win.containsFocus;
             });
-            field.focus();
+            runs(function() {
+                field = new Ext.form.field.Text({
+                    renderTo: document.body
+                });
+                field.focus();
+            });
 
             waitsFor(function() {
                 return field.hasFocus;

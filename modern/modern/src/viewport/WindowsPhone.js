@@ -3,11 +3,11 @@
  * Windows Phone version of Viewport.
  */
 Ext.define('Ext.viewport.WindowsPhone', {
+    extend: 'Ext.viewport.Default',
+
     requires: [],
 
     alternateClassName: 'Ext.viewport.WP',
-
-    extend: 'Ext.viewport.Default',
 
     // so one pixel line is displayed on the right side of the screen. Setting width more than 100% fix the issue
 //    config: {
@@ -17,7 +17,7 @@ Ext.define('Ext.viewport.WindowsPhone', {
 
     config: {
         translatable: {
-            translationMethod: 'csstransform'
+            type: 'csstransform'
         }
     },
 
@@ -43,7 +43,8 @@ Ext.define('Ext.viewport.WindowsPhone', {
         return false;
     },
 
-    onResize: function() {
+    onWindowResize: function(width, height) {
+        this.callParent([width, height]);
         this.waitUntil(function() {
             var oldWidth = this.windowWidth,
                 oldHeight = this.windowHeight,

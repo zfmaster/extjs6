@@ -27,7 +27,7 @@ Ext.define('Ext.draw.Draw', {
     pi2: Math.PI * 2,
 
     /**
-     * @deprecated Please use the {@link Ext#identityFn} instead.
+     * @deprecated 6.5.0 Please use the {@link Ext#identityFn} instead.
      * Function that returns its first element.
      * @param {Mixed} a
      * @return {Mixed}
@@ -84,7 +84,7 @@ Ext.define('Ext.draw.Draw', {
      *
      * @param {Array} points Array of numbers.
      */
-    spline: function (points) {
+    naturalSpline: function (points) {
         var i, j, ln = points.length,
             nd, d, y, ny,
             r = 0,
@@ -118,6 +118,63 @@ Ext.define('Ext.draw.Draw', {
             result[j + 2] = (nd * 2 + d) / 3;
         }
         result[j] = ny;
+        return result;
+    },
+
+    /**
+     * Shorthand for {@link #naturalSpline}
+     */
+    spline: function(points) {
+        return this.naturalSpline(points);
+    },
+
+    /**
+     * @private
+     * Cardinal spline interpolation.
+     * Goes from cardinal control points to cubic Bezier control points.
+     */
+    cardinalToBezier: function (P1, P2, P3, P4, tension) {
+        return [
+            P2,
+            P2 + (P3 - P1) / 6 * tension,
+            P3 - (P4 - P2) / 6 * tension,
+            P3
+        ];
+    },
+
+    /**
+     * @private
+     * @param {Number[]} P An array of n x- or y-coordinates.
+     * @param {Number} tension
+     * @return {Float32Array} An array of 3n - 2 Bezier control points.
+     */
+    cardinalSpline: function (P, tension) {
+        var n = P.length,
+            result = new Float32Array(n * 3 - 2),
+            i, bezier;
+
+        if (tension === undefined) {
+            tension = 0.5;
+        }
+
+        bezier = this.cardinalToBezier(P[0], P[0], P[1], P[2], tension);
+        result[0] = bezier[0];
+        result[1] = bezier[1];
+        result[2] = bezier[2];
+        result[3] = bezier[3];
+
+        for (i = 0; i < n - 3; i++) {
+            bezier = this.cardinalToBezier(P[i], P[i+1], P[i+2], P[i+3], tension);
+            result[4 + i * 3] = bezier[1];
+            result[4 + i * 3 + 1] = bezier[2];
+            result[4 + i * 3 + 2] = bezier[3];
+        }
+
+        bezier = this.cardinalToBezier(P[n-3], P[n-2], P[n-1], P[n-1], tension);
+        result[4 + i * 3] = bezier[1];
+        result[4 + i * 3 + 1] = bezier[2];
+        result[4 + i * 3 + 2] = bezier[3];
+
         return result;
     },
 

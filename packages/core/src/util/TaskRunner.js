@@ -107,10 +107,12 @@ Ext.define('Ext.util.TaskRunner', {
 // @require Ext.Function
 
     /**
-     * @cfg {Boolean} [fireIdleEvent=true]
+     * @cfg {Boolean} fireIdleEvent
      * This may be configured `false` to inhibit firing of the {@link
-     * Ext.GlobalEvents#idle idle event} after task invocation.
+     * Ext.GlobalEvents#idle idle event} after task invocation. By default the tasks
+     * run in a given tick determine whether `idle` events fire.
      */
+    fireIdleEvent: null,
 
     /**
      * @cfg {Number} interval
@@ -128,14 +130,14 @@ Ext.define('Ext.util.TaskRunner', {
     constructor: function (interval) {
         var me = this;
 
-        if (typeof interval == 'number') {
+        if (typeof interval === 'number') {
             me.interval = interval;
         } else if (interval) {
             Ext.apply(me, interval);
         }
 
         me.tasks = [];
-        me.timerFn = Ext.Function.bind(me.onTick, me);
+        me.timerFn = me.onTick.bind(me);
     },
 
     /**
@@ -150,6 +152,13 @@ Ext.define('Ext.util.TaskRunner', {
     newTask: function (config) {
         var task = new Ext.util.TaskRunner.Task(config);
         task.manager = this;
+
+        //<debug>
+        if (Ext.Timer.track) {
+            task.creator = new Error().stack;
+        }
+        //</debug>
+
         return task;
     },
 
@@ -196,7 +205,7 @@ Ext.define('Ext.util.TaskRunner', {
      *
      * @param {Number} [task.fireIdleEvent=true] If all tasks in a TaskRunner's execution 
      * sweep are configured with `fireIdleEvent: false`, then the 
-     * {@link Ext.GlobalEvents#idle idleEvent} is not fired when the TaskRunner's execution 
+     * {@link Ext.GlobalEvents#idle idle event} is not fired when the TaskRunner's execution
      * sweep finishes.
      *
      * @param {Boolean} [task.fireOnStart=false] True to run the task immediately instead of 
@@ -229,19 +238,41 @@ Ext.define('Ext.util.TaskRunner', {
 
     /**
      * Stops an existing running task.
-     * @param {Object} task The task to stop
+     * @param {Object} task The task to stop.
+     * @param {Boolean} andRemove Pass `true` to also remove the task from the queue.
      * @return {Object} The task
      */
-    stop: function(task) {
+    stop: function(task, andRemove) {
+        var me = this,
+            tasks = me.tasks,
+            pendingCount = 0,
+            i;
+
         // NOTE: we don't attempt to remove the task from me.tasks at this point because
         // this could be called from inside a task which would then corrupt the state of
         // the loop in onTick
         if (!task.stopped) {
             task.stopped = true;
+            task.pending = false;
 
             if (task.onStop) {
                 task.onStop.call(task.scope || task, task);
             }
+        }
+        if (andRemove) {
+            Ext.Array.remove(tasks, task);
+        }
+
+        // If there are now no pending tasks
+        // we shhuld stop the timer.
+        for (i = 0; !pendingCount && i < tasks.length; i++) {
+            if (!tasks[i].stopped) {
+                pendingCount++;
+            }
+        }
+        if (!pendingCount) {
+            Ext.undefer(me.timerId);
+            me.timerId = null;
         }
 
         return task;
@@ -249,10 +280,16 @@ Ext.define('Ext.util.TaskRunner', {
 
     /**
      * Stops all tasks that are currently running.
+     * @param {Boolean} andRemove Pass `true` to also remove the tasks from the queue.
      */
-    stopAll: function() {
+    stopAll: function(andRemove) {
+        var me = this;
+
         // onTick will take care of cleaning up the mess after this point...
-        Ext.each(this.tasks, this.stop, this);
+        // must use reverse in case a task is removed.
+        Ext.each(this.tasks, function(task) {
+            me.stop(task, andRemove);
+        }, null, true);
     },
 
     //-------------------------------------------------------------------------
@@ -261,18 +298,24 @@ Ext.define('Ext.util.TaskRunner', {
 
     nextExpires: 1e99,
 
-   /**
-    * @private
-    */
+    /**
+     * @private
+     */
     onTick: function () {
         var me = this,
             tasks = me.tasks,
-            fireIdleEvent = me.fireIdleEvent,
+            fireIdleEvent = me.fireIdleEvent, // null by default
             now = Ext.Date.now(),
             nextExpires = 1e99,
             len = tasks.length,
-            globalEvents = Ext.GlobalEvents,
             expires, newTasks, i, task, rt, remove, args;
+
+        //<debug>
+        var timer = Ext.Timer.get(me.timerId);
+        if (timer) {
+            timer.tasks = [];
+        }
+        //</debug>
 
         me.timerId = null;
         me.firing = true; // ensure we don't startTimer during this loop...
@@ -291,10 +334,8 @@ Ext.define('Ext.util.TaskRunner', {
                     rt = 1; // otherwise we have a stale "rt"
 
                     // If all tasks left specify fireIdleEvent as false, then don't do it
-                    if (task.hasOwnProperty('fireIdleEvent')) {
-                        fireIdleEvent = task.fireIdleEvent;
-                    } else {
-                        fireIdleEvent = me.fireIdleEvent;
+                    if (fireIdleEvent === null && task.fireIdleEvent !== false) {
+                        fireIdleEvent = true;
                     }
                     
                     task.taskRunCount++;
@@ -307,6 +348,10 @@ Ext.define('Ext.util.TaskRunner', {
 
                     // We want the exceptions not to get caught while unit testing
                     //<debug>
+                    if (timer) {
+                        timer.tasks.push(task);
+                    }
+
                     if (me.disableTryCatch) {
                         rt = task.run.apply(task.scope || task, args);
                     }
@@ -393,11 +438,16 @@ Ext.define('Ext.util.TaskRunner', {
             // callback storm):
             me.startTimer(nextExpires - now, Ext.Date.now());
         }
-        
-        // After a tick
-        if (fireIdleEvent !== false && globalEvents.hasListeners.idle) {
-            globalEvents.fireEvent('idle');
+
+        // If all tasks fired and had fireIdleEvent=false then our fireIdleEvent var
+        // will still be null. This is to allow any task that does not suppress idle
+        // to override those that do. The only other reason our var will be null is if
+        // no tasks fired. In which case, no need for idle either.
+        if (fireIdleEvent === null) {
+            fireIdleEvent = false;
         }
+
+        Ext._suppressIdle = !fireIdleEvent;
    },
 
    /**
@@ -411,8 +461,7 @@ Ext.define('Ext.util.TaskRunner', {
         // Check to see if this request is enough in advance of the current timer. If so,
         // we reschedule the timer based on this new expiration.
         if (timerId && me.nextExpires - expires > me.interval) {
-            clearTimeout(timerId);
-            timerId = null;
+            timerId = Ext.undefer(timerId);
         }
 
         if (!timerId) {
@@ -422,6 +471,13 @@ Ext.define('Ext.util.TaskRunner', {
 
             me.timerId = Ext.defer(me.timerFn, timeout);
             me.nextExpires = expires;
+
+            //<debug>
+            var timer = Ext.Timer.get(me.timerId);
+            if (timer) {
+                timer.runner = me;
+            }
+            //</debug>
         }
     }
 },
@@ -481,8 +537,12 @@ function () {
         /**
          * Stops this task.
          */
-        stop: function () {
-            this.manager.stop(this);
+        stop: function (andRemove) {
+            this.manager.stop(this, andRemove);
+        },
+
+        destroy: function() {
+            this.stop(true)
         }
     });
 
@@ -495,12 +555,3 @@ function () {
      */
     proto.destroy = proto.stop;
 });
-
-
-
-
-
-
-
-
-

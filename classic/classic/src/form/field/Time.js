@@ -61,69 +61,60 @@ Ext.define('Ext.form.field.Time', {
      * valid format -- see {@link #format} and {@link #altFormats}.
      */
 
-    //<locale>
     /**
      * @cfg {String} minText
      * The error text to display when the entered time is before {@link #minValue}.
+     * @locale
      */
-    minText : "The time in this field must be equal to or after {0}",
-    //</locale>
+    minText: "The time in this field must be equal to or after {0}",
 
-    //<locale>
     /**
      * @cfg {String} maxText
      * The error text to display when the entered time is after {@link #maxValue}.
+     * @locale
      */
-    maxText : "The time in this field must be equal to or before {0}",
-    //</locale>
+    maxText: "The time in this field must be equal to or before {0}",
 
-    //<locale>
     /**
      * @cfg {String} invalidText
      * The error text to display when the time in the field is invalid.
+     * @locale
      */
-    invalidText : "{0} is not a valid time",
-    //</locale>
+    invalidText: "{0} is not a valid time",
 
-    //<locale>
     /**
      * @cfg {String} [format=undefined]
      * The default time format string which can be overridden for localization support. 
      * The format must be valid according to {@link Ext.Date#parse}.
      *
      * Defaults to `'g:i A'`, e.g., `'3:15 PM'`. For 24-hour time format try `'H:i'` instead.
+     * @locale
      */
-    format : "g:i A",
-    //</locale>
+    format: "g:i A",
 
-    //<locale>
     /**
      * @cfg {String} [submitFormat=undefined]
      * The date format string which will be submitted to the server. The format must be valid according to
      * {@link Ext.Date#parse}.
      *
      * Defaults to {@link #format}.
+     * @locale
      */
-    //</locale>
 
-    //<locale>
     /**
      * @cfg {String} altFormats
      * Multiple date formats separated by "|" to try when parsing a user input value and it doesn't match the defined
      * format.
+     * @locale
      */
-    altFormats : "g:ia|g:iA|g:i a|g:i A|h:i|g:i|H:i|ga|ha|gA|h a|g a|g A|gi|hi|gia|hia|g|H|gi a|hi a|giA|hiA|gi A|hi A",
-    //</locale>
-    
-    //<locale>
-    // The default format for the time field is 'g:i A', which is hardly informative
+    altFormats: "g:ia|g:iA|g:i a|g:i A|h:i|g:i|H:i|ga|ha|gA|h a|g a|g A|gi|hi|gia|hia|g|H|gi a|hi a|giA|hiA|gi A|hi A",
+
     /**
      * @cfg {String} formatText
      * The format text to be announced by screen readers when the field is focused.
+     * @locale
      */
-    /** @ignore */
     formatText: 'Expected time format HH:MM space AM or PM',
-    //</locale>
 
     /**
      * @cfg {Number} [increment=15]
@@ -157,7 +148,7 @@ Ext.define('Ext.form.field.Time', {
     snapToIncrement: false,
 
     /**
-     * @cfg
+     * @cfg {String/String[]} valuePublishEvent
      * @inheritdoc
      */
     valuePublishEvent: ['select', 'blur'],

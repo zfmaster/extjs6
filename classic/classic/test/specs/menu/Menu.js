@@ -1,6 +1,9 @@
 /* global expect, jasmine, Ext, spyOn, xdescribe, describe, it */
 
-describe("Ext.menu.Menu", function() {
+topSuite("Ext.menu.Menu",
+    ['Ext.Panel', 'Ext.Button', 'Ext.form.field.Date',
+     'Ext.layout.container.Accordion', 'Ext.layout.container.Fit'],
+function() {
     var menu;
 
     function makeMenu(cfg) {
@@ -9,26 +12,28 @@ describe("Ext.menu.Menu", function() {
     }
 
     function doItemMouseover(item) {
-        var x = item.el.getX() + item.el.getWidth() / 2,
-            y = item.el.getY() + item.el.getHeight() / 2;
+        var targetEl = item.ariaEl,
+            x = targetEl.getX() + targetEl.getWidth() / 2,
+            y = targetEl.getY() + targetEl.getHeight() / 2;
 
-        if (Ext.supports.TouchEvents) {
-            Ext.testHelper.touchStart(item.el, { x: x, y: y });
-            Ext.testHelper.touchEnd(item.el, { x: x, y: y });
+        if (jasmine.supportsTouch) {
+            Ext.testHelper.touchStart(targetEl, { x: x, y: y });
+            Ext.testHelper.touchEnd(targetEl, { x: x, y: y });
         } else {
-            jasmine.fireMouseEvent(item.el, 'mouseover');
+            jasmine.fireMouseEvent(targetEl, 'mouseover');
         }
     }
 
     function doItemClick(item) {
-        var x = item.el.getX() + item.el.getWidth() / 2,
-            y = item.el.getY() + item.el.getHeight() / 2;
+        var targetEl = item.ariaEl,
+            x = targetEl.getX() + targetEl.getWidth() / 2,
+            y = targetEl.getY() + targetEl.getHeight() / 2;
 
-        if (Ext.supports.TouchEvents) {
-            Ext.testHelper.touchStart(item.el, { x: x, y: y });
-            Ext.testHelper.touchEnd(item.el, { x: x, y: y });
+        if (jasmine.supportsTouch) {
+            Ext.testHelper.touchStart(targetEl, { x: x, y: y });
+            Ext.testHelper.touchEnd(targetEl, { x: x, y: y });
         } else {
-            jasmine.fireMouseEvent(item.el, 'click');
+            jasmine.fireMouseEvent(targetEl, 'click');
         }
     }
 
@@ -38,10 +43,23 @@ describe("Ext.menu.Menu", function() {
         var x = el.getX() + el.getWidth() / 2,
             y = el.getY() + el.getHeight() / 2;
 
-        if (Ext.supports.TouchEvents) {
+        if (jasmine.supportsTouch) {
             Ext.testHelper.touchStart(el, { x: x, y: y });
         } else {
             jasmine.fireMouseEvent(el, 'mousedown');
+        }
+    }
+    
+    function doElementMouseup(el) {
+        el = Ext.get(el);
+
+        var x = el.getX() + el.getWidth() / 2,
+            y = el.getY() + el.getHeight() / 2;
+
+        if (jasmine.supportsTouch) {
+            Ext.testHelper.touchEnd(el, { x: x, y: y });
+        } else {
+            jasmine.fireMouseEvent(el, 'mouseup');
         }
     }
 
@@ -291,7 +309,7 @@ describe("Ext.menu.Menu", function() {
                 });
                 
                 runs(function() {
-                    jasmine.fireMouseEvent(item.el, 'click');
+                    jasmine.fireMouseEvent(item.ariaEl, 'click');
                 
                     // Manager acts on global mousedown with no delays
                     expect(item.menu.isVisible()).toBe(true);
@@ -302,7 +320,7 @@ describe("Ext.menu.Menu", function() {
     
     describe('Touch events', function() {
         // https://sencha.jira.com/browse/EXTJS-20372
-        if (Ext.supports.TouchEvents) {
+        if (jasmine.supportsTouch) {
             it("should not expand submenu when parent item is touched", function() {
                 makeMenu({
                     items: [{
@@ -512,6 +530,7 @@ describe("Ext.menu.Menu", function() {
             menu.show();
             doElementMousedown(field.inputEl);
             expect(menu.isVisible()).toBe(false);
+            doElementMouseup(field.inputEl);
             field.destroy();
         });
 
@@ -532,6 +551,7 @@ describe("Ext.menu.Menu", function() {
             menu.show();
             doElementMousedown(el);
             expect(menu.isVisible()).toBe(false);
+            doElementMouseup(el);
             el.destroy();
         });
 
@@ -549,6 +569,7 @@ describe("Ext.menu.Menu", function() {
             doElementMousedown(field.inputEl);
             expect(m1.isVisible()).toBe(false);
             expect(m2.isVisible()).toBe(false);
+            doElementMouseup(field.inputEl);
             Ext.destroy(field, m1, m2);
         });
     });
@@ -610,15 +631,11 @@ describe("Ext.menu.Menu", function() {
             
             menu.items.items[0].focus();
             
-            waitsFor(function() {
-                return menu.containsFocus;
-            });
+            waitsForFocus(menu);
             runs(function() {
-                menu.items.items[0].blur();
+                document.body.focus();
             });
-            waitsFor(function() {
-                return !menu.containsFocus;
-            });
+            jasmine.blurAndWait(menu);
             runs(function() {
                 expect(menu.isVisible()).toBe(true);
             });
@@ -1359,7 +1376,7 @@ describe("Ext.menu.Menu", function() {
                 downSpy = spyOn(menu, 'onFocusableContainerDownKey').andCallThrough();
                 rightSpy = spyOn(menu, 'onFocusableContainerRightKey').andCallThrough();
                 
-                menu.show();
+                menu.showAt(0, 0);
             });
             
             afterEach(function() {
@@ -1447,9 +1464,12 @@ describe("Ext.menu.Menu", function() {
 
             // We must wait for a possibly asynchronous scroll event to happen.
             waits(100);
+            
             runs(function() {
                 expect(menu.isVisible()).toBe(true);
                 stretcher.destroy();
+                Ext.scroll.Scroller.viewport.destroy();
+                Ext.scroll.Scroller.viewport = null;
             });
         });
     });
@@ -1538,6 +1558,8 @@ describe("Ext.menu.Menu", function() {
 
             // Must not have thrown an error
             expect(onErrorSpy).not.toHaveBeenCalled();
+            
+            jasmine.fireMouseEvent(header.el, 'mouseup');
         });
     });
 });

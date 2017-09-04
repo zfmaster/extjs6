@@ -56,12 +56,12 @@ Ext.define('Ext.data.proxy.Memory', {
 
     config: {
         /**
-        * @cfg {Boolean} [enablePaging]
+        * @cfg {Boolean} [enablePaging=false]
         * Configure as `true` to enable this MemoryProxy to honour a read operation's `start` and `limit` options.
         *
         * When `true`, read operations will be able to read *pages* of records from the data object.
         */
-       enablePaging: false,
+       enablePaging: null,
 
         /**
         * @cfg {Object} data
@@ -69,17 +69,21 @@ Ext.define('Ext.data.proxy.Memory', {
         */
         data: {
             $value: null,
-            // Don't deeply clone the data object, just shallow copy the array
+            // Because of destructive association reading, we always need to clone incoming data
+            // to protect externally owned data objects from mutation
             merge: function(newValue, currentValue, target, mixinClass) {
-                if (Ext.isArray(newValue)) {
-                    return Ext.Array.clone(newValue);
-                } else {
-                    return Ext.clone(newValue);
-                }
+                return newValue ? Ext.clone(newValue) : newValue;
             }
-        }
+        },
+
+        /**
+         * @cfg {Boolean} [clearOnRead=false]
+         * By default MemoryProxy data is persistent, and subsequent reads will read the
+         * same data. If this is not required, configure the proxy using `clearOnRead: true`.
+         */
+        clearOnRead: null
     },
-    
+
     /**
      * @private
      * Fake processing function to commit the records, set the current operation
@@ -87,16 +91,17 @@ Ext.define('Ext.data.proxy.Memory', {
      * by the create, update and destroy methods to perform the bare minimum
      * processing required for the proxy to register a result from the action.
      */
-    finishOperation: function(operation) {
-        var i = 0,
-            recs = operation.getRecords(),
-            len = recs.length;
+    finishOperation: function (operation) {
+        var recs = operation.getRecords(),
+            len = recs.length,
+            i;
             
-        for (i; i < len; i++) {
+        for (i = 0; i < len; i++) {
             // Because Memory proxy is synchronous, the commit must call store#afterErase
             recs[i].dropped = !!operation.isDestroyOperation;
             recs[i].commit();
         }
+
         operation.setSuccessful(true);
     },
     
@@ -153,6 +158,11 @@ Ext.define('Ext.data.proxy.Memory', {
 
         // Apply filters, sorters, and start/limit options
         if (operation.process(resultSet, null, null, false) !== false) {
+            // If we are configured to read the data one time only, clear our data
+            if (operation.success && me.getClearOnRead()) {
+                this.setData(null);
+            }
+
             // Filter the resulting array of records
             if (filters && filters.length) {
                 // Total will be updated by setting records
@@ -174,7 +184,6 @@ Ext.define('Ext.data.proxy.Memory', {
             // Reader reads the whole passed data object.
             // If successful and we were given a start and limit, slice the result.
             if (me.getEnablePaging() && start !== undefined && limit !== undefined) {
-
                 // Attempt to read past end of memory dataset - convert to failure
                 if (start >= resultSet.getTotal()) {
                     resultSet.setConfig({
@@ -188,6 +197,7 @@ Ext.define('Ext.data.proxy.Memory', {
                     resultSet.setRecords(Ext.Array.slice(records, start, start + limit));
                 }
             }
+
             operation.setCompleted();
 
             // If a JsonReader detected metadata, process it now.

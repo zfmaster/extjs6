@@ -115,7 +115,7 @@ Ext.define('Admin.view.main.Main', {
                     xtype: 'treelist',
                     reference: 'navigationTreeList',
                     itemId: 'navigationTreeList',
-                    ui: 'navigation',
+                    ui: 'nav',
                     store: 'NavigationTree',
                     width: 250,
                     expanderFirst: false,

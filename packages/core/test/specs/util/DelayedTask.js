@@ -1,4 +1,4 @@
-describe("Ext.util.DelayedTask", function() {
+topSuite("Ext.util.DelayedTask", function() {
 
     it('should delay the call', function() {
         var d,

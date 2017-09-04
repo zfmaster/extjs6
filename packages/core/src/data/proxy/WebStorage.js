@@ -82,7 +82,6 @@ Ext.define('Ext.data.proxy.WebStorage', {
             record = records[i];
 
             if (record.phantom) {
-                record.phantom = false;
                 identifier = record.identifier;
                 if (identifier && identifier.isUnique) {
                     id = record.getId();

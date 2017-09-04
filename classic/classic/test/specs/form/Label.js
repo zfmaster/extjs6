@@ -1,4 +1,4 @@
-describe("Ext.form.Label", function() {
+topSuite("Ext.form.Label", function() {
     var component;
 
     function makeComponent(config) {

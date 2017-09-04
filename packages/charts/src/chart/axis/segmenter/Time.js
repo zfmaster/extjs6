@@ -73,53 +73,90 @@ Ext.define('Ext.chart.axis.segmenter.Time', {
         return Ext.Date.add(new Date(value), unit, step);
     },
 
-    stepUnits: [
-        [Ext.Date.YEAR, 1, 2, 5, 10, 20, 50, 100, 200, 500],
-        [Ext.Date.MONTH, 1, 3, 6],
-        [Ext.Date.DAY, 1, 7, 14],
-        [Ext.Date.HOUR, 1, 6, 12],
-        [Ext.Date.MINUTE, 1, 5, 15, 30],
-        [Ext.Date.SECOND, 1, 5, 15, 30],
-        [Ext.Date.MILLI, 1, 2, 5, 10, 20, 50, 100, 200, 500]
+    timeBuckets: [
+        {
+            unit: Ext.Date.YEAR,
+            steps: [1, 2, 5, 10, 20, 50, 100, 200, 500]
+        },
+        {
+            unit: Ext.Date.MONTH,
+            steps: [1, 3, 6]
+        },
+        {
+            unit: Ext.Date.DAY,
+            steps: [1, 7, 14]
+        },
+        {
+            unit: Ext.Date.HOUR,
+            steps: [1, 6, 12]
+        },
+        {
+            unit: Ext.Date.MINUTE,
+            steps: [1, 5, 15, 30]
+        },
+        {
+            unit: Ext.Date.SECOND,
+            steps: [1, 5, 15, 30]
+        },
+        {
+            unit: Ext.Date.MILLI,
+            steps: [1, 2, 5, 10, 20, 50, 100, 200, 500]
+        }
     ],
 
-    preferredStep: function (min, estStepSize) {
-        if (this.getStep()) {
-            return this.getStep();
-        }
-        var from = new Date(+min),
-            to = new Date(+min + Math.ceil(estStepSize)),
-            units = this.stepUnits,
-            result, unit, diff,
+    /**
+     * @private
+     * Takes a time interval and figures out what is the smallest nice number of which
+     * units (years, months, days, etc.) that can fully encompass that interval.
+     * @param {Date} min
+     * @param {Date} max
+     * @return {Object}
+     * @return {String} return.unit The unit.
+     * @return {Number} return.step The number of units.
+     */
+    getTimeBucket: function (min, max) {
+        var buckets = this.timeBuckets,
+            unit, unitCount,
+            steps, step,
+            result,
             i, j;
 
-        for (i = 0; i < units.length; i++) {
-            unit = units[i][0];
-            diff = this.diff(from, to, unit);
+        for (i = 0; i < buckets.length; i++) {
+            unit = buckets[i].unit;
+            unitCount = this.diff(min, max, unit);
 
-            if (diff > 0) {
-                for (j = 1; j < units[i].length; j++) {
-                    if (diff <= units[i][j]) {
-                        result = {
-                            unit: unit,
-                            step: units[i][j]
-                        };
+            if (unitCount > 0) {
+                steps = buckets[i].steps;
+                for (j = 0; j < steps.length; j++) {
+                    step = steps[j];
+                    if (unitCount <= step) {
                         break;
                     }
                 }
-                if (!result) {
-                    i--;
-                    result = {
-                        unit: units[i][0],
-                        step: 1
-                    };
-                }
+                result = {
+                    unit: unit,
+                    step: step
+                };
                 break;
             }
         }
+        // If the interval is smaller then one millisecond ...
         if (!result) {
-            result = {unit: Ext.Date.DAY, step: 1}; // Default step is one Day.
+            // ... we can't go smaller than one millisecond.
+            result = {
+                unit: Ext.Date.MILLI,
+                step: 1
+            };
         }
         return result;
+    },
+
+    preferredStep: function (min, estStepSize) {
+        var step = this.getStep();
+
+        return step ? step : this.getTimeBucket(
+            new Date(+min),
+            new Date(+min + Math.ceil(estStepSize))
+        );
     }
 });

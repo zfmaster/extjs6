@@ -1,6 +1,6 @@
 /* global Ext, MockAjaxManager, expect, jasmine */
 
-describe("Ext.view.MultiSelector", function(){
+topSuite("Ext.view.MultiSelector", ['Ext.data.ArrayStore'], function() {
     var synchronousLoad = true,
         proxyStoreLoad = Ext.data.ProxyStore.prototype.load,
         loadStore = function() {
@@ -255,18 +255,18 @@ describe("Ext.view.MultiSelector", function(){
                     expect(nodes[0]).toHaveCls('x-grid-item-selected');
                 });
 
-                if (Ext.supports.TouchEvents) {
+                if (jasmine.supportsTouch) {
                     it('should not hide the picker when the picker is tapped', function() {
                         multiSelector.onShowSearch();
 
                         var searchGrid = multiSelector.searchPopup.lookupReference('searchGrid'),
-                            cell = new Ext.grid.CellContext(searchGrid.view).setPosition(1, 0).getCell(),
+                            cell = new Ext.grid.CellContext(searchGrid.view).setPosition(1, 0).getCell(true),
                             selectedCount = multiSelector.store.getCount(),
-                            x = cell.getX() + cell.getWidth() / 2,
-                            y = cell.getY() + cell.getHeight() / 2;
+                            x = Ext.fly(cell).getX() + Ext.fly(cell).getWidth() / 2,
+                            y = Ext.fly(cell).getY() + Ext.fly(cell).getHeight() / 2;
 
-                        Ext.testHelper.fireEvent('start', cell.dom, [{ x: x, y: y }]);
-                        Ext.testHelper.fireEvent('end', cell.dom, [{ x: x, y: y }]);
+                        Ext.testHelper.fireEvent('start', cell, [{ x: x, y: y }]);
+                        Ext.testHelper.fireEvent('end', cell, [{ x: x, y: y }]);
 
                         expect(multiSelector.store.getCount()).toBe(selectedCount + 1);
                         expect(multiSelector.searchPopup.isVisible()).toBe(true);
@@ -337,6 +337,45 @@ describe("Ext.view.MultiSelector", function(){
                 node = multiSelector.down('gridpanel').getView().getNode(0);
 
                 expect(node).not.toHaveCls('x-grid-item-selected');
+            });
+        });
+    
+        describe('focus', function () {
+            beforeEach(function () {
+                makeSelector();
+            });
+        
+            it('should move focus to the search field after checkbox selection and scrolling the row out of the buffer', function () {
+                var searchStore, searchGrid, searchField,
+                    cell, x, y;
+            
+                multiSelector.onShowSearch();
+            
+                searchGrid = multiSelector.searchPopup.lookup('searchGrid');
+                searchField = multiSelector.searchPopup.lookup('searchField');
+                searchStore = searchGrid.store;
+            
+                // Search grid's store is set to autoload, so wait for it to kick off a load
+                waitsFor(function () {
+                    return (searchStore instanceof Ext.data.Store) && searchStore.isLoading();
+                }, 'searchStore to kick off a load');
+                runs(function () {
+                    completeRequest();
+                
+                    cell = new Ext.grid.CellContext(searchGrid.view).setPosition(0, 0).getCell(true);
+                    x = Ext.fly(cell).getX() + Ext.fly(cell).getWidth() / 2;
+                    y = Ext.fly(cell).getY() + Ext.fly(cell).getHeight() / 2;
+                
+                    jasmine.fireMouseEvent(cell, 'click', x, y);
+                });
+            
+                jasmine.waitsForScroll(searchGrid.getScrollable(), function (scroller, x, y) {
+                    if (searchField.inputEl.dom === Ext.dom.Element.getActiveElement()) {
+                        return true;
+                    }
+                
+                    scroller.scrollBy(0, 10);
+                }, 'focus to move to the Search field');
             });
         });
     });

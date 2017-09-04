@@ -192,6 +192,7 @@ Ext.define('Ext.Anim', {
         el.un('transitionend', me.onTransitionEnd, me);
 
         style.webkitTransitionDuration = '0ms';
+        style.transitionDuration = '0ms';
         for (property in config.from) {
             if (!config.from.hasOwnProperty(property)) {
                 continue;
@@ -217,6 +218,10 @@ Ext.define('Ext.Anim', {
             style.webkitTransitionDuration = config.duration + 'ms';
             style.webkitTransitionProperty = 'all';
             style.webkitTransitionTimingFunction = config.easing;
+            // for IE
+            style.transitionDuration = config.duration + 'ms';
+            style.transitionProperty = 'all';
+            style.transitionTimingFunction = config.easing;
 
             // Bind our listener that fires after the animation ends
             el.on('transitionend', me.onTransitionEnd, me, {
@@ -261,6 +266,9 @@ Ext.define('Ext.Anim', {
         style.webkitTransitionDuration = null;
         style.webkitTransitionProperty = null;
         style.webkitTransitionTimingFunction = null;
+        style.transitionDuration = '';
+        style.transitionProperty = '';
+        style.transitionTimingFunction = '';
 
         if (config.is3d) {
             el.parent().setStyle({
@@ -311,7 +319,7 @@ Ext.define('Ext.Anim', {
                     config.after = Ext.createInterceptor(config.after, anim.after, anim.scope);
                 }
                 config = Ext.apply({}, config, anim);
-                anim = anim.type;
+                anim = anim.type || 'raw';
             }
 
             if (!Ext.anims[anim]) {
@@ -630,6 +638,14 @@ Ext.define('Ext.Anim', {
                 }
             },
             duration: 500
+        }),
+
+        /**
+         * Raw Animation.
+         * Best used when the other types do not suite your needs. Set `from` and `to` as needed.
+         */
+        raw: new Ext.Anim({
+            duration: 250
         })
     };
 });

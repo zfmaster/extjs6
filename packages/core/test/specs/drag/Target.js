@@ -1,4 +1,6 @@
-describe("Ext.drag.Target", function() {
+/* global Ext, expect, jasmine, spyOn */
+
+topSuite("Ext.drag.Target", ['Ext.drag.*', 'Ext.dom.Element'], function() {
     var helper = Ext.testHelper,
         touchId = 0,
         cursorTrack, source, target,
@@ -2504,25 +2506,6 @@ describe("Ext.drag.Target", function() {
 
     describe("interaction", function() {
         it("should be reachable when the element is also a source with handles", function() {
-            function startHandleDrag(handle) {
-                runs(function() {
-                    // Start a drag in the middle of a handle
-                    var center = getCenter(handle);
-
-                    start({
-                        id: touchId,
-                        x: center[0],
-                        y: center[1]
-                    }, handle);
-                });
-                waitsForAnimation();
-
-            }
-
-            function endHandleDrag(handle) {
-                endDrag(null, null, handle);
-            }
-
             var spy = jasmine.createSpy();
 
             dragEl = dropEl = makeEl({
@@ -2567,10 +2550,10 @@ describe("Ext.drag.Target", function() {
                 }
             });
 
-            var handle = dragEl.down('.foo');
-            startHandleDrag(handle);
-            moveBy(100, 100, handle);
-            endHandleDrag(handle);
+            var handle = Ext.fly(dragEl.down('.foo', true));
+            startDrag(null, null, handle);
+            moveBy(100, 100);
+            endDrag(null, null, handle);
             runsExpectCallCount(spy, 1);
         });
     });

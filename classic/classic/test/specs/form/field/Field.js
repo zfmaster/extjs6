@@ -1,5 +1,11 @@
-describe('Ext.form.field.Field', function () {
-    var ajaxRequestCfg, ct, action, form;
+/* global expect, jasmine, it, spyOn */
+
+topSuite('Ext.form.field.Field',
+    ['Ext.form.field.*', 'Ext.data.validator.*', 'Ext.form.Panel',
+     'Ext.app.ViewController', 'Ext.app.ViewModel'],
+function () {
+    var itNotTouch = jasmine.supportsTouch ? xit : it,
+        ajaxRequestCfg, ct, action, form;
 
     function makeContainer(items) {
         ct = new Ext.container.Container({
@@ -67,7 +73,7 @@ describe('Ext.form.field.Field', function () {
             expect(tf.errorEl.dom.firstChild).not.toBeNull();
         });
 
-        it("should show a quicktip if mouse over the invalid icon", function() {
+        itNotTouch("should show a quicktip if mouse over the invalid icon", function() {
             createForm(true, {
                 title: 'quicktip'
             });
@@ -140,7 +146,7 @@ describe('Ext.form.field.Field', function () {
                 makeField({
                     renderTo: Ext.getBody(),
                     bind: '{theValue}'
-                })
+                });
                 field.getErrors = function() {
                     return [];
                 };
@@ -153,7 +159,7 @@ describe('Ext.form.field.Field', function () {
                 makeField({
                     renderTo: Ext.getBody(),
                     bind: '{theValue}'
-                })
+                });
                 field.getErrors = function() {
                     var v = this.getValue();
                     return v === 'abc' ? ['Invalid'] : [];
@@ -271,7 +277,7 @@ describe('Ext.form.field.Field', function () {
                         result.push('Fail');
                         return result;
                     }
-                })
+                });
                 field.setValue('');
                 expect(field.getErrors()).toEqual(['Must be present', 'Fail']);
             });

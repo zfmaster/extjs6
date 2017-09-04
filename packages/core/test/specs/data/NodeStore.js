@@ -1,4 +1,4 @@
-describe("Ext.data.NodeStore", function() {
+topSuite("Ext.data.NodeStore", function() {
 
     var Model = Ext.define(null, {
         extend: 'Ext.data.TreeModel'

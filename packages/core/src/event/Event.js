@@ -5,13 +5,12 @@
  *
  * Here is a simple example of how you use it:
  *
- *     @example preview
+ *     @example
  *     var container = Ext.create('Ext.Container', {
  *         layout: 'fit',
  *         renderTo: Ext.getBody(),
  *         items: [{
  *             id: 'logger',
- *             styleHtmlContent: true,
  *             html: 'Click somewhere!',
  *             padding: 5
  *         }]
@@ -160,10 +159,25 @@ Ext.define('Ext.event.Event', {
 
     isEvent: true,
 
+    // With these events, the relatedTarget can sometimes be an Object literal in FF.
+    geckoRelatedTargetEvents: {
+        blur: 1,
+        dragenter: 1,
+        dragleave: 1,
+        focus: 1
+    },
+
     statics: {
         resolveTextNode: function(node) {
             return (node && node.nodeType === 3) ? node.parentNode : node;
         },
+
+        /**
+         * @private
+         * An amalgamation of pointerEvents/mouseEvents/touchEvents.
+         * Will be populated in class callback.
+         */
+        gestureEvents: {},
 
         /**
          * @private
@@ -227,10 +241,16 @@ Ext.define('Ext.event.Event', {
          */
         focusEvents: {
             focus: 1,
-            blur: 1,
             focusin: 1,
+            focusenter: 1
+        },
+        
+        /**
+         * @private
+         */
+        blurEvents: {
+            blur: 1,
             focusout: 1,
-            focusenter: 1,
             focusleave: 1
         },
 
@@ -246,6 +266,8 @@ Ext.define('Ext.event.Event', {
             pen: 'pen',
             mouse: 'mouse'
         },
+
+        keyEventRe: /^key/,
 
         keyFlags: {
             CTRL: 'ctrlKey',
@@ -286,16 +308,24 @@ Ext.define('Ext.event.Event', {
             CONTEXT_MENU: '\u2630'
         },
 
+        _hyphenRe: /^[a-z]+\-/i,  // eg "Ctrl-" (instead of "Ctrl+")
+
         /**
          * Convert a key specification in the form eg: "CTRL+ALT+DELETE" to the glyph sequence
          * for use in menu items, eg "⌃⌥⌦".
          * @private
          */
         getKeyId: function(keyName) {
-            keyName = keyName.toUpperCase();
+            // Translate eg: 27 to "ESC"
+            if (typeof keyName === 'number') {
+                keyName = this.keyCodes[keyName];
+            } else {
+                keyName = keyName.toUpperCase();
+            }
 
             var me = this,
-                parts = keyName.split('+'),
+                delim = me._hyphenRe.test(keyName) ? '-' : '+',
+                parts = (keyName === delim) ? [delim] : keyName.split(delim),
                 numModifiers = parts.length - 1,
                 rawKey = parts[numModifiers],
                 result = [],
@@ -317,19 +347,37 @@ Ext.define('Ext.event.Event', {
                 result[eventFlag] = true;
             }
             if (result.ctrlKey) {
-                result.push(me.modifierGlyphs.ctrlKey)
+                result.push(me.modifierGlyphs.ctrlKey);
             }
             if (result.altKey) {
-                result.push(me.modifierGlyphs.altKey)
+                result.push(me.modifierGlyphs.altKey);
             }
             if (result.shiftKey) {
-                result.push(me.modifierGlyphs.shiftKey)
+                result.push(me.modifierGlyphs.shiftKey);
             }
             if (result.metaKey) {
-                result.push(me.modifierGlyphs.metaKey)
+                result.push(me.modifierGlyphs.metaKey);
             }
             result.push(this.specialKeyGlyphs[rawKey] || rawKey);
             return result.join('');
+        },
+        
+        /**
+         * @private
+         */
+        globalTabKeyDown: function(e) {
+            if (e.keyCode === 9) {
+                Ext.event.Event.forwardTab = !e.shiftKey;
+            }
+        },
+        
+        /**
+         * @private
+         */
+        globalTabKeyUp: function(e) {
+            if (e.keyCode === 9) {
+                delete Ext.event.Event.forwardTab;
+            }
         }
     },
 
@@ -355,10 +403,10 @@ Ext.define('Ext.event.Event', {
         me.clientY = coordinateOwner.clientY;
 
         me.target = me.delegatedTarget = resolveTextNode(event.target);
+        me.currentTarget = resolveTextNode(event.currentTarget);
         relatedTarget = event.relatedTarget;
         if (relatedTarget) {
-            // When leaving the document, the relatedTarget can be incorrect in Gecko
-            if (Ext.isGecko && type === 'dragenter' || type === 'dragleave') {
+            if (Ext.isGecko && me.geckoRelatedTargetEvents[type]) {
                 try {
                     me.relatedTarget = resolveTextNode(relatedTarget);
                 } catch(e) {
@@ -391,9 +439,18 @@ Ext.define('Ext.event.Event', {
             me.buttons = 1;
         }
         
-        if (self.focusEvents[type]) {
+        if (self.focusEvents[type] || self.blurEvents[type]) {
             if (self.forwardTab !== undefined) {
                 me.forwardTab = self.forwardTab;
+            }
+            
+            if (self.focusEvents[type]) {
+                me.fromElement = event.relatedTarget;
+                me.toElement = event.target;
+            }
+            else {
+                me.fromElement = event.target;
+                me.toElement = event.relatedTarget;
             }
         }
         else if (type !== 'keydown') {
@@ -406,9 +463,16 @@ Ext.define('Ext.event.Event', {
         if (self.mouseEvents[type]) {
             pointerType = 'mouse';
         } else if (self.clickEvents[type]) {
-            pointerType = self.pointerTypeMap[event.pointerType] || 'mouse';
+            // On pointer events browsers like IE11 and Edge click events have a pointerType
+            // property.  On touch events devices we check if the last touchend event
+            // happened less than a second ago - if so we can reasonably assume that
+            // the click event happened because of a tap on the screen.
+            pointerType = self.pointerTypeMap[event.pointerType] ||
+                (((Ext.now() - Ext.event.publisher.Dom.lastTouchEndTime) < 1000) ? 'touch' : 'mouse');
         } else if (self.pointerEvents[type]) {
-            pointerType = self.pointerTypeMap[event.pointerType];
+            // In electron the mousemove event when the mouse first enters the document
+            // can have a pointerType of "", so default it to mouse if not found in the map.
+            pointerType = self.pointerTypeMap[event.pointerType] || 'mouse';
         } else if (self.touchEvents[type]) {
             pointerType = 'touch';
         }
@@ -452,6 +516,11 @@ Ext.define('Ext.event.Event', {
         return ret;
     },
 
+    getChar: function () {
+        var r = this.which();
+        return String.fromCharCode(r);
+    },
+
     /**
      * Gets the character code for the event.
      * @return {Number}
@@ -464,7 +533,7 @@ Ext.define('Ext.event.Event', {
      * Returns a normalized keyCode for the event.
      * @return {Number} The key code
      */
-    getKey: function(){
+    getKey: function () {
         return this.keyCode || this.charCode;
     },
     
@@ -473,14 +542,73 @@ Ext.define('Ext.event.Event', {
      * @return {String} The key name
      */
     getKeyName: function() {
-        return this.keyCodes[this.keyCode];
+        return this.type === 'keypress' ? String.fromCharCode(this.getCharCode()) : this.keyCodes[this.keyCode];
     },
-    
+
+    /**
+     * Returns the `key` property of a keyboard event.
+     * @return {String}
+     */
+    key: function () {
+        return this.browserEvent.key;
+    },
+
+    which: function () {
+        var me = this,
+            e = me.browserEvent,
+            r = e.which;
+
+        if (r == null) {
+            if (me.self.keyEventRe.test(e.type)) {
+                r = e.charCode || e.keyCode;
+            }
+            else if ((r = e.button) !== undefined) {
+                // L M R button codes (1, 4, 2):
+                r = (r & 1) ? 1 : ((r & 4) ? 2 : ((r & 2) ? 3 : 0));
+            }
+        }
+
+        return r;
+    },
+
+    /**
+     * If this is an event of {@link #type} `paste`, this returns the clipboard data
+     * of the pasesd mime type.
+     *
+     * @param {String} [type='text/plain'] The mime type of the data to extract from the
+     * clipabord.
+     *
+     * Note that this uses non-standard browaer APIs and may not work reliably on all
+     * platforms.
+     * @return {Mixed} The clipboard data.
+     * @since 6.5.1
+     */
+    getClipboardData: function(type) {
+        var clipboardData = this.browserEvent.clipboardData,
+            clipIE = Ext.global.clipboardData, // IE
+            result = null,
+            typeIE;
+
+        type = type || 'text/plain';
+
+        if (clipboardData && clipboardData.getData) {
+            result = clipboardData.getData(type);
+        }
+        else if (clipIE && clipIE.getData) {
+            typeIE = this.ieMimeType[type];
+            if (typeIE) {
+                result = clipIE.getData(typeIE);
+            }
+        }
+
+        return result;
+    },
+
     /**
      * Returns a point object that consists of the object coordinates.
      * @return {Ext.util.Point} point
      */
-    getPoint: function(){
+    getPoint: function () {
         var me = this,
             point = me.point,
             xy;
@@ -768,6 +896,19 @@ Ext.define('Ext.event.Event', {
         return this.preventDefault().stopPropagation();
     },
 
+    // map of events that should fire global mousedown even if stopped
+    mousedownEvents: {
+        mousedown: 1,
+        pointerdown: 1,
+        touchstart: 1
+    },
+    // map of events that should fire global mouseup even if stopped
+    mouseupEvents: {
+        mouseup: 1,
+        pointerup: 1,
+        touchend: 1
+    },
+
     /**
      * Cancels bubbling of the event.
      * @chainable
@@ -776,6 +917,17 @@ Ext.define('Ext.event.Event', {
         var me = this,
             browserEvent = me.browserEvent,
             parentEvent = me.parentEvent;
+
+        // Fire the "unstoppable" global mousedown event
+        // (used for menu hiding, etc)
+        if (me.mousedownEvents[me.type]) {
+            Ext.GlobalEvents.fireMouseDown(me);
+        }
+        // Fire the "unstoppable" global mouseup event
+        // (used for component unpressing, etc)
+        if (me.mouseupEvents[me.type]) {
+            Ext.GlobalEvents.fireMouseUp(me);
+        }
 
         // Set stopped for delegated event listeners.  Dom publisher will check this
         // property during its emulated propagation phase (see doPublish)
@@ -830,7 +982,7 @@ Ext.define('Ext.event.Event', {
 
         me.claimed = true;
 
-        if (parentEvent && !me.hasOwnProperty('isGesture')) {
+        if (parentEvent && !me.isGesture) {
             parentEvent.claimGesture();
         } else {
             // Claiming a gesture should also prevent default browser actions like pan/zoom
@@ -844,8 +996,8 @@ Ext.define('Ext.event.Event', {
     },
 
     /**
-     * Returns true if the target of this event is a child of `el`.  Unless the allowEl
-     * parameter is set, it will return false if if the target is `el`.
+     * Returns true if the target of this event is a child of `el`. If the allowEl
+     * parameter is set to false, it will return false if the target is `el`.
      * Example usage:
      * 
      *     // Handle click on any child of an element
@@ -865,17 +1017,28 @@ Ext.define('Ext.event.Event', {
      * @param {String/HTMLElement/Ext.dom.Element} el The id, DOM element or Ext.Element to check
      * @param {Boolean} [related] `true` to test if the related target is within el instead
      * of the target
-     * @param {Boolean} [allowEl] `true` to also check if the passed element is the target
-     * or related target
+     * @param {Boolean} [allowEl=true] `true` to allow the target to be considered "within" itself. 
+     * `false` to only allow child elements.
      * @return {Boolean}
      */
-    within: function(el, related, allowEl){
+    within: function(el, related, allowEl) {
         var t;
+
         if (el) {
             t = related ? this.getRelatedTarget() : this.getTarget();
         }
 
-        return t ? Ext.fly(el).contains(t) || !!(allowEl && t === Ext.getDom(el)) : false;
+        if (!t || (allowEl === false && t === Ext.getDom(el))) {
+            return false;
+        }
+
+        return Ext.fly(el).contains(t);
+    },
+
+    privates: {
+        ieMimeType: {
+            "text/plain": 'Text'
+        }
     },
 
     deprecated: {
@@ -883,250 +1046,253 @@ Ext.define('Ext.event.Event', {
             methods: {
 
                 /**
+                 * @method getPageX
                  * Gets the x coordinate of the event.
                  * @return {Number}
                  * @deprecated 4.0 use {@link #getX} instead
+                 * @member Ext.event.Event
                  */
                 getPageX: 'getX',
                 
                 /**
+                 * @method getPageY
                  * Gets the y coordinate of the event.
                  * @return {Number}
                  * @deprecated 4.0 use {@link #getY} instead
+                 * @member Ext.event.Event
                  */
                 getPageY: 'getY'
             }
         }
     }
 }, function(Event) {
-    var prototype = Event.prototype,
-        constants = {
-        /** Key constant @type Number */
-        BACKSPACE: 8,
-        /** Key constant @type Number */
-        TAB: 9,
-        /** Key constant @type Number */
-        NUM_CENTER: 12,
-        /** Key constant @type Number */
-        ENTER: 13,
-        /** Key constant @type Number */
-        RETURN: 13,
-        /** Key constant @type Number */
-        SHIFT: 16,
-        /** Key constant @type Number */
-        CTRL: 17,
-        /** Key constant @type Number */
-        ALT: 18,
-        /** Key constant @type Number */
-        PAUSE: 19,
-        /** Key constant @type Number */
-        CAPS_LOCK: 20,
-        /** Key constant @type Number */
-        ESC: 27,
-        /** Key constant @type Number */
-        SPACE: 32,
-        /** Key constant @type Number */
-        PAGE_UP: 33,
-        /** Key constant @type Number */
-        PAGE_DOWN: 34,
-        /** Key constant @type Number */
-        END: 35,
-        /** Key constant @type Number */
-        HOME: 36,
-        /** Key constant @type Number */
-        LEFT: 37,
-        /** Key constant @type Number */
-        UP: 38,
-        /** Key constant @type Number */
-        RIGHT: 39,
-        /** Key constant @type Number */
-        DOWN: 40,
-        /** Key constant @type Number */
-        PRINT_SCREEN: 44,
-        /** Key constant @type Number */
-        INSERT: 45,
-        /** Key constant @type Number */
-        DELETE: 46,
-        /** Key constant @type Number */
-        ZERO: 48,
-        /** Key constant @type Number */
-        ONE: 49,
-        /** Key constant @type Number */
-        TWO: 50,
-        /** Key constant @type Number */
-        THREE: 51,
-        /** Key constant @type Number */
-        FOUR: 52,
-        /** Key constant @type Number */
-        FIVE: 53,
-        /** Key constant @type Number */
-        SIX: 54,
-        /** Key constant @type Number */
-        SEVEN: 55,
-        /** Key constant @type Number */
-        EIGHT: 56,
-        /** Key constant @type Number */
-        NINE: 57,
-        /** Key constant @type Number */
-        A: 65,
-        /** Key constant @type Number */
-        B: 66,
-        /** Key constant @type Number */
-        C: 67,
-        /** Key constant @type Number */
-        D: 68,
-        /** Key constant @type Number */
-        E: 69,
-        /** Key constant @type Number */
-        F: 70,
-        /** Key constant @type Number */
-        G: 71,
-        /** Key constant @type Number */
-        H: 72,
-        /** Key constant @type Number */
-        I: 73,
-        /** Key constant @type Number */
-        J: 74,
-        /** Key constant @type Number */
-        K: 75,
-        /** Key constant @type Number */
-        L: 76,
-        /** Key constant @type Number */
-        M: 77,
-        /** Key constant @type Number */
-        N: 78,
-        /** Key constant @type Number */
-        O: 79,
-        /** Key constant @type Number */
-        P: 80,
-        /** Key constant @type Number */
-        Q: 81,
-        /** Key constant @type Number */
-        R: 82,
-        /** Key constant @type Number */
-        S: 83,
-        /** Key constant @type Number */
-        T: 84,
-        /** Key constant @type Number */
-        U: 85,
-        /** Key constant @type Number */
-        V: 86,
-        /** Key constant @type Number */
-        W: 87,
-        /** Key constant @type Number */
-        X: 88,
-        /** Key constant @type Number */
-        Y: 89,
-        /** Key constant @type Number */
-        Z: 90,
-        /** Key constant @type Number */
-        CONTEXT_MENU: 93,
-        /** Key constant @type Number */
-        NUM_ZERO: 96,
-        /** Key constant @type Number */
-        NUM_ONE: 97,
-        /** Key constant @type Number */
-        NUM_TWO: 98,
-        /** Key constant @type Number */
-        NUM_THREE: 99,
-        /** Key constant @type Number */
-        NUM_FOUR: 100,
-        /** Key constant @type Number */
-        NUM_FIVE: 101,
-        /** Key constant @type Number */
-        NUM_SIX: 102,
-        /** Key constant @type Number */
-        NUM_SEVEN: 103,
-        /** Key constant @type Number */
-        NUM_EIGHT: 104,
-        /** Key constant @type Number */
-        NUM_NINE: 105,
-        /** Key constant @type Number */
-        NUM_MULTIPLY: 106,
-        /** Key constant @type Number */
-        NUM_PLUS: 107,
-        /** Key constant @type Number */
-        NUM_MINUS: 109,
-        /** Key constant @type Number */
-        NUM_PERIOD: 110,
-        /** Key constant @type Number */
-        NUM_DIVISION: 111,
-        /** Key constant @type Number */
-        F1: 112,
-        /** Key constant @type Number */
-        F2: 113,
-        /** Key constant @type Number */
-        F3: 114,
-        /** Key constant @type Number */
-        F4: 115,
-        /** Key constant @type Number */
-        F5: 116,
-        /** Key constant @type Number */
-        F6: 117,
-        /** Key constant @type Number */
-        F7: 118,
-        /** Key constant @type Number */
-        F8: 119,
-        /** Key constant @type Number */
-        F9: 120,
-        /** Key constant @type Number */
-        F10: 121,
-        /** Key constant @type Number */
-        F11: 122,
-        /** Key constant @type Number */
-        F12: 123,
+    var constants = {
+            /** Key constant @type Number */
+            BACKSPACE: 8,
+            /** Key constant @type Number */
+            TAB: 9,
+            /** Key constant @type Number */
+            NUM_CENTER: 12,
+            /** Key constant @type Number */
+            ENTER: 13,
+            /** Key constant @type Number */
+            RETURN: 13,
+            /** Key constant @type Number */
+            SHIFT: 16,
+            /** Key constant @type Number */
+            CTRL: 17,
+            /** Key constant @type Number */
+            ALT: 18,
+            /** Key constant @type Number */
+            PAUSE: 19,
+            /** Key constant @type Number */
+            CAPS_LOCK: 20,
+            /** Key constant @type Number */
+            ESC: 27,
+            /** Key constant @type Number */
+            SPACE: 32,
+            /** Key constant @type Number */
+            PAGE_UP: 33,
+            /** Key constant @type Number */
+            PAGE_DOWN: 34,
+            /** Key constant @type Number */
+            END: 35,
+            /** Key constant @type Number */
+            HOME: 36,
+            /** Key constant @type Number */
+            LEFT: 37,
+            /** Key constant @type Number */
+            UP: 38,
+            /** Key constant @type Number */
+            RIGHT: 39,
+            /** Key constant @type Number */
+            DOWN: 40,
+            /** Key constant @type Number */
+            PRINT_SCREEN: 44,
+            /** Key constant @type Number */
+            INSERT: 45,
+            /** Key constant @type Number */
+            DELETE: 46,
+            /** Key constant @type Number */
+            ZERO: 48,
+            /** Key constant @type Number */
+            ONE: 49,
+            /** Key constant @type Number */
+            TWO: 50,
+            /** Key constant @type Number */
+            THREE: 51,
+            /** Key constant @type Number */
+            FOUR: 52,
+            /** Key constant @type Number */
+            FIVE: 53,
+            /** Key constant @type Number */
+            SIX: 54,
+            /** Key constant @type Number */
+            SEVEN: 55,
+            /** Key constant @type Number */
+            EIGHT: 56,
+            /** Key constant @type Number */
+            NINE: 57,
+            /** Key constant @type Number */
+            A: 65,
+            /** Key constant @type Number */
+            B: 66,
+            /** Key constant @type Number */
+            C: 67,
+            /** Key constant @type Number */
+            D: 68,
+            /** Key constant @type Number */
+            E: 69,
+            /** Key constant @type Number */
+            F: 70,
+            /** Key constant @type Number */
+            G: 71,
+            /** Key constant @type Number */
+            H: 72,
+            /** Key constant @type Number */
+            I: 73,
+            /** Key constant @type Number */
+            J: 74,
+            /** Key constant @type Number */
+            K: 75,
+            /** Key constant @type Number */
+            L: 76,
+            /** Key constant @type Number */
+            M: 77,
+            /** Key constant @type Number */
+            N: 78,
+            /** Key constant @type Number */
+            O: 79,
+            /** Key constant @type Number */
+            P: 80,
+            /** Key constant @type Number */
+            Q: 81,
+            /** Key constant @type Number */
+            R: 82,
+            /** Key constant @type Number */
+            S: 83,
+            /** Key constant @type Number */
+            T: 84,
+            /** Key constant @type Number */
+            U: 85,
+            /** Key constant @type Number */
+            V: 86,
+            /** Key constant @type Number */
+            W: 87,
+            /** Key constant @type Number */
+            X: 88,
+            /** Key constant @type Number */
+            Y: 89,
+            /** Key constant @type Number */
+            Z: 90,
+            /** Key constant @type Number */
+            META: 91,
+            /** Key constant @type Number */
+            CONTEXT_MENU: 93,
+            /** Key constant @type Number */
+            NUM_ZERO: 96,
+            /** Key constant @type Number */
+            NUM_ONE: 97,
+            /** Key constant @type Number */
+            NUM_TWO: 98,
+            /** Key constant @type Number */
+            NUM_THREE: 99,
+            /** Key constant @type Number */
+            NUM_FOUR: 100,
+            /** Key constant @type Number */
+            NUM_FIVE: 101,
+            /** Key constant @type Number */
+            NUM_SIX: 102,
+            /** Key constant @type Number */
+            NUM_SEVEN: 103,
+            /** Key constant @type Number */
+            NUM_EIGHT: 104,
+            /** Key constant @type Number */
+            NUM_NINE: 105,
+            /** Key constant @type Number */
+            NUM_MULTIPLY: 106,
+            /** Key constant @type Number */
+            NUM_PLUS: 107,
+            /** Key constant @type Number */
+            NUM_MINUS: 109,
+            /** Key constant @type Number */
+            NUM_PERIOD: 110,
+            /** Key constant @type Number */
+            NUM_DIVISION: 111,
+            /** Key constant @type Number */
+            F1: 112,
+            /** Key constant @type Number */
+            F2: 113,
+            /** Key constant @type Number */
+            F3: 114,
+            /** Key constant @type Number */
+            F4: 115,
+            /** Key constant @type Number */
+            F5: 116,
+            /** Key constant @type Number */
+            F6: 117,
+            /** Key constant @type Number */
+            F7: 118,
+            /** Key constant @type Number */
+            F8: 119,
+            /** Key constant @type Number */
+            F9: 120,
+            /** Key constant @type Number */
+            F10: 121,
+            /** Key constant @type Number */
+            F11: 122,
+            /** Key constant @type Number */
+            F12: 123,
 
-        /**
-         * The mouse wheel delta scaling factor. This value depends on browser version and OS and
-         * attempts to produce a similar scrolling experience across all platforms and browsers.
-         *
-         * To change this value:
-         *
-         *      Ext.event.Event.prototype.WHEEL_SCALE = 72;
-         *
-         * @type Number
-         * @property
-         */
-        WHEEL_SCALE: (function () {
-            var scale;
+            /**
+             * @property {Number}
+             * The mouse wheel delta scaling factor. This value depends on browser
+             * version and OS and attempts to produce a similar scrolling experience
+             * across all platforms and browsers.
+             *
+             * To change this value:
+             *
+             *      Ext.event.Event.prototype.WHEEL_SCALE = 72;
+             */
+            WHEEL_SCALE: 120 // IE, Opera and other Windows browsers use 120
+        },
+        keyCodes = {},
+        gestureEvents = Event.gestureEvents,
+        prototype = Event.prototype,
+        i, keyName, keyCode, keys, s, scale;
 
-            if (Ext.isGecko) {
-                // Firefox uses 3 on all platforms
-                scale = 3;
-            } else if (Ext.isMac) {
-                // Continuous scrolling devices have momentum and produce much more scroll than
-                // discrete devices on the same OS and browser. To make things exciting, Safari
-                // (and not Chrome) changed from small values to 120 (like IE).
+    if (Ext.isGecko) {
+        // Firefox uses 3 on all platforms
+        constants.WHEEL_SCALE = 3;
+    } else if (Ext.isMac) {
+        // Continuous scrolling devices have momentum and produce much more scroll than
+        // discrete devices on the same OS and browser. To make things exciting, Safari
+        // (and not Chrome) changed from small values to 120 (like IE).
 
-                if (Ext.isSafari && Ext.webKitVersion >= 532.0) {
-                    // Safari changed the scrolling factor to match IE (for details see
-                    // https://bugs.webkit.org/show_bug.cgi?id=24368). The WebKit version where this
-                    // change was introduced was 532.0
-                    //      Detailed discussion:
-                    //      https://bugs.webkit.org/show_bug.cgi?id=29601
-                    //      http://trac.webkit.org/browser/trunk/WebKit/chromium/src/mac/WebInputEventFactory.mm#L1063
-                    scale = 120;
-                } else {
-                    // MS optical wheel mouse produces multiples of 12 which is close enough
-                    // to help tame the speed of the continuous mice...
-                    scale = 12;
-                }
+        if (Ext.isSafari && Ext.webKitVersion >= 532.0) {
+            // Safari changed the scrolling factor to match IE (for details see
+            // https://bugs.webkit.org/show_bug.cgi?id=24368). The WebKit version where this
+            // change was introduced was 532.0
+            //      Detailed discussion:
+            //      https://bugs.webkit.org/show_bug.cgi?id=29601
+            //      http://trac.webkit.org/browser/trunk/WebKit/chromium/src/mac/WebInputEventFactory.mm#L1063
+            scale = 120;
+        } else {
+            // MS optical wheel mouse produces multiples of 12 which is close enough
+            // to help tame the speed of the continuous mice...
+            scale = 12;
+        }
 
-                // Momentum scrolling produces very fast scrolling, so increase the scale factor
-                // to help produce similar results cross platform. This could be even larger and
-                // it would help those mice, but other mice would become almost unusable as a
-                // result (since we cannot tell which device type is in use).
-                scale *= 3;
-            } else {
-                // IE, Opera and other Windows browsers use 120.
-                scale = 120;
-            }
+        // Momentum scrolling produces very fast scrolling, so increase the scale factor
+        // to help produce similar results cross platform. This could be even larger and
+        // it would help those mice, but other mice would become almost unusable as a
+        // result (since we cannot tell which device type is in use).
+        constants.WHEEL_SCALE = 3 * scale;
+    }
 
-            return scale;
-        }())
-    },
-    keyCodes = {},
-    keyName, keyCode;
+    Ext.apply(gestureEvents, Event.mouseEvents);
+    Ext.apply(gestureEvents, Event.pointerEvents);
+    Ext.apply(gestureEvents, Event.touchEvents);
 
     Ext.apply(Event, constants);
     Ext.apply(prototype, constants);
@@ -1144,13 +1310,109 @@ Ext.define('Ext.event.Event', {
         keyCode = constants[keyName];
         keyCodes[keyCode] = keyName;
     }
+
+    Event.keyCodes = prototype.keyCodes = keyCodes;
     
-    prototype.keyCodes = keyCodes;
+    // Classic Event override will install this handler in IE9-
+    if (!Ext.isIE9m) {
+        document.addEventListener('keydown', Event.globalTabKeyDown, true);
+        document.addEventListener('keyup',   Event.globalTabKeyUp,   true);
+    }
     
     /**
+     * @member Ext.event.Event
      * @private
      * Returns the X and Y coordinates of this event without regard to any RTL
      * direction settings.
      */
     prototype.getTrueXY = prototype.getXY;
+
+    if (typeof KeyboardEvent !== 'undefined' && !('key' in KeyboardEvent.prototype)) {
+        prototype._keys = keys = {
+            3: 'Cancel',
+            6: 'Help',
+            8: 'Backspace',
+            9: 'Tab',
+            12: 'Clear',
+            13: 'Enter',
+            16: 'Shift',
+            17: 'Control',
+            18: 'Alt',
+            19: 'Pause',
+            20: 'CapsLock',
+            27: 'Escape',
+            28: 'Convert',
+            29: 'NonConvert',
+            30: 'Accept',
+            31: 'ModeChange',
+            32: ' ',
+            33: 'PageUp',
+            34: 'PageDown',
+            35: 'End',
+            36: 'Home',
+            37: 'ArrowLeft',
+            38: 'ArrowUp',
+            39: 'ArrowRight',
+            40: 'ArrowDown',
+            41: 'Select',
+            42: 'Print',
+            43: 'Execute',
+            44: 'PrintScreen',
+            45: 'Insert',
+            46: 'Delete',
+            48: ['0', ')'],
+            49: ['1', '!'],
+            50: ['2', '@'],
+            51: ['3', '#'],
+            52: ['4', '$'],
+            53: ['5', '%'],
+            54: ['6', '^'],
+            55: ['7', '&'],
+            56: ['8', '*'],
+            57: ['9', '('],
+            91: 'OS',
+            93: 'ContextMenu',
+            144: 'NumLock',
+            145: 'ScrollLock',
+            181: 'VolumeMute',
+            182: 'VolumeDown',
+            183: 'VolumeUp',
+            186: [';', ':'],
+            187: ['=', '+'],
+            188: [',', '<'],
+            189: ['-', '_'],
+            190: ['.', '>'],
+            191: ['/', '?'],
+            192: ['`', '~'],
+            219: ['[', '{'],
+            220: ['\\', '|'],
+            221: [']', '}'],
+            222: ["'", '"'],
+            224: 'Meta',
+            225: 'AltGraph',
+            246: 'Attn',
+            247: 'CrSel',
+            248: 'ExSel',
+            249: 'EraseEof',
+            250: 'Play',
+            251: 'ZoomOut'
+        };
+
+        for (i = 1; i < 25; ++i) {
+            keys[i + 111] = 'F' + i; // F1 - F24
+        }
+        for (i = 0; i < 26; ++i) { // a-z, A-Z
+            keys[i] = [String.fromCharCode(i + 97), String.fromCharCode(i + 65)];
+        }
+
+        prototype.key = function () {
+            var k = keys[this.browserEvent.which || this.keyCode];
+
+            if (k && typeof k !== 'string') {
+                k = k[+this.shiftKey];
+            }
+
+            return k;
+        };
+    }
 });

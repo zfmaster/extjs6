@@ -61,17 +61,17 @@ Ext.define('Ext.sparkline.CanvasCanvas', {
     },
 
     _getContext: function (lineColor, fillColor, lineWidth) {
-        var context = this.el.dom.getContext('2d'),
-            overrides = Ext.sparkline.CanvasCanvas.contextOverrides,
-            name;
+        var context = this.context,
+            overrides, name;
 
-        if (!this.context) {
+        if (!context) {
+            this.context = context = this.el.dom.getContext('2d');
+            overrides = Ext.sparkline.CanvasCanvas.contextOverrides;
             for (name in overrides) {
                 context['$' + name] = context[name];
             }
             Ext.apply(context, overrides);
             context.rtl = this.rtl;
-            this.context = context;
         }
         if (lineColor != null) {
             context.strokeStyle = lineColor;

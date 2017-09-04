@@ -1,4 +1,4 @@
-describe("Ext.form.field.Date", function() {
+topSuite("Ext.form.field.Date", ['Ext.window.Window', 'Ext.layout.container.Anchor'], function() {
     var component, makeComponent;
     
     function spyOnEvent(object, eventName, fn) {
@@ -379,6 +379,20 @@ describe("Ext.form.field.Date", function() {
                 component.setValue(date);
                 expect(component.getValue()).toEqual(date);
             });
+
+            it("should strip off time if the format does not contain a time specification", function() {
+                makeComponent();
+                component.setValue(new Date(2016, 9, 26, 8));   // Date contains a time
+                expect(component.getValue().getHours()).toBe(0);
+            });
+
+            it("should not alter the passed date", function() {
+                var d = new Date(2016, 9, 26, 8);
+                makeComponent();
+                component.setValue(d);
+                expect(component.getValue().getHours()).toBe(0);
+                expect(d.getHours()).toBe(8);
+            });
         });
     });
 
@@ -412,6 +426,41 @@ describe("Ext.form.field.Date", function() {
             clickTrigger();
             
             expect(component.picker.id).toBe(component.id + '-picker');
+        });
+    });
+
+    describe("picker creation", function() {
+        it("should create the picker set to the current date", function() {
+            makeComponent({
+                renderTo: document.body
+            });
+            component.expand();
+
+            expect(component.picker.getValue()).toEqual(Ext.Date.clearTime(new Date()));
+        });
+
+        it("should set the picker to minValue if its greater than the current date", function() {
+            var date = Ext.Date.add(Ext.Date.clearTime(new Date(), Ext.Date.DAY, 5));
+            makeComponent({
+                renderTo: document.body,
+                minValue: date
+            });
+
+            component.expand();
+
+            expect(component.picker.getValue()).toEqual(date);
+        });
+
+        it("should set the picker to maxValue if its lower than the current date", function() {
+            var date = Ext.Date.add(Ext.Date.clearTime(new Date(), Ext.Date.DAY, -5));
+            makeComponent({
+                renderTo: document.body,
+                maxValue: date
+            });
+
+            component.expand();
+
+            expect(component.picker.getValue()).toEqual(date);
         });
     });
 
@@ -695,7 +744,7 @@ describe("Ext.form.field.Date", function() {
                     value: '2010/11/05', //Friday
                     disabledDays: [1, 5] //Mon, Fri
                 });
-                expect(component.getErrors()).toContain(component.disabledDaysText);     
+                expect(component.getErrors()).toContain(component.disabledDaysText);
             });
 
             describe("setDisabledDays method", function() {
@@ -912,5 +961,3 @@ describe("Ext.form.field.Date", function() {
         });
     });
 });
-
-

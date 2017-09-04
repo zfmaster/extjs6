@@ -37,7 +37,9 @@ Ext.define('ExecDashboard.view.main.Main', {
         },
         tools: [{
             type: 'gear',
-            plugins: 'responsive',
+            plugins: {
+                responsive: true
+            },
             width: 120,
             margin: '0 0 0 0',
             handler: 'onSwitchTool',
@@ -75,7 +77,9 @@ Ext.define('ExecDashboard.view.main.Main', {
 
     defaults: {
         tabConfig: {
-            plugins: 'responsive',
+            plugins: {
+                responsive: true
+            },
             responsiveConfig: {
                 wide: {
                     iconAlign: 'left',

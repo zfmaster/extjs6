@@ -1,3 +1,6 @@
+/**
+ * @class Ext.event.publisher.Focus
+ */
 Ext.define(null, {
     override: 'Ext.event.publisher.Focus',
     

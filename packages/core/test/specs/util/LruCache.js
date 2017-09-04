@@ -1,4 +1,4 @@
-describe("Ext.util.LruCache", function(){
+topSuite("Ext.util.LruCache", function(){
     var cache,
         obj1  = {objIdx:1},
         obj2  = {objIdx:2},

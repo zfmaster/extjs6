@@ -19,8 +19,9 @@
  * - {@link Ext.data.proxy.Direct Direct} - uses {@link Ext.direct.Manager} to send requests
  *
  * Proxies operate on the principle that all operations performed are either Create, Read, Update or Delete. These four
- * operations are mapped to the methods {@link #create}, {@link #read}, {@link #update} and {@link #erase}
- * respectively. Each Proxy subclass implements these functions.
+ * operations are mapped to the methods {@link #method!create}, {@link #method!read},
+ * {@link #method!update} and {@link #method!erase} respectively. Each Proxy subclass
+ * implements these functions.
  *
  * The CRUD methods each expect an {@link Ext.data.operation.Operation Operation} object as the sole argument. The Operation
  * encapsulates information about the action the Store wishes to perform, the {@link Ext.data.Model model} instances
@@ -287,9 +288,18 @@ Ext.define('Ext.data.proxy.Proxy', {
      * @param {Object} [options.scope] The scope in which to execute any callbacks (i.e. the `this` object inside
      * the callback, success and/or failure functions). Defaults to the proxy.
      *
+     * @param {Object} [listeners] (deprecated) If `options` is the `operations`, this
+     * parameter is the listeners. Instead of passing these two arguments, the proper form
+     * is to pass them as:
+     *
+     *      batch({
+     *          operations: ...
+     *          listeners: ...
+     *      });
+     *
      * @return {Ext.data.Batch} The newly created Batch
      */
-    batch: function(options, /* deprecated */listeners) {
+    batch: function (options, listeners) {
         var me = this,
             useBatch = me.getBatchActions(),
             batch,

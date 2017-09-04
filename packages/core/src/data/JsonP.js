@@ -1,6 +1,4 @@
 /**
- * @class Ext.data.JsonP
- * @singleton
  * This class is used to create JSONP requests. JSONP is a mechanism that allows for making
  * requests for data cross domain. JSONP is basically a `<script>` node with the source of the url executing
  * a function that was created by Ext.data.JsonP. Once the resource has loaded, the `<script>` node will be destroyed.
@@ -39,12 +37,7 @@
  * More information is available <a href="http://en.wikipedia.org/wiki/JSONP">here</a>. You can also use <a href="http://www.jsonplint.com">JSONPLint</a> to test your JSONP.
  */
 Ext.define('Ext.data.JsonP', {
-
-    /* Begin Definitions */
-
     singleton: true,
-
-    /* End Definitions */
 
     /**
      * Number of requests done so far.
@@ -93,26 +86,25 @@ Ext.define('Ext.data.JsonP', {
      * Makes a JSONP request.
      * @param {Object} options An object which may contain the following properties. Note that options will
      * take priority over any defaults that are specified in the class.
-     * <ul>
-     * <li><b>url</b> : String <div class="sub-desc">The URL to request.</div></li>
-     * <li><b>params</b> : Object (Optional)<div class="sub-desc">An object containing a series of
-     * key value pairs that will be sent along with the request.</div></li>
-     * <li><b>timeout</b> : Number (Optional) <div class="sub-desc">See {@link #timeout}</div></li>
-     * <li><b>callbackKey</b> : String (Optional) <div class="sub-desc">See {@link #callbackKey}</div></li>
-     * <li><b>callbackName</b> : String (Optional) <div class="sub-desc">The function name to use for this request.
-     * By default this name will be auto-generated: Ext.data.JsonP.callback1, Ext.data.JsonP.callback2, etc.
-     * Setting this option to "my_name" will force the function name to be Ext.data.JsonP.my_name.
-     * Use this if you want deterministic behavior, but be careful - the callbackName should be different
-     * in each JsonP request that you make.</div></li>
-     * <li><b>disableCaching</b> : Boolean (Optional) <div class="sub-desc">See {@link #disableCaching}</div></li>
-     * <li><b>disableCachingParam</b> : String (Optional) <div class="sub-desc">See {@link #disableCachingParam}</div></li>
-     * <li><b>success</b> : Function (Optional) <div class="sub-desc">A function to execute if the request succeeds.</div></li>
-     * <li><b>failure</b> : Function (Optional) <div class="sub-desc">A function to execute if the request fails.</div></li>
-     * <li><b>callback</b> : Function (Optional) <div class="sub-desc">A function to execute when the request
-     * completes, whether it is a success or failure.</div></li>
-     * <li><b>scope</b> : Object (Optional)<div class="sub-desc">The scope in
-     * which to execute the callbacks: The "this" object for the callback function. Defaults to the browser window.</div></li>
-     * </ul>
+     * @param {String} options.url The URL to request.
+     * @param {Object} options.params (optional) An object containing a series of key value pairs that
+     * will be sent along with the request.
+     * @param {Number} options.timeout (optional) See {@link #timeout}
+     * @param {String} options.callbackKey (optional) See {@link #callbackKey}
+     * @param {String} options.callbackName (optional) The function name to use for this request. By
+     * default this name will be auto-generated: Ext.data.JsonP.callback1, Ext.data.JsonP.callback2, etc.
+     * Setting this option to "my_name" will force the function name to be Ext.data.JsonP.my_name. Use
+     * this if you want deterministic behavior, but be careful - the callbackName should be different
+     * in each JsonP request that you make.
+     * @param {Boolean} options.disableCaching (optional) See {@link #disableCaching}
+     * @param {String} options.disableCachingParam (optional) See {@link #disableCachingParam}
+     * @param {Function} options.success (optional) A function to execute if the request succeeds.
+     * @param {Function} options.failure (optional) A function to execute if the request fails.
+     * @param {Function} options.callback (optional) A function to execute when the request completes,
+     * whether it is a success or failure.
+     * @param {Object} options.scope (optional) The scope in which to execute the callbacks: The "this"
+     * object for the callback function. Defaults to the browser window.
+     *
      * @return {Object} request An object containing the request details.
      */
     request: function(options) {
@@ -165,9 +157,19 @@ Ext.define('Ext.data.JsonP', {
         }
 
         me.setupErrorHandling(request);
-        me[callbackName] = Ext.bind(me.handleResponse, me, [request], true);
+        me[callbackName] = me.bindResponse(request);
         me.loadScript(request);
         return request;
+    },
+
+    bindResponse: function (request) {
+        var me = this;
+
+        return function (result) {
+            Ext.elevate(function () {
+                me.handleResponse(result, request);
+            });
+        };
     },
 
     /**
@@ -249,16 +251,15 @@ Ext.define('Ext.data.JsonP', {
      * @param {Object} request The request
      */
     handleResponse: function(result, request){
+        var success = true;
 
-        var success = true,
-            globalEvents = Ext.GlobalEvents;
+        Ext.undefer(request.timeout);
 
-        if (request.timeout) {
-            clearTimeout(request.timeout);
-        }
         delete this[request.callbackName];
         delete this.requests[request.id];
+
         this.cleanupErrorHandling(request);
+
         Ext.fly(request.script).destroy();
 
         if (request.errorType) {
@@ -267,11 +268,8 @@ Ext.define('Ext.data.JsonP', {
         } else {
             Ext.callback(request.success, request.scope, [result]);
         }
-        Ext.callback(request.callback, request.scope, [success, result, request.errorType]);
-        if (globalEvents.hasListeners.idle) {
-            globalEvents.fireEvent('idle');
-        }
 
+        Ext.callback(request.callback, request.scope, [success, result, request.errorType]);
     },
 
     /**

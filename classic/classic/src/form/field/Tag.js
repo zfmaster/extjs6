@@ -4,34 +4,34 @@
  * within the picker itself. Users may easily add or remove `tags` from the 
  * display value area.
  *
- *       @example
- *       var shows = Ext.create('Ext.data.Store', {
- *           fields: ['id','show'],
- *           data: [
- *               {id: 0, show: 'Battlestar Galactica'},
- *               {id: 1, show: 'Doctor Who'},
- *               {id: 2, show: 'Farscape'},
- *               {id: 3, show: 'Firefly'},
- *               {id: 4, show: 'Star Trek'},
- *               {id: 5, show: 'Star Wars: Christmas Special'}
- *           ]
- *        });
+ *     @example
+ *     var shows = Ext.create('Ext.data.Store', {
+ *         fields: ['id','show'],
+ *         data: [
+ *             {id: 0, show: 'Battlestar Galactica'},
+ *             {id: 1, show: 'Doctor Who'},
+ *             {id: 2, show: 'Farscape'},
+ *             {id: 3, show: 'Firefly'},
+ *             {id: 4, show: 'Star Trek'},
+ *             {id: 5, show: 'Star Wars: Christmas Special'}
+ *         ]
+ *     });
  *
- *       Ext.create('Ext.form.Panel', {
- *           renderTo: Ext.getBody(),
- *           title: 'Sci-Fi Television',
- *           height: 200,
- *           width: 500,
- *           items: [{
- *               xtype: 'tagfield',
- *               fieldLabel: 'Select a Show',
- *               store: shows,
- *               displayField: 'show',
- *               valueField: 'id',
- *               queryMode: 'local',
- *               filterPickList: true
- *           }]
- *       });  
+ *     Ext.create('Ext.form.Panel', {
+ *         renderTo: Ext.getBody(),
+ *         title: 'Sci-Fi Television',
+ *         height: 200,
+ *         width: 500,
+ *         items: [{
+ *             xtype: 'tagfield',
+ *             fieldLabel: 'Select a Show',
+ *             store: shows,
+ *             displayField: 'show',
+ *             valueField: 'id',
+ *             queryMode: 'local',
+ *             filterPickList: true
+ *         }]
+ *     });
  *       
  * ### History
  *
@@ -100,7 +100,7 @@ Ext.define('Ext.form.field.Tag', {
     tipTpl: undefined,
 
     /**
-     * @cfg
+     * @cfg {Boolean} forceSelection
      * @inheritdoc
      *
      * When {@link #forceSelection} is `false`, new records can be created by the user as they
@@ -208,13 +208,13 @@ Ext.define('Ext.form.field.Tag', {
     growMax: false,
 
     /**
+     * @cfg {Boolean} simulatePlaceholder
      * @private
-     * @cfg
      */
     simulatePlaceholder: true,
 
     /**
-     * @cfg
+     * @cfg {Boolean} selectOnFocus
      * @inheritdoc
      */
     selectOnFocus: true,
@@ -233,57 +233,69 @@ Ext.define('Ext.form.field.Tag', {
      * only supports vertical growth.
      */
     
-    //<locale>
     /**
-     * @cfg {String} ariaHelpText The text to be announced by screen readers when input element is
+     * @cfg {String} ariaHelpText
+     * The text to be announced by screen readers when input element is
      * focused. This text is used when this component is configured not to allow creating
      * new values; when {@link #createNewOnEnter} is set to `true`, {@link #ariaHelpTextEditable}
      * will be used instead.
+     * @locale
      */
     ariaHelpText: 'Use Up and Down arrows to view available values, Enter to select. ' +
                   'Use Left and Right arrows to view selected values, Delete key to deselect.',
     
     /**
-     * @cfg {String} ariaHelpTextEditable The text to be announced by screen readers when
+     * @cfg {String} ariaHelpTextEditable
+     * The text to be announced by screen readers when
      * input element is focused. This text is used when {@link #createNewOnEnter} is set to `true`;
      * see also {@link #ariaHelpText}.
+     * @locale
      */
     ariaHelpTextEditable: 'Use Up and Down arrows to view available values, Enter to select. ' +
                           'Type and press Enter to create a new value. ' +
                           'Use Left and Right arrows to view selected values, Delete key to deselect.',
     
     /**
-     * @cfg {String} ariaSelectedText Template text for announcing selected values to screen
+     * @cfg {String} ariaSelectedText
+     * Template text for announcing selected values to screen
      * reader users. '{0}' will be replaced with the list of selected values.
+     * @locale
      */
     ariaSelectedText: 'Selected {0}.',
     
     /**
-     * @cfg {String} ariaDeselectedText Template text for announcing deselected values to
+     * @cfg {String} ariaDeselectedText
+     * Template text for announcing deselected values to
      * screen reader users. '{0}' will be replaced with the list of values removed from
      * selected list.
+     * @locale
      */
     ariaDeselectedText: '{0} removed from selection.',
     
     /**
-     * @cfg {String} ariaNoneSelectedText Text to announce to screen reader users when no
+     * @cfg {String} ariaNoneSelectedText
+     * Text to announce to screen reader users when no
      * values are currently selected. This text is used when Tag field is focused.
+     * @locale
      */
     ariaNoneSelectedText: 'No value selected.',
     
     /**
-     * @cfg {String} ariaSelectedListLabel Label to be announced to screen reader users
+     * @cfg {String} ariaSelectedListLabel
+     * Label to be announced to screen reader users
      * when they use Left and Right arrow keys to navigate the list of currently selected values.
+     * @locale
      */
     ariaSelectedListLabel: 'Selected values',
     
     /**
-     * @cfg {String} ariaAvailableListLabel Label to be announced to screen reader users
+     * @cfg {String} ariaAvailableListLabel
+     * Label to be announced to screen reader users
      * when they use Up and Down arrow keys to navigate the list of available values.
+     * @locale
      */
     ariaAvailableListLabel: 'Available values',
-    //</locale>
-    
+
     /**
      * @event autosize
      * Fires when the **{@link #autoSize}** function is triggered and the field is resized according to the
@@ -294,8 +306,8 @@ Ext.define('Ext.form.field.Tag', {
      */
 
     /**
+     * @cfg fieldSubTpl
      * @private
-     * @cfg
      */
     fieldSubTpl: [
         // listWrapper div is tabbable in Firefox, for some unfathomable reason
@@ -312,7 +324,7 @@ Ext.define('Ext.form.field.Tag', {
                     '<tpl if="tabIdx != null">tabindex="{tabIdx}" </tpl>',
                     '<tpl if="disabled"> disabled="disabled"</tpl>',
                     '<tpl foreach="inputElAriaAttributes"> {$}="{.}"</tpl>',
-                    'class="' + Ext.baseCSSPrefix + 'tagfield-input-field {inputElCls} {emptyCls}" autocomplete="off">',
+                    'class="' + Ext.baseCSSPrefix + 'tagfield-input-field {inputElCls} {emptyCls} {fixCls}" autocomplete="off">',
                 '</li>',
             '</ul>',
             '<ul id="{cmpId}-ariaList" data-ref="ariaList" role="listbox"',
@@ -674,6 +686,13 @@ Ext.define('Ext.form.field.Tag', {
         return data;
     },
 
+    onRender: function(container, index) {
+        var me = this;
+
+        me.callParent([container, index]);
+        me.emptyClsElements.push(me.listWrapper, me.placeholderLabel);
+    },
+
     afterRender: function() {
         var me = this,
             inputEl = me.inputEl,
@@ -690,8 +709,7 @@ Ext.define('Ext.form.field.Tag', {
         me.applyAriaListMarkup();
         me.applyAriaSelectedText();
 
-        me.callParent(arguments);
-        me.emptyClsElements.push(me.listWrapper, me.placeholderLabel);
+        me.callParent();
     },
 
     findRecord: function(field, value) {
@@ -981,7 +999,9 @@ Ext.define('Ext.form.field.Tag', {
     // Prevent item from receiving focus.
     // See EXTJS-17686.
     onItemMouseDown: function(e) {
-        e.preventDefault();
+        if (e.target !== this.inputEl.dom) {
+            e.preventDefault();
+        }
     },
 
     /**

@@ -178,7 +178,8 @@ Ext.define('Ext.data.schema.Role', {
         
         me.onStoreCreate(store, session, id);
 
-        if (foreignKeyName || (isMany && session)) {
+        // Want to run these in all cases for M-1, only with a session M-M
+        if (!isMany || session) {
             store.on({
                 scope: me,
                 add: 'onAddToMany',
@@ -206,13 +207,14 @@ Ext.define('Ext.data.schema.Role', {
         var me = this,
             storeName = me.getStoreName(),
             store = inverseRecord[storeName],
+            hadStore = store,
             session = inverseRecord.session,
             load = options && options.reload,
             source = inverseRecord.$source,
             isComplete = false,
             phantom = false,
             hadSourceStore, args, i, len, raw, 
-            rec, sourceStore, hadRecords;
+            rec, sourceStore, hadRecords, isLoading;
 
         if (!store) {
             if (session) {
@@ -290,8 +292,13 @@ Ext.define('Ext.data.schema.Role', {
             }
         }
 
-        if (load && !store.isLoading()) {
-            store.load();
+        isLoading = store.isLoading();
+        if (load) {
+            if (!isLoading) {
+                store.load();
+            }
+        } else if (hadStore && records && !isLoading) {
+            store.loadData(records);
         }
 
         return store;

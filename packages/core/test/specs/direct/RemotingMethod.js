@@ -1,4 +1,4 @@
-describe("Ext.direct.RemotingMethod", function() {
+topSuite("Ext.direct.RemotingMethod", ['Ext.direct.*'], function() {
     var cb  = jasmine.createSpy('callback'),
         opt = { timeout: 10 },
         method;

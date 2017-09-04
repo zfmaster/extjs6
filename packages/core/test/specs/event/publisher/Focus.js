@@ -1,4 +1,4 @@
-describe("Ext.event.publisher.Focus", function() {
+topSuite("Ext.event.publisher.Focus", function() {
     var body = document.body,
         fired = false,
         a, b, c;

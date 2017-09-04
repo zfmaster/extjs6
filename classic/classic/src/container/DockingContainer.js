@@ -114,6 +114,11 @@ Ext.define('Ext.container.DockingContainer', {
 
         for (; i < length; i++) {
             item = items[i];
+            
+            if (item.isDetached) {
+                item.reattachToBody();
+            }
+
             item.dock = item.dock || 'top';
             if (item.dock === 'left' || item.dock === 'right') {
                 me.horizontalDocks++;
@@ -148,7 +153,9 @@ Ext.define('Ext.container.DockingContainer', {
 
         if (dockedItems) {
             while ((c = dockedItems.first())) {
-                this.removeDocked(c, true);
+                this.removeDocked(c, {
+                    destroy: true
+                });
             }
         }
     },
@@ -225,6 +232,11 @@ Ext.define('Ext.container.DockingContainer', {
         return dockedItems;
     },
 
+    /**
+     * @protected
+     * Initializes an Item Collection for docked items to be inserted into.  If items
+     * already exist, they will be added to the new collection.
+     */
     initDockingItems: function() {
         var me = this,
             items = me.dockedItems;
@@ -269,17 +281,31 @@ Ext.define('Ext.container.DockingContainer', {
     /**
      * Removes the docked item from the panel.
      * @param {Ext.Component} item The Component to remove.
-     * @param {Boolean} autoDestroy (optional) Destroy the component after removal.
+     * @param {Boolean/Object} [flags] Pass `true` to destroy the item or an
+     * object with multiple options. If not passed, {@link #cfg!autoDestroy} will
+     * determine if the item is destroyed.
+     * @param {Boolean} [flags.destroy] Pass `true` to destroy the item.
+     * @param {Boolean} [flags.detach] Pass `true` to put the item in the
+     * {@link Ext#getDetachedBody detachedBody element}.
      */
-    removeDocked: function(item, autoDestroy) {
+    removeDocked: function(item, flags) {
         var me = this,
-            layout,
-            hasLayout;
+            layout, hasLayout, doDestroy, doDetach;
 
-        autoDestroy = autoDestroy === true || (autoDestroy !== false && me.autoDestroy);
         if (!me.dockedItems.contains(item)) {
             return item;
         }
+
+        // Ensure the flags are set correctly 
+        if (flags == null) {
+            doDestroy = me.autoDestroy;
+        } else if (typeof flags === 'boolean') {
+            doDestroy = flags;
+        } else {
+            doDestroy = ('destroy' in flags) && flags.destroy;
+            doDetach = ('detach' in flags) && flags.detach;
+        }
+
         if (item.dock === 'left' || item.dock === 'right') {
             me.horizontalDocks--;
         }
@@ -293,14 +319,22 @@ Ext.define('Ext.container.DockingContainer', {
 
         me.dockedItems.remove(item);
         // destroying flag is true if the removal is taking place as part of destruction, OR if removal is intended to *cause* destruction
-        item.onRemoved(item.destroying || autoDestroy);
+        if (!item.destroyed) {
+            item.onRemoved(item.destroying || doDestroy);
+        }
+
         me.onDockedRemove(item);
 
-        if (autoDestroy) {
+        if (doDestroy) {
             item.destroy();
-        } else if (hasLayout) {
-            // not destroying, make any layout related removals
-            layout.afterRemove(item);
+        } else if (!me.destroyed) {
+            if (hasLayout) {
+                // not destroying, make any layout related removals
+                layout.afterRemove(item);
+            }
+            if (doDetach && item.rendered) {
+                item.detachFromBody();
+            }
         }
         
         if (me.hasListeners.dockedremove) {
@@ -327,18 +361,15 @@ Ext.define('Ext.container.DockingContainer', {
             Ext.suspendLayouts();
         }
 
-        me.removeDocked(item, false);
+        me.removeDocked(item, {
+            destroy: false,
+            detach: true
+        });
+
         item.dock = side;
         me.addDocked(item);
 
         if (me.rendered) {
-            if (item.frame) {
-                // temporarily append the item to the detached body while updating framing
-                // elements.  This is so the framing els won't get detected as garbage
-                // by element.getById
-                Ext.getDetachedBody().appendChild(item.el);
-                item.updateFrame();
-            }
             Ext.resumeLayouts(true);
         }
     },

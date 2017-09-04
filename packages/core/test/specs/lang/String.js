@@ -1,4 +1,4 @@
-describe("Ext.String", function() {
+topSuite("Ext.String", function() {
     
     var S = Ext.String;
 

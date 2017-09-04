@@ -394,6 +394,7 @@ TestAction.multiply(
      * @private
      * @param {String} action The action being executed
      * @param {Object} method The method being executed
+     * @param {Object} args The argument to pass to the request
      */
     configureRequest: function(action, method, args){
         var me = this,
@@ -409,7 +410,7 @@ TestAction.multiply(
             action: action,
             method: method.name,
             data: data,
-            callback: scope && Ext.isFunction(callback) ? Ext.Function.bind(callback, scope) : callback
+            callback: scope && Ext.isFunction(callback) ? callback.bind(scope) : callback
         });
 
         if (me.fireEvent('beforecall', me, transaction, method) !== false) {

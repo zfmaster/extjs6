@@ -75,6 +75,7 @@ Ext.define('Ext.sparkline.Bar', {
         chartRangeClip: false,
         
         /**
+         * @cfg {Object}
          * @inheritdoc Ext.sparkline.TriState
          */
         colorMap: null
@@ -120,7 +121,7 @@ Ext.define('Ext.sparkline.Bar', {
                 me.colorMapByValue = new Ext.sparkline.RangeMap(colorMap);
             }
         }
-        me.applyConfigChange();
+        me.updateConfigChange();
         return colorMap;
     },
 

@@ -1,7 +1,8 @@
 // HasOne is not a real class, but is an alternate way of declaring OneToOne.
 // The purpose of these tests is to check that they set everything up correctly,
 // functionality tested in OneToOne.
-describe("Ext.data.schema.HasOne", function() {
+// false in dependencies means don't attempt to load "Ext.data.schema.HasOne"
+topSuite("Ext.data.schema.HasOne", [false, 'Ext.data.ArrayStore'], function() {
 
     var Key, User, Avatar;
 

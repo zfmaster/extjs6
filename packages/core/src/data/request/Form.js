@@ -116,6 +116,7 @@ Ext.define('Ext.data.request.Form', {
         });
 
         document.body.appendChild(frameDom);
+        document.body.appendChild(form);
 
         // This is required so that IE doesn't pop the response up in a new window.
         if (document.frames) {
@@ -159,6 +160,7 @@ Ext.define('Ext.data.request.Form', {
         });
 
         form.submit();
+        document.body.removeChild(form);
 
         // Restore form to previous settings
         Ext.fly(form).set(buf);

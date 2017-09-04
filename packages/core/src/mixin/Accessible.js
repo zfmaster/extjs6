@@ -64,6 +64,19 @@ Ext.define('Ext.mixin.Accessible', {
      * @private
      */
     
+    /**
+     * @property {String} [ariaEl='el'] The name of the Component property that holds
+     * a reference to the Element that serves as that Component's ARIA element.
+     * This property will be replaced with the actual Element reference after rendering.
+     *
+     * Most of the simple Components will have their main element as ariaEl.
+     *
+     * @private
+     * @readonly
+     * @since 6.0.0
+     */
+    ariaEl: 'el',
+    
     privates: {
         /**
          * Find component(s) that label or describe this component,
@@ -77,24 +90,24 @@ Ext.define('Ext.mixin.Accessible', {
          * @return {Ext.Element} Element id string, or null
          * @private
          */
-        getAriaLabelEl: function(selector) {
+        getAriaLabelEl: function(reference) {
             var ids = [],
                 refHolder, i, len, cmp, result;
             
-            if (selector) {
-                if (Ext.isFunction(selector)) {
-                    return selector.call(this);
+            if (reference) {
+                if (Ext.isFunction(reference)) {
+                    return reference.call(this);
                 }
                 else {
-                    if (!Ext.isArray(selector)) {
-                        selector = [selector];
+                    if (!Ext.isArray(reference)) {
+                        reference = [reference];
                     }
                     
                     refHolder = this.lookupReferenceHolder();
                     
                     if (refHolder) {
-                        for (i = 0, len = selector.length; i < len; i++) {
-                            cmp = refHolder.lookupReference(selector[i]);
+                        for (i = 0, len = reference.length; i < len; i++) {
+                            cmp = refHolder.lookupReference(reference[i]);
                             
                             if (cmp) {
                                 ids.push(cmp.ariaEl.id);

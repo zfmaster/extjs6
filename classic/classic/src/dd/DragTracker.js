@@ -144,7 +144,7 @@ Ext.define('Ext.dd.DragTracker', {
      */
 
     /**
-     * @event beforestart
+     * @event beforedragstart
      * @param {Object} this
      * @param {Object} e event object
      */
@@ -199,17 +199,27 @@ Ext.define('Ext.dd.DragTracker', {
     initEl: function(el) {
         var me = this,
             delegate = me.delegate,
-            elCmp,
-            touchScrollable;
+            elCmp, touchScrollable, unselectable;
 
         me.el = el = Ext.get(el);
 
         // Disable drag to select. We must take over any drag selecting gestures.
-        el.addCls(Ext.baseCSSPrefix + 'unselectable');
 
         // The delegate option may also be an element on which to listen
-        if (delegate && delegate.isElement) {
-            me.handle = delegate;
+        if (delegate) {
+            if (delegate.isElement) {
+                me.handle = delegate;
+                unselectable = delegate;
+            }
+        } else {
+            unselectable = el;
+        }
+
+        // Only make the element unselectable if we have a known delegate, or this item is to be dragged.
+        // Otherwise it's too wide of a net to cast, callers will need to apply unselectable to the appropriate
+        // delegated elements to get the same effect.
+        if (unselectable) {
+            unselectable.addCls(Ext.baseCSSPrefix + 'unselectable');
         }
 
         // If delegate specified an actual element to listen on, we do not use the delegate listener option
@@ -218,7 +228,7 @@ Ext.define('Ext.dd.DragTracker', {
         // See if the handle or delegates are inside the scrolling part of the component.
         // If they are, we will need to use longpress to trigger the dragstart.
         if (Ext.supports.Touch) {
-            elCmp = Ext.ComponentManager.fromElement(el);
+            elCmp = Ext.Component.from(el);
             touchScrollable = elCmp && elCmp.getScrollable();
             if (touchScrollable) {
                 elCmp = touchScrollable.getElement();
@@ -294,12 +304,10 @@ Ext.define('Ext.dd.DragTracker', {
     },
 
     destroy: function() {
-        var me = this;
-
         // endDrag has a mandatory event parameter
-        me.endDrag({});
-        me.el = me.handle = me.onBeforeStart = me.onStart = me.onDrag = me.onEnd = me.onCancel = null;
-        me.callParent();
+        this.endDrag({});
+        Ext.destroy(this.keyNav);
+        this.callParent();
     },
 
     onWindowTouchStart: function(e) {
@@ -369,8 +377,9 @@ Ext.define('Ext.dd.DragTracker', {
             // we need to track on the parentEvent if it exists.
             trackEvent = e.parentEvent || e;
 
+        // Ignore all mousedown events that were not started by the primary button
         // If this is disabled, or the mousedown has been processed by an upstream DragTracker, return
-        if (me.disabled || trackEvent.dragTracked) {
+        if (e.button || me.disabled || trackEvent.dragTracked) {
             return;
         }
 
@@ -520,7 +529,7 @@ Ext.define('Ext.dd.DragTracker', {
     clearStart : function() {
         var timer = this.timer;
         if (timer) {
-            clearTimeout(timer);
+            Ext.undefer(timer);
             this.timer = null;
         }
     },
@@ -546,7 +555,7 @@ Ext.define('Ext.dd.DragTracker', {
      * @param {Ext.event.Event} e The event object
      * @template
      */
-    onStart : function(xy) {
+    onStart : function(e) {
 
     },
 
@@ -640,7 +649,7 @@ Ext.define('Ext.dd.DragTracker', {
      *    based upon the current mouse position, and then coerced into the constrainRegion. The returned
      *    mouse position is then adjusted by the same delta as was used to coerce the region.
      *
-     * @param {String} constrainMode (Optional) If omitted the true mouse position is returned. May be passed
+     * @param {String} constrain (Optional) If omitted the true mouse position is returned. May be passed
      * as `point` or `dragTarget`. See above.
      * @return {Number[]} The `X, Y` offset from the mousedown point, optionally constrained.
      */

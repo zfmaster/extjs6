@@ -1,4 +1,4 @@
-describe("Ext.button.Segmented", function() {
+topSuite("Ext.button.Segmented", ['Ext.app.ViewModel'], function() {
     var button;
 
     function makeButton(cfg) {

@@ -49,16 +49,15 @@ Ext.define('Ext.tab.Tab', {
      */
     closable: true,
 
-    //<locale>
+    // The wording is chosen to be less confusing to blind users.
     /**
      * @cfg {String} [closeText="removable"]
      * The accessible text label for the close button link to be announced by screen readers
      * when the tab is focused. This text does not appear visually and is only used when
      * {@link #cfg-closable} is `true`.
+     * @locale
      */
-    // The wording is chosen to be less confusing to blind users.
     closeText: 'removable',
-    //</locale>
 
     /**
      * @property {Boolean} active

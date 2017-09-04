@@ -91,7 +91,8 @@ Ext.define('Ext.selection.RowModel', {
     isRowModel: true,
 
     /**
-     * @inheritdoc
+     * @cfg {Boolean} deselectOnContainerClick
+     * @inheritdoc Ext.mixin.Selectable#cfg!deselectOnContainerClick
      */
     deselectOnContainerClick: false,
 

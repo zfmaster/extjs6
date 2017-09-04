@@ -1,3 +1,6 @@
+/**
+ * @class Ext.form.field.Radio
+ */
 Ext.define(null, {
     override: 'Ext.form.field.Radio',
     

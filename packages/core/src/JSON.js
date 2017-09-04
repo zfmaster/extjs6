@@ -111,7 +111,7 @@ var me = this,
             val = o[i];
             if (!useHasOwn || o.hasOwnProperty(i)) {
                 // To match JSON.stringify, we shouldn't encode functions or undefined
-                if (typeof val === 'function' || val === undefined) {
+                if (typeof val === 'function' || val === undefined || val.isInstance) {
                     continue;
                 }
                 a.push(me.encodeValue(i) + ': ' + me.encodeValue(val, cnewline), sep);
@@ -203,7 +203,7 @@ var me = this,
      *         return Ext.Date.format(d, '"Y-m-d"');
      *     };
      *
-     * @param {Date} d The Date to encode
+     * @param {Date} o The Date to encode
      * @return {String} The string literal to use in a JSON string.
      */
     me.encodeDate = function(o) {

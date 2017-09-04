@@ -36,7 +36,7 @@ Ext.define('Ext.app.domain.Component', {
             view = controller.getView();
             controller = view ? view.lookupController(true) : null;
         }
-        return this.callParent(arguments);    
+        return this.callParent([target, ev, args]);    
     },
 
     match: function(target, selector) {

@@ -1,30 +1,204 @@
 /* global Ext, expect */
 
-describe('Ext.Component', function() {
+topSuite("Ext.Component",
+    ['Ext.Container', 'Ext.app.ViewModel', 'Ext.layout.HBox',
+     'Ext.layout.VBox', 'Ext.Mask', 'Ext.MessageBox'],
+function() {
     var component;
 
     function makeComponent(config) {
-        return component = new Ext.Component(config);
+        component = new Ext.Component(config);
+        return component;
     }
-
-    var hasCls = function(cls) {
-        if (component) {
-            var compCls = component.getCls() || [];
-
-            return compCls.indexOf(cls) !== -1;
-        }
-
-        return false;
-    };
-
-    var elHasCls = function(cls) {
-        var el = component.element;
-
-        return el.hasCls(cls);
-    };
 
     afterEach(function() {
         component = Ext.destroy(component);
+    });
+
+
+    describe("userSelectable", function() {
+        var userSelect,
+            userSelectAuto = 'text';
+
+        beforeAll(function() {
+            var el = document.createElement('div'),
+                style = el.style;
+
+            Ext.each([
+                'user-select', '-moz-user-select', '-ms-user-select', '-webkit-user-select'
+            ], function (name) {
+                if (style[name] !== undefined) {
+                    userSelect = name;
+                    return false;
+                }
+            });
+            if (userSelect === '-moz-user-select') {
+                userSelectAuto = 'auto';
+            }
+            else if (userSelect === '-ms-user-select') {
+                userSelectAuto = 'text';
+            }
+        });
+
+        it("should default userSelectable off", function() {
+            makeComponent({
+                renderTo: Ext.getBody()
+            });
+            expect(component.el.getStyle(userSelect)).toBe('none');
+        });
+        it("should allow userSelectable configured as a boolean on main element", function() {
+            makeComponent({
+                renderTo: Ext.getBody(),
+                userSelectable: true
+            });
+
+            expect(component.el.getStyle(userSelect)).toBe(userSelectAuto);
+        });
+        it("should allow userSelectable configured as an object with element prop", function() {
+            makeComponent({
+                renderTo: Ext.getBody(),
+                userSelectable: {
+                    element: true
+                }
+            });
+            expect(component.el.getStyle(userSelect)).toBe(userSelectAuto);
+        });
+        it("should allow userSelectable configured as an object with reference element prop", function() {
+            component = new Ext.Container({
+                referenceHolder: true,
+                renderTo: Ext.getBody(),
+                userSelectable: {
+                    bodyElement: true
+                }
+            });
+
+            expect(component.bodyElement.getStyle(userSelect)).toBe(userSelectAuto);
+            expect(component.element.getStyle(userSelect)).toBe('none');
+
+        });
+        it("should pass userSelectable to child component via inheritance", function() {
+            component = new Ext.Container({
+                userSelectable: true,
+                renderTo: Ext.getBody(),
+                items: [
+                    {
+                        html: 'foo'
+                    }
+                ]
+            });
+
+            expect(component.el.getStyle(userSelect)).toBe(userSelectAuto);
+        });
+        it("should allow child component to override userSelectable of parent", function() {
+            component = new Ext.Container({
+                userSelectable: true,
+                renderTo: Ext.getBody(),
+                items: [
+                    {
+                        userSelectable: false,
+                        html: 'foo'
+                    }
+                ]
+            });
+
+            expect(component.element.getStyle(userSelect)).toBe(userSelectAuto);
+            expect(component.items.items[0].element.getStyle(userSelect)).toBe('none');
+
+        });
+    });
+
+    describe("animation", function() {
+        var oldOnError = window.onerror;
+
+        afterEach(function() {
+            window.onerror = oldOnError;
+        });
+
+        // This spec fails around 50% of the time locally in Chrome, going
+        // to disable it until it can be made more stable
+        xit("should allow show twice in succession while animating", function() {
+            var onErrorSpy = jasmine.createSpy();
+            window.onerror = onErrorSpy.andCallFake(function() {
+                if (oldOnError) {
+                    oldOnError();
+                }
+            });
+
+            Ext.Msg.confirm('Title', 'question', Ext.emptyFn);
+            waitsFor(function() {
+                return !Ext.Msg.getHidden();
+            }, 'MessageBox to be shown');
+            runs(function() {
+                Ext.Msg.hide();
+                Ext.Msg.confirm('Title2', 'question2', Ext.emptyFn);
+            });
+            waitsFor(function() {
+                return !Ext.Msg.getHidden();
+            }, 'MessageBox2 to be shown');
+            // this bit to cleanup modal mask - don't want to exit test with it showing
+            runs(function() {
+                Ext.Msg.hide();
+                expect(onErrorSpy).not.toHaveBeenCalled();
+                Ext.Msg.hideModalMask();
+            });
+        });
+
+        it("should be visible during hide animation until hidden", function() {
+            var spy = jasmine.createSpy();
+
+            makeComponent({
+                renderTo: Ext.getBody(),
+                hideAnimation: {
+                    type: 'fadeOut',
+                    duration: 300
+                },
+                listeners: {
+                    hide: spy
+                }
+            });
+            component.hide();
+            waits(100);
+            runs(function() {
+                expect(spy).not.toHaveBeenCalled();
+                expect(component.isVisible()).toBe(true);
+            });
+            waitsFor(function() {
+                return spy.callCount > 0;
+            });
+            runs(function() {
+                expect(spy.callCount).toBe(1);
+                expect(component.isVisible()).toBe(false);
+            });
+        });
+
+        it("should be visible during show animation as soon as it's visible", function() {
+            var spy = jasmine.createSpy();
+
+            makeComponent({
+                renderTo: Ext.getBody(),
+                hidden: true,
+                showAnimation: {
+                    type: 'fadeIn',
+                    duration: 300
+                },
+                listeners: {
+                    show: spy
+                }
+            });
+            component.show();
+            waits(100);
+            runs(function() {
+                expect(spy).not.toHaveBeenCalled();
+                expect(component.isVisible()).toBe(true);
+            });
+            waitsFor(function() {
+                return spy.callCount > 0;
+            });
+            runs(function() {
+                expect(spy.callCount).toBe(1);
+                expect(component.isVisible()).toBe(true);
+            });
+        });
     });
 
     describe('configuration', function() {
@@ -78,6 +252,13 @@ describe('Ext.Component', function() {
                     },
                     bind: '{theHtml}'
                 });
+
+                // The component's defaultBindProperty is bound
+                expect(component.isBound(component.defaultBindProperty)).toBe(true);
+
+                // No arg version should check defaultBindProperty
+                expect(component.isBound()).toBe(true);
+
                 component.getViewModel().notify();
                 expect(component.getInnerHtmlElement().dom.innerHTML).toBe('foo');
             });
@@ -85,6 +266,7 @@ describe('Ext.Component', function() {
             it("should throw an exception if we have no default bind", function() {
                 expect(function() {
                     makeComponent({
+                        id: 'this-should-throw',
                         defaultBindProperty: '',
                         viewModel: {
                             data: {
@@ -93,20 +275,86 @@ describe('Ext.Component', function() {
                         },
                         bind: '{theHtml}'
                     });
+
+                    // Any arbitrary name will return false as not being bound
+                    expect(component.isBound('foo')).toBe(false);
+
+                    // No defaultBindProperty - should return false
+                    expect(component.isBound()).toBe(false);
+
                     component.getBind();
                 }).toThrow();
-                
-                // The caught exception above was thrown after the component was
-                // constructed and registered with ComponentManager, so we have to clean up
-                Ext.ComponentMgr.clearAll();
+                // The exception prevented the assoignment to the component var, but the
+                // component MUST be cleaned up in the afterEach to prevent ViewModel/Scheduler
+                // timer leaks, so we must collect the component into the var now.
+                component = Ext.getCmp('this-should-throw');
             });
         });
     });
 
     describe("'cls' methods", function() {
         var spy;
+        var spacesRe = /\s+/;
+
+        function getClsList (el) {
+            if (el.isWidget) {
+                el = el.el;
+            }
+
+            var list = el.dom.className.split(spacesRe);
+
+            Ext.Array.remove(list, 'x-root');
+            Ext.Array.remove(list, 'x-component');
+
+            return list;
+        }
+
+        function getClsMap (el) {
+            var classes = getClsList(el);
+            var map = {};
+
+            while (classes.length) {
+                map[classes.pop()] = 1;
+            }
+
+            return map;
+        }
+
+        function expectCls (el, cls) {
+            if (el.isWidget) {
+                el = el.el;
+            }
+
+            var classes = typeof cls === 'string' ? cls.split(' ') : cls;
+            var map = getClsMap(el);
+
+            while (classes.length) {
+                var c = classes.pop();
+
+                if (c) {
+                    if (!map[c]) {
+                        Ext.raise('Expected element to have class "' + c +
+                            '" but it had these "' + el.dom.className + '"');
+                    }
+
+                    delete map[c];
+                }
+            }
+
+            classes = Ext.Object.getKeys(map);
+            if (classes.length) {
+                Ext.raise('Expected cls to have only "' + cls + '" but found "' +
+                    classes.join(' ') + '"');
+            }
+        }
 
         describe("configuration", function() {
+            it("should start empty", function() {
+                makeComponent();
+
+                expectCls(component, '');
+            });
+
             it("should convert a string into an array", function() {
                 makeComponent({
                     cls: 'one'
@@ -124,201 +372,173 @@ describe('Ext.Component', function() {
             });
         });
 
-        /**
-         * Ext.Component#addCls
-         */
         describe("addCls", function() {
             beforeEach(function() {
                 makeComponent();
-                spy = spyOn(component, "updateCls");
             });
 
             describe("no prefix/suffix", function() {
                 it("should convert the cls to an array and add it to the component", function() {
                     component.addCls('one');
-                    expect(spy).toHaveBeenCalledWith(['one'], null);
-                    expect(component.getCls()).toEqual(['one']);
+                    expectCls(component, 'one');
+                    expect(getClsMap(component)).toEqual({ one: 1 });
 
                     component.addCls('two');
-                    expect(spy).toHaveBeenCalledWith(['one', 'two'], ['one']);
-                    expect(component.getCls()).toEqual(['one', 'two']);
+                    expectCls(component, 'one two');
+                    expect(getClsMap(component)).toEqual({ one: 1, two: 1 });
                 });
 
                 it("should add each of the cls to the component", function() {
                     component.addCls(['one', 'two']);
-                    expect(spy).toHaveBeenCalledWith(['one', 'two'], null);
-                    expect(component.getCls()).toEqual(['one', 'two']);
+                    expectCls(component, 'one two');
 
                     component.addCls(['two', 'three']);
-                    expect(spy).toHaveBeenCalledWith(['one', 'two', 'three'], ['one', 'two']);
-                    expect(component.getCls()).toEqual(['one', 'two', 'three']);
+                    expectCls(component, 'one two three');
+                    expect(getClsMap(component)).toEqual({ one: 1, two: 1, three: 1 });
                 });
 
                 it("should allow for adding both strings and arrays", function() {
                     component.addCls('one');
-                    expect(spy).toHaveBeenCalledWith(['one'], null);
-                    expect(component.getCls()).toEqual(['one']);
+                    expectCls(component, 'one');
 
                     component.addCls(['two', 'three']);
-                    expect(spy).toHaveBeenCalledWith(['one', 'two', 'three'], ['one']);
-                    expect(component.getCls()).toEqual(['one', 'two', 'three']);
+                    expectCls(component, 'one two three');
                 });
 
                 it("should allow for adding both strings and arrays (reverse)", function() {
                     component.addCls(['two', 'three']);
-                    expect(spy).toHaveBeenCalledWith(['two', 'three'], null);
-                    expect(component.getCls()).toEqual(['two', 'three']);
+                    expectCls(component, 'two three');
 
                     component.addCls('one');
-                    expect(spy).toHaveBeenCalledWith(['two', 'three', 'one'], ['two', 'three']);
-                    expect(component.getCls()).toEqual(['two', 'three', 'one']);
+                    expectCls(component, 'one two three');
                 });
             });
 
             describe("prefix", function() {
                 it("should convert the cls to an array and add it to the component", function() {
                     component.addCls('one', 'x-');
-                    expect(spy).toHaveBeenCalledWith(['x-one'], null);
-                    expect(component.getCls()).toEqual(['x-one']);
+                    expectCls(component, 'x-one');
 
                     component.addCls('two', 'x-');
-                    expect(spy).toHaveBeenCalledWith(['x-one', 'x-two'], ['x-one']);
-                    expect(component.getCls()).toEqual(['x-one', 'x-two']);
+                    expectCls(component, 'x-one x-two');
+                });
+
+                it("should trim spaces and add it to the component", function() {
+                    component.addCls('   one   ', 'x-');
+                    expectCls(component, 'x-one');
+
+                    component.addCls('two', 'x-');
+                    expectCls(component, 'x-one x-two');
                 });
 
                 it("should add each of the cls to the component", function() {
                     component.addCls(['one', 'two'], 'x-');
-                    expect(spy).toHaveBeenCalledWith(['x-one', 'x-two'], null);
-                    expect(component.getCls()).toEqual(['x-one', 'x-two']);
+                    expectCls(component, 'x-one x-two');
 
                     component.addCls(['two', 'three'], 'x-');
-                    expect(spy).toHaveBeenCalledWith(['x-one', 'x-two', 'x-three'], ['x-one', 'x-two']);
-                    expect(component.getCls()).toEqual(['x-one', 'x-two', 'x-three']);
+                    expectCls(component, 'x-one x-two x-three');
                 });
 
                 it("should allow for adding both strings and arrays", function() {
                     component.addCls('one', 'x-');
-                    expect(spy).toHaveBeenCalledWith(['x-one'], null);
-                    expect(component.getCls()).toEqual(['x-one']);
+                    expectCls(component, 'x-one');
 
                     component.addCls(['two', 'three'], 'x-');
-                    expect(spy).toHaveBeenCalledWith(['x-one', 'x-two', 'x-three'], ['x-one']);
-                    expect(component.getCls()).toEqual(['x-one', 'x-two', 'x-three']);
+                    expectCls(component, 'x-one x-two x-three');
                 });
 
                 it("should allow for adding both strings and arrays (reverse)", function() {
                     component.addCls(['two', 'three'], 'x-');
-                    expect(spy).toHaveBeenCalledWith(['x-two', 'x-three'], null);
-                    expect(component.getCls()).toEqual(['x-two', 'x-three']);
+                    expectCls(component, 'x-two x-three');
 
                     component.addCls('one', 'x-');
-                    expect(spy).toHaveBeenCalledWith(['x-two', 'x-three', 'x-one'], ['x-two', 'x-three']);
-                    expect(component.getCls()).toEqual(['x-two', 'x-three', 'x-one']);
+                    expectCls(component, 'x-one x-two x-three');
                 });
             });
 
             describe("suffix", function() {
                 it("should convert the cls to an array and add it to the component", function() {
                     component.addCls('one', null, '-y');
-                    expect(spy).toHaveBeenCalledWith(['one-y'], null);
-                    expect(component.getCls()).toEqual(['one-y']);
+                    expectCls(component, 'one-y');
 
                     component.addCls('two', null, '-y');
-                    expect(spy).toHaveBeenCalledWith(['one-y', 'two-y'], ['one-y']);
-                    expect(component.getCls()).toEqual(['one-y', 'two-y']);
+                    expectCls(component, 'one-y two-y');
                 });
 
                 it("should add each of the cls to the component", function() {
                     component.addCls(['one', 'two'], null, '-y');
-                    expect(spy).toHaveBeenCalledWith(['one-y', 'two-y'], null);
-                    expect(component.getCls()).toEqual(['one-y', 'two-y']);
+                    expectCls(component, 'one-y two-y');
 
                     component.addCls(['two', 'three'], null, '-y');
-                    expect(spy).toHaveBeenCalledWith(['one-y', 'two-y', 'three-y'], ['one-y', 'two-y']);
-                    expect(component.getCls()).toEqual(['one-y', 'two-y', 'three-y']);
+                    expectCls(component, 'one-y two-y three-y');
                 });
 
                 it("should allow for adding both strings and arrays", function() {
                     component.addCls('one', null, '-y');
-                    expect(spy).toHaveBeenCalledWith(['one-y'], null);
-                    expect(component.getCls()).toEqual(['one-y']);
+                    expectCls(component, 'one-y');
 
                     component.addCls(['two', 'three'], null, '-y');
-                    expect(spy).toHaveBeenCalledWith(['one-y', 'two-y', 'three-y'], ['one-y']);
-                    expect(component.getCls()).toEqual(['one-y', 'two-y', 'three-y']);
+                    expectCls(component, 'one-y two-y three-y');
                 });
 
                 it("should allow for adding both strings and arrays (reverse)", function() {
                     component.addCls(['two', 'three'], null, '-y');
-                    expect(spy).toHaveBeenCalledWith(['two-y', 'three-y'], null);
-                    expect(component.getCls()).toEqual(['two-y', 'three-y']);
+                    expectCls(component, 'two-y three-y');
 
                     component.addCls('one', null, '-y');
-                    expect(spy).toHaveBeenCalledWith(['two-y', 'three-y', 'one-y'], ['two-y', 'three-y']);
-                    expect(component.getCls()).toEqual(['two-y', 'three-y', 'one-y']);
+                    expectCls(component, 'one-y two-y three-y');
                 });
             });
 
             describe("prefix + suffix", function() {
                 it("should convert the cls to an array and add it to the component", function() {
                     component.addCls('one', 'x-', '-y');
-                    expect(spy).toHaveBeenCalledWith(['x-one-y'], null);
-                    expect(component.getCls()).toEqual(['x-one-y']);
+                    expectCls(component, 'x-one-y');
 
                     component.addCls('two', 'x-', '-y');
-                    expect(spy).toHaveBeenCalledWith(['x-one-y', 'x-two-y'], ['x-one-y']);
-                    expect(component.getCls()).toEqual(['x-one-y', 'x-two-y']);
+                    expectCls(component, 'x-one-y x-two-y');
                 });
 
                 it("should add each of the cls to the component", function() {
                     component.addCls(['one', 'two'], 'x-', '-y');
-                    expect(spy).toHaveBeenCalledWith(['x-one-y', 'x-two-y'], null);
-                    expect(component.getCls()).toEqual(['x-one-y', 'x-two-y']);
+                    expectCls(component, 'x-one-y x-two-y');
 
                     component.addCls(['two', 'three'], 'x-', '-y');
-                    expect(spy).toHaveBeenCalledWith(['x-one-y', 'x-two-y', 'x-three-y'], ['x-one-y', 'x-two-y']);
-                    expect(component.getCls()).toEqual(['x-one-y', 'x-two-y', 'x-three-y']);
+
+                    expectCls(component, 'x-one-y x-two-y x-three-y');
                 });
 
                 it("should allow for adding both strings and arrays", function() {
                     component.addCls('one', 'x-', '-y');
-                    expect(spy).toHaveBeenCalledWith(['x-one-y'], null);
-                    expect(component.getCls()).toEqual(['x-one-y']);
+                    expectCls(component, 'x-one-y');
 
                     component.addCls(['two', 'three'], 'x-', '-y');
-                    expect(spy).toHaveBeenCalledWith(['x-one-y', 'x-two-y', 'x-three-y'], ['x-one-y']);
-                    expect(component.getCls()).toEqual(['x-one-y', 'x-two-y', 'x-three-y']);
+                    expectCls(component, 'x-one-y x-two-y x-three-y');
                 });
 
                 it("should allow for adding both strings and arrays (reverse)", function() {
                     component.addCls(['two', 'three'], 'x-', '-y');
-                    expect(spy).toHaveBeenCalledWith(['x-two-y', 'x-three-y'], null);
-                    expect(component.getCls()).toEqual(['x-two-y', 'x-three-y']);
+                    expectCls(component, 'x-two-y x-three-y');
 
                     component.addCls('one', 'x-', '-y');
-                    expect(spy).toHaveBeenCalledWith(['x-two-y', 'x-three-y', 'x-one-y'], ['x-two-y', 'x-three-y']);
-                    expect(component.getCls()).toEqual(['x-two-y', 'x-three-y', 'x-one-y']);
+                    expectCls(component, 'x-one-y x-two-y x-three-y');
                 });
             });
         });
 
-        /**
-         * Ext.Component#removeCls
-         */
         describe("removeCls", function() {
             describe("no prefix/suffix", function() {
                 describe("removing nothing", function() {
                     beforeEach(function() {
                         makeComponent();
-                        spy = spyOn(component, "updateCls");
                     });
 
                     it("should do nothing", function() {
-                        expect(component.getCls()).toEqual(null);
+                        var s = component.el.dom.className;
 
                         component.removeCls('one');
 
-                        expect(component.getCls()).toEqual(null);
+                        expect(component.el.dom.className).toEqual(s);
                     });
                 });
 
@@ -327,7 +547,6 @@ describe('Ext.Component', function() {
                         makeComponent({
                             cls: 'one'
                         });
-                        spy = spyOn(component, "updateCls");
                     });
 
                     it("should remove the cls (string)", function() {
@@ -335,8 +554,7 @@ describe('Ext.Component', function() {
 
                         component.removeCls('one');
 
-                        expect(spy).toHaveBeenCalledWith(null, ['one']);
-                        expect(component.getCls()).toEqual(null);
+                        expect(getClsList(component)).toEqual([]);
                     });
 
                     it("should remove the cls (array)", function() {
@@ -344,8 +562,7 @@ describe('Ext.Component', function() {
 
                         component.removeCls(['one']);
 
-                        expect(spy).toHaveBeenCalledWith(null, ['one']);
-                        expect(component.getCls()).toEqual(null);
+                        expect(getClsList(component)).toEqual([]);
                     });
                 });
 
@@ -354,7 +571,6 @@ describe('Ext.Component', function() {
                         makeComponent({
                             cls: ['one', 'two']
                         });
-                        spy = spyOn(component, "updateCls");
                     });
 
                     it("should remove the cls (string)", function() {
@@ -362,8 +578,7 @@ describe('Ext.Component', function() {
 
                         component.removeCls('two');
 
-                        expect(spy).toHaveBeenCalledWith(['one'], ['one', 'two']);
-                        expect(component.getCls()).toEqual(['one']);
+                        expectCls(component, 'one');
                     });
 
                     it("should remove the cls (array)", function() {
@@ -371,8 +586,7 @@ describe('Ext.Component', function() {
 
                         component.removeCls(['one']);
 
-                        expect(spy).toHaveBeenCalledWith(['two'], ['one', 'two']);
-                        expect(component.getCls()).toEqual(['two']);
+                        expectCls(component, 'two');
                     });
 
                     it("should remove the cls (array, multiple)", function() {
@@ -380,8 +594,7 @@ describe('Ext.Component', function() {
 
                         component.removeCls(['one', 'two']);
 
-                        expect(spy).toHaveBeenCalledWith(null, ['one', 'two']);
-                        expect(component.getCls()).toEqual(null);
+                        expect(getClsList(component)).toEqual([]);
                     });
                 });
             });
@@ -393,11 +606,11 @@ describe('Ext.Component', function() {
                     });
 
                     it("should do nothing", function() {
-                        expect(component.getCls()).toEqual(null);
+                        var s = component.el.dom.className;
 
                         component.removeCls('one', 'x-');
 
-                        expect(component.getCls()).toEqual(null);
+                        expect(component.el.dom.className).toEqual(s);
                     });
                 });
 
@@ -406,7 +619,6 @@ describe('Ext.Component', function() {
                         makeComponent({
                             cls: 'x-one'
                         });
-                        spy = spyOn(component, "updateCls");
                     });
 
                     it("should remove the cls (string)", function() {
@@ -414,8 +626,7 @@ describe('Ext.Component', function() {
 
                         component.removeCls('one', 'x-');
 
-                        expect(spy).toHaveBeenCalledWith(null, ['x-one']);
-                        expect(component.getCls()).toEqual(null);
+                        expect(getClsList(component)).toEqual([]);
                     });
 
                     it("should remove the cls (array)", function() {
@@ -423,8 +634,7 @@ describe('Ext.Component', function() {
 
                         component.removeCls(['one'], 'x-');
 
-                        expect(spy).toHaveBeenCalledWith(null, ['x-one']);
-                        expect(component.getCls()).toEqual(null);
+                        expect(getClsList(component)).toEqual([]);
                     });
                 });
 
@@ -433,7 +643,6 @@ describe('Ext.Component', function() {
                         makeComponent({
                             cls: ['x-one', 'x-two']
                         });
-                        spy = spyOn(component, "updateCls");
                     });
 
                     it("should remove the cls (string)", function() {
@@ -441,8 +650,7 @@ describe('Ext.Component', function() {
 
                         component.removeCls('two', 'x-');
 
-                        expect(spy).toHaveBeenCalledWith(['x-one'], ['x-one', 'x-two']);
-                        expect(component.getCls()).toEqual(['x-one']);
+                        expectCls(component, 'x-one');
                     });
 
                     it("should remove the cls (array)", function() {
@@ -450,8 +658,7 @@ describe('Ext.Component', function() {
 
                         component.removeCls(['one'], 'x-');
 
-                        expect(spy).toHaveBeenCalledWith(['x-two'], ['x-one', 'x-two']);
-                        expect(component.getCls()).toEqual(['x-two']);
+                        expectCls(component, 'x-two');
                     });
 
                     it("should remove the cls (array, multiple)", function() {
@@ -459,8 +666,7 @@ describe('Ext.Component', function() {
 
                         component.removeCls(['one', 'two'], 'x-');
 
-                        expect(spy).toHaveBeenCalledWith(null, ['x-one', 'x-two']);
-                        expect(component.getCls()).toEqual(null);
+                        expect(getClsList(component)).toEqual([]);
                     });
                 });
             });
@@ -472,11 +678,11 @@ describe('Ext.Component', function() {
                     });
 
                     it("should do nothing", function() {
-                        expect(component.getCls()).toEqual(null);
+                        var s = component.el.dom.className;
 
                         component.removeCls('one', null, '-y');
 
-                        expect(component.getCls()).toEqual(null);
+                        expect(component.el.dom.className).toEqual(s);
                     });
                 });
 
@@ -485,7 +691,6 @@ describe('Ext.Component', function() {
                         makeComponent({
                             cls: 'one-y'
                         });
-                        spy = spyOn(component, "updateCls");
                     });
 
                     it("should remove the cls (string)", function() {
@@ -493,8 +698,7 @@ describe('Ext.Component', function() {
 
                         component.removeCls('one', null, '-y');
 
-                        expect(spy).toHaveBeenCalledWith(null, ['one-y']);
-                        expect(component.getCls()).toEqual(null);
+                        expect(getClsList(component)).toEqual([]);
                     });
 
                     it("should remove the cls (array)", function() {
@@ -502,8 +706,7 @@ describe('Ext.Component', function() {
 
                         component.removeCls(['one'], null, '-y');
 
-                        expect(spy).toHaveBeenCalledWith(null, ['one-y']);
-                        expect(component.getCls()).toEqual(null);
+                        expect(getClsList(component)).toEqual([]);
                     });
                 });
 
@@ -512,7 +715,6 @@ describe('Ext.Component', function() {
                         makeComponent({
                             cls: ['one-y', 'two-y']
                         });
-                        spy = spyOn(component, "updateCls");
                     });
 
                     it("should remove the cls (string)", function() {
@@ -520,8 +722,7 @@ describe('Ext.Component', function() {
 
                         component.removeCls('two', null, '-y');
 
-                        expect(spy).toHaveBeenCalledWith(['one-y'], ['one-y', 'two-y']);
-                        expect(component.getCls()).toEqual(['one-y']);
+                        expectCls(component, 'one-y');
                     });
 
                     it("should remove the cls (array)", function() {
@@ -529,8 +730,7 @@ describe('Ext.Component', function() {
 
                         component.removeCls(['one'], null, '-y');
 
-                        expect(spy).toHaveBeenCalledWith(['two-y'], ['one-y', 'two-y']);
-                        expect(component.getCls()).toEqual(['two-y']);
+                        expectCls(component, 'two-y');
                     });
 
                     it("should remove the cls (array, multiple)", function() {
@@ -538,8 +738,7 @@ describe('Ext.Component', function() {
 
                         component.removeCls(['one', 'two'], null, '-y');
 
-                        expect(spy).toHaveBeenCalledWith(null, ['one-y', 'two-y']);
-                        expect(component.getCls()).toEqual(null);
+                        expect(getClsList(component)).toEqual([]);
                     });
                 });
             });
@@ -551,11 +750,11 @@ describe('Ext.Component', function() {
                     });
 
                     it("should do nothing", function() {
-                        expect(component.getCls()).toEqual(null);
+                        var s = component.el.dom.className;
 
                         component.removeCls('one', 'x-', '-y');
 
-                        expect(component.getCls()).toEqual(null);
+                        expect(component.el.dom.className).toEqual(s);
                     });
                 });
 
@@ -564,7 +763,6 @@ describe('Ext.Component', function() {
                         makeComponent({
                             cls: 'x-one-y'
                         });
-                        spy = spyOn(component, "updateCls");
                     });
 
                     it("should remove the cls (string)", function() {
@@ -572,8 +770,7 @@ describe('Ext.Component', function() {
 
                         component.removeCls('one', 'x-', '-y');
 
-                        expect(spy).toHaveBeenCalledWith(null, ['x-one-y']);
-                        expect(component.getCls()).toEqual(null);
+                        expect(getClsList(component)).toEqual([]);
                     });
 
                     it("should remove the cls (array)", function() {
@@ -581,8 +778,7 @@ describe('Ext.Component', function() {
 
                         component.removeCls(['one'], 'x-', '-y');
 
-                        expect(spy).toHaveBeenCalledWith(null, ['x-one-y']);
-                        expect(component.getCls()).toEqual(null);
+                        expect(getClsList(component)).toEqual([]);
                     });
                 });
 
@@ -591,7 +787,6 @@ describe('Ext.Component', function() {
                         makeComponent({
                             cls: ['x-one-y', 'x-two-y']
                         });
-                        spy = spyOn(component, "updateCls");
                     });
 
                     it("should remove the cls (string)", function() {
@@ -599,8 +794,7 @@ describe('Ext.Component', function() {
 
                         component.removeCls('two', 'x-', '-y');
 
-                        expect(spy).toHaveBeenCalledWith(['x-one-y'], ['x-one-y', 'x-two-y']);
-                        expect(component.getCls()).toEqual(['x-one-y']);
+                        expectCls(component, 'x-one-y');
                     });
 
                     it("should remove the cls (array)", function() {
@@ -608,8 +802,7 @@ describe('Ext.Component', function() {
 
                         component.removeCls(['one'], 'x-', '-y');
 
-                        expect(spy).toHaveBeenCalledWith(['x-two-y'], ['x-one-y', 'x-two-y']);
-                        expect(component.getCls()).toEqual(['x-two-y']);
+                        expectCls(component, 'x-two-y');
                     });
 
                     it("should remove the cls (array, multiple)", function() {
@@ -617,16 +810,12 @@ describe('Ext.Component', function() {
 
                         component.removeCls(['one', 'two'], 'x-', '-y');
 
-                        expect(spy).toHaveBeenCalledWith(null, ['x-one-y', 'x-two-y']);
-                        expect(component.getCls()).toEqual(null);
+                        expect(getClsList(component)).toEqual([]);
                     });
                 });
             });
         });
 
-        /**
-         * Ext.Component#setCls
-         */
         describe("setCls", function() {
             describe("with no existing cls", function() {
                 beforeEach(function() {
@@ -708,15 +897,11 @@ describe('Ext.Component', function() {
             });
         });
 
-        /**
-         * Ext.Component#replaceCls
-         */
         describe("replaceCls", function() {
             describe("no prefix/suffix", function() {
                 describe("with no existing cls", function() {
                     beforeEach(function() {
                         makeComponent();
-                        spy = spyOn(component, "updateCls");
                     });
 
                     it("should set the cls (string)", function() {
@@ -724,8 +909,7 @@ describe('Ext.Component', function() {
 
                         component.replaceCls('two', 'one');
 
-                        expect(spy).toHaveBeenCalledWith(['one'], null);
-                        expect(component.getCls()).toEqual(['one']);
+                        expectCls(component, 'one');
                     });
 
                     it("should set the cls (array)", function() {
@@ -733,8 +917,7 @@ describe('Ext.Component', function() {
 
                         component.replaceCls(['one', 'two'], ['three', 'four']);
 
-                        expect(spy).toHaveBeenCalledWith(['three', 'four'], null);
-                        expect(component.getCls()).toEqual(['three', 'four']);
+                        expectCls(component, 'three four');
                     });
                 });
 
@@ -743,7 +926,6 @@ describe('Ext.Component', function() {
                         makeComponent({
                             cls: 'one'
                         });
-                        spy = spyOn(component, "updateCls");
                     });
 
                     it("should replace the cls (string)", function() {
@@ -751,8 +933,7 @@ describe('Ext.Component', function() {
 
                         component.replaceCls('one', 'two');
 
-                        expect(spy).toHaveBeenCalledWith(['two'], ['one']);
-                        expect(component.getCls()).toEqual(['two']);
+                        expectCls(component, 'two');
                     });
 
                     it("should replace the cls (array)", function() {
@@ -760,8 +941,7 @@ describe('Ext.Component', function() {
 
                         component.replaceCls(['one'], ['two']);
 
-                        expect(spy).toHaveBeenCalledWith(['two'], ['one']);
-                        expect(component.getCls()).toEqual(['two']);
+                        expectCls(component, 'two');
                     });
 
                     it("should replace the cls (array, multiple)", function() {
@@ -769,8 +949,7 @@ describe('Ext.Component', function() {
 
                         component.replaceCls(['one'], ['two', 'three']);
 
-                        expect(spy).toHaveBeenCalledWith(['two', 'three'], ['one']);
-                        expect(component.getCls()).toEqual(['two', 'three']);
+                        expectCls(component, 'two three');
                     });
                 });
 
@@ -779,7 +958,6 @@ describe('Ext.Component', function() {
                         makeComponent({
                             cls: ['one', 'two']
                         });
-                        spy = spyOn(component, "updateCls");
                     });
 
                     it("should replace the cls (string)", function() {
@@ -787,8 +965,7 @@ describe('Ext.Component', function() {
 
                         component.replaceCls('one', 'three');
 
-                        expect(spy).toHaveBeenCalledWith(['two', 'three'], ['one', 'two']);
-                        expect(component.getCls()).toEqual(['two', 'three']);
+                        expectCls(component, 'two three');
                     });
 
                     it("should replace the cls (array)", function() {
@@ -796,8 +973,7 @@ describe('Ext.Component', function() {
 
                         component.replaceCls(['one', 'two'], ['four', 'three']);
 
-                        expect(spy).toHaveBeenCalledWith(['four', 'three'], ['one', 'two']);
-                        expect(component.getCls()).toEqual(['four', 'three']);
+                        expectCls(component, 'three four');
                     });
                 });
             });
@@ -806,7 +982,6 @@ describe('Ext.Component', function() {
                 describe("with no existing cls", function() {
                     beforeEach(function() {
                         makeComponent();
-                        spy = spyOn(component, "updateCls");
                     });
 
                     it("should set the cls (string)", function() {
@@ -814,8 +989,7 @@ describe('Ext.Component', function() {
 
                         component.replaceCls('two', 'one', 'x-');
 
-                        expect(spy).toHaveBeenCalledWith(['x-one'], null);
-                        expect(component.getCls()).toEqual(['x-one']);
+                        expectCls(component, 'x-one');
                     });
 
                     it("should set the cls (array)", function() {
@@ -823,8 +997,7 @@ describe('Ext.Component', function() {
 
                         component.replaceCls(['one', 'two'], ['three', 'four'], 'x-');
 
-                        expect(spy).toHaveBeenCalledWith(['x-three', 'x-four'], null);
-                        expect(component.getCls()).toEqual(['x-three', 'x-four']);
+                        expectCls(component, 'x-three x-four');
                     });
                 });
 
@@ -833,7 +1006,6 @@ describe('Ext.Component', function() {
                         makeComponent({
                             cls: 'x-one'
                         });
-                        spy = spyOn(component, "updateCls");
                     });
 
                     it("should replace the cls (string)", function() {
@@ -841,8 +1013,7 @@ describe('Ext.Component', function() {
 
                         component.replaceCls('one', 'two', 'x-');
 
-                        expect(spy).toHaveBeenCalledWith(['x-two'], ['x-one']);
-                        expect(component.getCls()).toEqual(['x-two']);
+                        expectCls(component, 'x-two');
                     });
 
                     it("should replace the cls (array)", function() {
@@ -850,8 +1021,7 @@ describe('Ext.Component', function() {
 
                         component.replaceCls(['one'], ['two'], 'x-');
 
-                        expect(spy).toHaveBeenCalledWith(['x-two'], ['x-one']);
-                        expect(component.getCls()).toEqual(['x-two']);
+                        expectCls(component, 'x-two');
                     });
 
                     it("should replace the cls (array, multiple)", function() {
@@ -859,8 +1029,7 @@ describe('Ext.Component', function() {
 
                         component.replaceCls(['one'], ['two', 'three'], 'x-');
 
-                        expect(spy).toHaveBeenCalledWith(['x-two', 'x-three'], ['x-one']);
-                        expect(component.getCls()).toEqual(['x-two', 'x-three']);
+                        expectCls(component, 'x-two x-three');
                     });
                 });
 
@@ -869,7 +1038,6 @@ describe('Ext.Component', function() {
                         makeComponent({
                             cls: ['x-one', 'x-two']
                         });
-                        spy = spyOn(component, "updateCls");
                     });
 
                     it("should replace the cls (string)", function() {
@@ -877,8 +1045,7 @@ describe('Ext.Component', function() {
 
                         component.replaceCls('one', 'three', 'x-');
 
-                        expect(spy).toHaveBeenCalledWith(['x-two', 'x-three'], ['x-one', 'x-two']);
-                        expect(component.getCls()).toEqual(['x-two', 'x-three']);
+                        expectCls(component, 'x-two x-three');
                     });
 
                     it("should replace the cls (array)", function() {
@@ -886,8 +1053,7 @@ describe('Ext.Component', function() {
 
                         component.replaceCls(['one', 'two'], ['four', 'three'], 'x-');
 
-                        expect(spy).toHaveBeenCalledWith(['x-four', 'x-three'], ['x-one', 'x-two']);
-                        expect(component.getCls()).toEqual(['x-four', 'x-three']);
+                        expectCls(component, 'x-four x-three');
                     });
                 });
             });
@@ -896,7 +1062,6 @@ describe('Ext.Component', function() {
                 describe("with no existing cls", function() {
                     beforeEach(function() {
                         makeComponent();
-                        spy = spyOn(component, "updateCls");
                     });
 
                     it("should set the cls (string)", function() {
@@ -904,8 +1069,7 @@ describe('Ext.Component', function() {
 
                         component.replaceCls('two', 'one', null, '-y');
 
-                        expect(spy).toHaveBeenCalledWith(['one-y'], null);
-                        expect(component.getCls()).toEqual(['one-y']);
+                        expectCls(component, 'one-y');
                     });
 
                     it("should set the cls (array)", function() {
@@ -913,8 +1077,7 @@ describe('Ext.Component', function() {
 
                         component.replaceCls(['one', 'two'], ['three', 'four'], null, '-y');
 
-                        expect(spy).toHaveBeenCalledWith(['three-y', 'four-y'], null);
-                        expect(component.getCls()).toEqual(['three-y', 'four-y']);
+                        expectCls(component, 'three-y four-y');
                     });
                 });
 
@@ -923,7 +1086,6 @@ describe('Ext.Component', function() {
                         makeComponent({
                             cls: 'one-y'
                         });
-                        spy = spyOn(component, "updateCls");
                     });
 
                     it("should replace the cls (string)", function() {
@@ -931,8 +1093,7 @@ describe('Ext.Component', function() {
 
                         component.replaceCls('one', 'two', null, '-y');
 
-                        expect(spy).toHaveBeenCalledWith(['two-y'], ['one-y']);
-                        expect(component.getCls()).toEqual(['two-y']);
+                        expectCls(component, 'two-y');
                     });
 
                     it("should replace the cls (array)", function() {
@@ -940,8 +1101,7 @@ describe('Ext.Component', function() {
 
                         component.replaceCls(['one'], ['two'], null, '-y');
 
-                        expect(spy).toHaveBeenCalledWith(['two-y'], ['one-y']);
-                        expect(component.getCls()).toEqual(['two-y']);
+                        expectCls(component, 'two-y');
                     });
 
                     it("should replace the cls (array, multiple)", function() {
@@ -949,8 +1109,7 @@ describe('Ext.Component', function() {
 
                         component.replaceCls(['one'], ['two', 'three'], null, '-y');
 
-                        expect(spy).toHaveBeenCalledWith(['two-y', 'three-y'], ['one-y']);
-                        expect(component.getCls()).toEqual(['two-y', 'three-y']);
+                        expectCls(component, 'two-y three-y');
                     });
                 });
 
@@ -959,7 +1118,6 @@ describe('Ext.Component', function() {
                         makeComponent({
                             cls: ['one-y', 'two-y']
                         });
-                        spy = spyOn(component, "updateCls");
                     });
 
                     it("should replace the cls (string)", function() {
@@ -967,8 +1125,7 @@ describe('Ext.Component', function() {
 
                         component.replaceCls('one', 'three', null, '-y');
 
-                        expect(spy).toHaveBeenCalledWith(['two-y', 'three-y'], ['one-y', 'two-y']);
-                        expect(component.getCls()).toEqual(['two-y', 'three-y']);
+                        expectCls(component, 'two-y three-y');
                     });
 
                     it("should replace the cls (array)", function() {
@@ -976,8 +1133,7 @@ describe('Ext.Component', function() {
 
                         component.replaceCls(['one', 'two'], ['four', 'three'], null, '-y');
 
-                        expect(spy).toHaveBeenCalledWith(['four-y', 'three-y'], ['one-y', 'two-y']);
-                        expect(component.getCls()).toEqual(['four-y', 'three-y']);
+                        expectCls(component, 'four-y three-y');
                     });
                 });
             });
@@ -986,7 +1142,6 @@ describe('Ext.Component', function() {
                 describe("with no existing cls", function() {
                     beforeEach(function() {
                         makeComponent();
-                        spy = spyOn(component, "updateCls");
                     });
 
                     it("should set the cls (string)", function() {
@@ -994,8 +1149,7 @@ describe('Ext.Component', function() {
 
                         component.replaceCls('two', 'one', 'x-', '-y');
 
-                        expect(spy).toHaveBeenCalledWith(['x-one-y'], null);
-                        expect(component.getCls()).toEqual(['x-one-y']);
+                        expectCls(component, 'x-one-y');
                     });
 
                     it("should set the cls (array)", function() {
@@ -1003,8 +1157,7 @@ describe('Ext.Component', function() {
 
                         component.replaceCls(['one', 'two'], ['three', 'four'], 'x-', '-y');
 
-                        expect(spy).toHaveBeenCalledWith(['x-three-y', 'x-four-y'], null);
-                        expect(component.getCls()).toEqual(['x-three-y', 'x-four-y']);
+                        expectCls(component, 'x-three-y x-four-y');
                     });
                 });
 
@@ -1013,7 +1166,6 @@ describe('Ext.Component', function() {
                         makeComponent({
                             cls: 'x-one-y'
                         });
-                        spy = spyOn(component, "updateCls");
                     });
 
                     it("should replace the cls (string)", function() {
@@ -1021,8 +1173,7 @@ describe('Ext.Component', function() {
 
                         component.replaceCls('one', 'two', 'x-', '-y');
 
-                        expect(spy).toHaveBeenCalledWith(['x-two-y'], ['x-one-y']);
-                        expect(component.getCls()).toEqual(['x-two-y']);
+                        expectCls(component, 'x-two-y');
                     });
 
                     it("should replace the cls (array)", function() {
@@ -1030,8 +1181,7 @@ describe('Ext.Component', function() {
 
                         component.replaceCls(['one'], ['two'], 'x-', '-y');
 
-                        expect(spy).toHaveBeenCalledWith(['x-two-y'], ['x-one-y']);
-                        expect(component.getCls()).toEqual(['x-two-y']);
+                        expectCls(component, 'x-two-y');
                     });
 
                     it("should replace the cls (array, multiple)", function() {
@@ -1039,8 +1189,7 @@ describe('Ext.Component', function() {
 
                         component.replaceCls(['one'], ['two', 'three'], 'x-', '-y');
 
-                        expect(spy).toHaveBeenCalledWith(['x-two-y', 'x-three-y'], ['x-one-y']);
-                        expect(component.getCls()).toEqual(['x-two-y', 'x-three-y']);
+                        expectCls(component, 'x-two-y x-three-y');
                     });
                 });
 
@@ -1049,7 +1198,6 @@ describe('Ext.Component', function() {
                         makeComponent({
                             cls: ['x-one-y', 'x-two-y']
                         });
-                        spy = spyOn(component, "updateCls");
                     });
 
                     it("should replace the cls (string)", function() {
@@ -1057,16 +1205,14 @@ describe('Ext.Component', function() {
 
                         component.replaceCls('one', 'three', 'x-', '-y');
 
-                        expect(spy).toHaveBeenCalledWith(['x-two-y', 'x-three-y'], ['x-one-y', 'x-two-y']);
-                        expect(component.getCls()).toEqual(['x-two-y', 'x-three-y']);
+                        expectCls(component, 'x-two-y x-three-y');
                     });
 
                     it("should replace the cls (array)", function() {
                         expect(component.getCls()).toEqual(['x-one-y', 'x-two-y']);
                         component.replaceCls(['one', 'two'], ['four', 'three'], 'x-', '-y');
 
-                        expect(spy).toHaveBeenCalledWith(['x-four-y', 'x-three-y'], ['x-one-y', 'x-two-y']);
-                        expect(component.getCls()).toEqual(['x-four-y', 'x-three-y']);
+                        expectCls(component, 'x-three-y x-four-y');
                     });
                 });
             });
@@ -1082,14 +1228,6 @@ describe('Ext.Component', function() {
                     expect(component.element).toHaveCls('one');
                 });
 
-                it("add cls to component's cls cache", function() {
-                    makeComponent();
-
-                    component.toggleCls('one');
-
-                    expect(hasCls('one')).toBe(true);
-                });
-
                 it("force add cls to component", function() {
                     makeComponent({
                         cls : 'one'
@@ -1099,7 +1237,7 @@ describe('Ext.Component', function() {
                     //but since we are passing `true`, it will force it to add
                     component.toggleCls('one', true);
 
-                    expect(hasCls('one')).toBe(true);
+                    expect(component.element).toHaveCls('one');
                 });
             });
 
@@ -1112,16 +1250,6 @@ describe('Ext.Component', function() {
                     component.toggleCls('one');
 
                     expect(component.element).not.toHaveCls('one');
-                });
-
-                it("remove cls from component's cls cache", function() {
-                    makeComponent({
-                        cls : 'one'
-                    });
-
-                    component.toggleCls('one');
-
-                    expect(hasCls('one')).toBe(false);
                 });
             });
         });
@@ -1396,7 +1524,9 @@ describe('Ext.Component', function() {
                     });
 
                     it("should return true if the component is not hidden", function() {
-                        makeComponent();
+                        makeComponent({
+                            renderTo: document.body
+                        });
                         expect(component.isVisible()).toBe(true);
                     });
                 });
@@ -1427,8 +1557,20 @@ describe('Ext.Component', function() {
                         ct.destroy();
                     });
 
+                    it('should return false if the component is not rendered', function() {
+                        var ct = new Ext.Container({
+                            items: {
+                                xtype: 'component'
+                            }
+                        });
+                        component = ct.getItems().first();
+                        expect(component.isVisible()).toBe(false);
+                        ct.destroy();
+                    });
+
                     it("should return true if the component is not hidden and the container is not", function() {
                         var ct = new Ext.Container({
+                            renderTo: document.body,
                             items: {
                                 xtype: 'component'
                             }
@@ -1440,6 +1582,7 @@ describe('Ext.Component', function() {
 
                     it("should return true if the component is not hidden and the container is hidden", function() {
                         var ct = new Ext.Container({
+                            renderTo: document.body,
                             hidden: true,
                             items: {
                                 xtype: 'component'
@@ -1452,6 +1595,7 @@ describe('Ext.Component', function() {
 
                     it("should return true if the component is not hidden and a high level container is hidden", function() {
                         var ct = new Ext.Container({
+                            renderTo: document.body,
                             hidden: true,
                             items: {
                                 xtype: 'container',
@@ -1481,7 +1625,9 @@ describe('Ext.Component', function() {
                     });
 
                     it("should return true if the component is not hidden", function() {
-                        makeComponent();
+                        makeComponent({
+                            renderTo: document.body
+                        });
                         expect(component.isVisible(false)).toBe(true);
                     });
                 });
@@ -1514,6 +1660,7 @@ describe('Ext.Component', function() {
 
                     it("should return true if the component is not hidden and the container is not", function() {
                         var ct = new Ext.Container({
+                            renderTo: document.body,
                             items: {
                                 xtype: 'component'
                             }
@@ -1525,6 +1672,7 @@ describe('Ext.Component', function() {
 
                     it("should return true if the component is not hidden and the container is hidden", function() {
                         var ct = new Ext.Container({
+                            renderTo: document.body,
                             hidden: true,
                             items: {
                                 xtype: 'component'
@@ -1537,6 +1685,7 @@ describe('Ext.Component', function() {
 
                     it("should return true if the component is not hidden and a high level container is hidden", function() {
                         var ct = new Ext.Container({
+                            renderTo: document.body,
                             hidden: true,
                             items: {
                                 xtype: 'container',
@@ -1566,7 +1715,9 @@ describe('Ext.Component', function() {
                     });
 
                     it("should return true if the component is not hidden", function() {
-                        makeComponent();
+                        makeComponent({
+                            renderTo: document.body
+                        });
                         expect(component.isVisible(true)).toBe(true);
                     });
                 });
@@ -1574,6 +1725,7 @@ describe('Ext.Component', function() {
                 describe("in a container", function() {
                     it("should return false if the component is hidden but the container is not", function() {
                         var ct = new Ext.Container({
+                            renderTo: document.body,
                             items: {
                                 xtype: 'component',
                                 hidden: true
@@ -1599,6 +1751,7 @@ describe('Ext.Component', function() {
 
                     it("should return true if the component is not hidden and the container is not", function() {
                         var ct = new Ext.Container({
+                            renderTo: document.body,
                             items: {
                                 xtype: 'component'
                             }
@@ -1679,6 +1832,251 @@ describe('Ext.Component', function() {
         });
     });
 
+    describe('responding to resizing', function() {
+        var container, onResizeSpy, resizeEventSpy;
+
+        beforeEach(function() {
+            onResizeSpy = jasmine.createSpy();
+            resizeEventSpy = jasmine.createSpy();
+        });
+
+        afterEach(function() {
+            container = Ext.destroy(container);
+        });
+
+        function getInfo(flag) {
+            return {
+                flag: flag,  // w = 0x01, h = 0x02
+                width: component.element.measure('w'),
+                height: component.element.measure('h'),
+                contentWidth: component.el.dom.offsetWidth,
+                contentHeight: component.el.dom.offsetHeight
+            };
+        }
+
+        function waitsForCalls(n) {
+            waitsFor(function() {
+                return onResizeSpy.callCount === n &&
+                       resizeEventSpy.callCount === n;
+            });
+        }
+
+        function expectSizeCalls(flag, w, h, oldW, oldH) {
+            var info = getInfo(flag);
+
+            oldW = oldW || null;
+            oldH = oldH || null;
+
+            expect(onResizeSpy.mostRecentCall.args).toEqual(
+                [ w, h, oldW, oldH, info ]);
+
+            expect(resizeEventSpy.mostRecentCall.args.slice(0, 6)).toEqual(
+                [ component, w, h, oldW, oldH, info ]);
+
+            // onResize is called first - its element resize listener is at priority 1000
+            expect(onResizeSpy.callSequence).toBeLessThan(resizeEventSpy.callSequence);
+        }
+
+        function makeSizeComponent(cfg) {
+            makeComponent(Ext.apply(cfg, {
+                renderTo: Ext.getBody(),
+                listeners: {
+                    resize: resizeEventSpy
+                }
+            }));
+            component.onResize = onResizeSpy;
+
+            waitsForCalls(1);
+
+            runs(function() {
+                expectSizeCalls(3, component.el.getWidth(), component.el.getHeight());
+            });
+
+            return component;
+        }
+
+        function makeSizeContainer(ctCfg, cfg) {
+            ctCfg.items = ctCfg.items || [];
+
+            ctCfg.items.push(Ext.apply({
+                xtype: 'component',
+                listeners: {
+                    resize: resizeEventSpy
+                }
+            }, cfg));
+
+            container = new Ext.Container(Ext.apply({
+                renderTo: Ext.getBody()
+            }, ctCfg));
+            component = container.items.last();
+            component.onResize = onResizeSpy;
+
+            waitsForCalls(1);
+
+            runs(function() {
+                expectSizeCalls(3, component.el.getWidth(), component.el.getHeight());
+            });
+        }
+
+        describe('shrinkWrap', function() {
+            it('should respond to content size changes', function() {
+                makeSizeComponent({
+                    style: 'position: absolute;',
+                    html: '<div class="foo" style="height: 100px; width: 100px;">Foo</div><div style="height: 70px; width: 50px;">Bar</div>'
+                });
+
+                runs(function() {
+                    component.el.down('.foo').destroy();
+                });
+                waitsForCalls(2);
+                runs(function() {
+                    expectSizeCalls(3, 50, 70, 100, 170);
+                });
+            });
+        });
+
+        describe('Auto sizing', function() {
+            it('should respond to changes in relative sizing values', function() {
+                makeSizeContainer({
+                    layout: 'hbox',
+                    height: 100,
+                    width: 100
+                }, {
+                    width: '50%',
+                    height: 100
+                });
+
+                runs(function() {
+                    component.setWidth('70%');
+                });
+
+                waitsForCalls(2);
+                runs(function() {
+                    expectSizeCalls(1, 70, 100, 50, 100);
+
+                    // Now widen the container
+                    container.setWidth(200);
+                    // Force a repaint
+                    component.el.dom.offsetWidth;
+                });
+
+                waitsForCalls(3);
+                runs(function() {
+                    expectSizeCalls(1, 140, 100, 70, 100);
+                });
+            });
+        });
+
+        describe('Layout sizing', function() {
+            it('should respond to layout-induced changes', function() {
+                makeSizeContainer({
+                    layout: 'hbox',
+                    height: 100,
+                    width: 100,
+                    items: [{
+                        flex: 1
+                    }]
+                }, {
+                    flex: 1,
+                    height: 100
+                });
+
+                runs(function() {
+                    component.setFlex(3);
+                });
+
+                waitsForCalls(2);
+                runs(function() {
+                    expectSizeCalls(1, 75, 100, 50, 100);
+
+                    container.setWidth(200);
+                });
+
+                waitsForCalls(3);
+
+                // Wait for the layout and the async event to run on the tail end of a browser layout
+                runs(function() {
+                    expectSizeCalls(1, 150, 100, 75, 100);
+                });
+            });
+        });
+
+        describe('Constraints', function() {
+            function makeSuite(cfgName) {
+                var vertical = Ext.String.endsWith(cfgName, 'Height'),
+                    isMin = Ext.String.startsWith(cfgName, 'min'),
+                    setter = Ext.Config.get(cfgName).names.set,
+                    flag = vertical ? 2 : 1,
+                    size = isMin ? 60 : 40;
+
+                function makeCt(doSet) {
+                    var o = {
+                        flex: 1
+                    };
+
+                    if (doSet) {
+                        o[cfgName] = size;
+                    }
+
+                    makeSizeContainer({
+                        layout: {
+                            type: vertical ? 'vbox' : 'hbox',
+                            align: 'stretch'
+                        },
+                        height: 100,
+                        width: 100,
+                        items: [{
+                            flex: 1
+                        }]
+                    }, o);
+                }
+
+                describe(cfgName, function() {
+                    it("should react to setting " + cfgName, function() {
+                        makeCt(false);
+                        runs(function() {
+                            component[setter](size);
+                        });
+
+                        waitsForCalls(2);
+
+                        runs(function() {
+                            var w = vertical ? 100 : size,
+                                h = !vertical ? 100 : size,
+                                oldW = vertical ? 100 : 50,
+                                oldH = !vertical ? 100 : 50;
+
+                            expectSizeCalls(flag, w, h, oldW, oldH);
+                        });
+                    });
+
+                    it("should react to clearing " + cfgName, function() {
+                        makeCt(true);
+                        runs(function() {
+                            component[setter](null);
+                        });
+
+                        waitsForCalls(2);
+
+                        runs(function() {
+                            var w = vertical ? 100 : 50,
+                                h = !vertical ? 100 : 50,
+                                oldW = vertical ? 100 : size,
+                                oldH = !vertical ? 100 : size;
+
+                            expectSizeCalls(flag, w, h, oldW, oldH);
+                        });
+                    });
+                });
+            }
+
+            makeSuite('maxHeight');
+            makeSuite('maxWidth');
+            makeSuite('minHeight');
+            makeSuite('minWidth');
+        });
+    });
+
     describe('destroy', function () {
         it("should fire the 'destroy' event", function () {
             var cmp = makeComponent({}),
@@ -1694,34 +2092,418 @@ describe('Ext.Component', function() {
 
         it("should destroy the animations when destroying the component", function() {
             var cmp = makeComponent({
-                renderTo: Ext.getBody(),
-                showAnimation: {
-                    type: 'slideIn',
-                    duration: 250,
-                    easing: 'ease-out'
-                },
-
-                hideAnimation: {
-                    type: 'slideOut',
-                    duration: 250,
-                    easing: 'ease-in'
-                },
-                modal: true,
-                floated: true,
-                html: 'Test'
-            }),
-            showAnim = cmp.getShowAnimation(),
+                    showAnimation: {
+                        type: 'slideIn',
+                        duration: 5,
+                        easing: 'ease-out'
+                    },
+    
+                    hideAnimation: {
+                        type: 'slideOut',
+                        duration: 5,
+                        easing: 'ease-in'
+                    },
+                    modal: true,
+                    floated: true,
+                    html: 'Test'
+                }),
+                showAnim, hideAnim;
+            
+            showAnim = cmp.getShowAnimation();
             hideAnim = cmp.getHideAnimation();
 
             cmp.show();
-            cmp.hide();
 
-            spyOn(showAnim, 'destroy');
-            spyOn(hideAnim, 'destroy');
-            cmp.destroy();
-            expect(showAnim.destroy).toHaveBeenCalled();
-            expect(hideAnim.destroy).toHaveBeenCalled();
+            waitsFor(function () {
+                return !cmp.activeAnimation;
+            });
+
+            runs(function () {
+                cmp.hide();
+            });
+
+            waitsFor(function () {
+                return !cmp.activeAnimation;
+            });
+
+            runs(function () {
+                var showAnimSpy = spyOn(showAnim, 'destroy').andCallThrough();
+                var hideAnimSpy = spyOn(hideAnim, 'destroy').andCallThrough();
+
+                cmp.destroy();
+
+                expect(showAnimSpy).toHaveBeenCalled();
+                expect(hideAnimSpy).toHaveBeenCalled();
+            });
         });
     });
 
+    describe("rootCls", function() {
+        it("should add the rootCls to the component if it has no parent container", function() {
+            var cmp = new Ext.Component();
+
+            expect(cmp.el).toHaveCls('x-root');
+
+            cmp.destroy();
+        });
+
+        it("should remove the rootCls from the component when it is added to a container", function() {
+            var cmp = new Ext.Component(),
+                ct = new Ext.Container();
+
+            ct.add(cmp);
+            expect(cmp.el).not.toHaveCls('x-root');
+            expect(ct.el).toHaveCls('x-root');
+
+            ct.destroy();
+        });
+
+        it("should add the rootCls when the component is removed from a container", function() {
+            var ct = Ext.create({
+                xtype: 'container',
+                items: [{
+                    xtype: 'component',
+                    id: 'cmp'
+                }]
+            });
+
+            var cmp = Ext.getCmp('cmp');
+
+            ct.remove(cmp, false);
+
+            expect(cmp).toHaveCls('x-root');
+
+            ct.destroy();
+            cmp.destroy();
+        });
+
+        it("should add the rootCls to only the top-level component in a hierarchy", function() {
+            var ct = Ext.create({
+                xtype: 'container',
+                items: [{
+                    xtype: 'container',
+                    id: 'ct2',
+                    items: [{
+                        xtype: 'component',
+                        id: 'cmp'
+                    }]
+                }]
+            });
+
+            expect(ct).toHaveCls('x-root');
+            expect(Ext.getCmp('ct2')).not.toHaveCls('x-root');
+            expect(Ext.getCmp('cmp')).not.toHaveCls('x-root');
+
+            ct.destroy();
+        });
+    });
+
+    describe('destroyable element listeners', function() {
+        it('should remove a destroyable element listener when destroyed', function() {
+            component = new Ext.Component({
+                style: 'height:100px;width:200px',
+                renderTo: document.body
+            });
+
+            var called = false,
+                myListeners = component.on({
+                    element: 'element',
+                    destroyable: true,
+                    tap: function() {
+                        called = true;
+                        Ext.destroy(myListeners);
+                    }
+                });
+
+            Ext.testHelper.tap(component.element);
+            expect(called).toBe(true);
+
+            // The listener should have been destroyed and removed.
+            called = false;
+            Ext.testHelper.tap(component.element);
+            expect(called).toBe(false);
+        });
+        it('should remove a destroyable element listener when destroyed - multi arg form', function() {
+            component = new Ext.Component({
+                style: 'height:100px;width:200px',
+                renderTo: document.body
+            });
+
+            var called = false,
+                myListeners = component.on('tap', function() {
+                    called = true;
+                    Ext.destroy(myListeners);
+                }, null, {
+                    element: 'element',
+                    destroyable: true
+                });
+
+            Ext.testHelper.tap(component.element);
+            expect(called).toBe(true);
+
+            // The listener should have been destroyed and removed.
+            called = false;
+            Ext.testHelper.tap(component.element);
+            expect(called).toBe(false);
+        });
+    });
+
+    describe("whenVisible", function() {
+        var Cls = Ext.define(null, {
+            extend: 'Ext.Component',
+            fn1: Ext.emptyFn,
+            fn2: Ext.emptyFn
+        }), ct;
+
+        function makeCls(hidden, preventRender) {
+            component = new Cls({
+                renderTo: preventRender ? null : Ext.getBody(),
+                hidden: hidden
+            });
+        }
+
+        afterEach(function() {
+            ct = Ext.destroy(ct);
+        });
+
+        describe("when component is visible", function() {
+            it("should run the passed function", function() {
+                makeCls();
+                spyOn(component, 'fn1');
+                component.whenVisible('fn1');
+                expect(component.fn1.callCount).toBe(1);
+            });
+
+            it("should not pass args by default", function() {
+                makeCls();
+                spyOn(component, 'fn1');
+                component.whenVisible('fn1');
+                expect(component.fn1).toHaveBeenCalledWith();
+            });
+
+            it("should use the passed args", function() {
+                makeCls();
+                spyOn(component, 'fn1');
+                component.whenVisible('fn1', ['a', 'b']);
+                expect(component.fn1).toHaveBeenCalledWith('a', 'b');
+            });
+
+            describe("with a show pending", function() {
+                it("should trigger any existing calls", function() {
+                    var spy = jasmine.createSpy();
+
+                    makeCls(true);
+
+                    component.setShowAnimation({});
+                    component.on('show', spy);
+
+                    spyOn(component, 'fn1');
+                    spyOn(component, 'fn2');
+
+                    component.whenVisible('fn1');
+                    component.show();
+                    component.whenVisible('fn2');
+                    expect(component.fn1.callCount).toBe(1);
+                    expect(component.fn2.callCount).toBe(1);
+
+                    waitsFor(function() {
+                        // Wait for the animation to complete
+                        return spy.callCount === 1;
+                    });
+                    runs(function() {
+                        expect(component.fn1.callCount).toBe(1);
+                        expect(component.fn2.callCount).toBe(1);
+                    });
+                });
+            });
+
+            describe("clearing", function() {
+                it("should not cause an exception", function() {
+                    makeCls();
+                    component.clearWhenVisible('fn1');
+                    expect(component.isVisible()).toBe(true);
+                });
+
+                it("should not prevent future functions from running", function() {
+                    makeCls();
+                    spyOn(component, 'fn1');
+                    component.clearWhenVisible('fn1');
+                    expect(component.fn1).not.toHaveBeenCalled();
+                    component.whenVisible('fn1');
+                    expect(component.fn1.callCount).toBe(1);
+                });
+            });
+        });
+
+        describe("when component is not visible", function() {
+            describe("not nested", function() {
+                it("should be able to call multiple methods", function() {
+                    makeCls(true);
+                    spyOn(component, 'fn1');
+                    spyOn(component, 'fn2');
+
+                    component.whenVisible('fn1');
+                    component.whenVisible('fn2');
+
+                    component.show();
+                    expect(component.fn1.callCount).toBe(1);
+                    expect(component.fn2.callCount).toBe(1);
+                });
+
+                it("should replace existing calls", function() {
+                    makeCls(true);
+                    spyOn(component, 'fn1');
+
+                    component.whenVisible('fn1', ['a']);
+                    component.whenVisible('fn1', ['b']);
+
+                    component.show();
+                    expect(component.fn1.callCount).toBe(1);
+                    expect(component.fn1).toHaveBeenCalledWith('b');
+                });
+
+                it("should be able to clear a call", function() {
+                    makeCls(true);
+                    spyOn(component, 'fn1');
+                    spyOn(component, 'fn2');
+
+                    component.whenVisible('fn1');
+                    component.whenVisible('fn2');
+
+                    component.clearWhenVisible('fn1');
+
+                    component.show();
+                    expect(component.fn1).not.toHaveBeenCalled();
+                    expect(component.fn2.callCount).toBe(1);
+                });
+
+                it("should not be called when a component in another hierarchy is shown", function() {
+                    var other = new Ext.Component({
+                        renderTo: Ext.getBody(),
+                        hidden: true
+                    });
+                    makeCls(true);
+                    spyOn(component, 'fn1');
+
+                    component.whenVisible('fn1');
+                    other.show();
+                    expect(component.fn1).not.toHaveBeenCalled();
+
+                    other.destroy();
+                });
+
+                it("should only fire once", function() {
+                    makeCls(true);
+                    spyOn(component, 'fn1');
+
+                    component.whenVisible('fn1');
+                    component.show();
+
+                    expect(component.fn1.callCount).toBe(1);
+                    component.fn1.reset();
+                    component.hide();
+                    component.show();
+                    expect(component.fn1).not.toHaveBeenCalled();
+                });
+            });
+
+            describe("nested", function() {
+                describe("showing container", function() {
+                    describe("when component is hidden", function() {
+                        it("should not fire", function() {
+                            makeCls(true, true);
+                            ct = new Ext.Container({
+                                renderTo: Ext.getBody(),
+                                hidden: true,
+                                items: [component]
+                            });
+                            spyOn(component, 'fn1');
+
+                            component.whenVisible('fn1');
+                            ct.show();
+
+                            expect(component.fn1).not.toHaveBeenCalled();
+                        });
+                    });
+
+                    describe("when component is visible", function() {
+                        it("should fire", function() {
+                            makeCls(false, true);
+                            ct = new Ext.Container({
+                                renderTo: Ext.getBody(),
+                                hidden: true,
+                                items: [component]
+                            });
+                            spyOn(component, 'fn1');
+
+                            component.whenVisible('fn1');
+                            ct.show();
+
+                            expect(component.fn1.callCount).toBe(1);
+                        });
+                    });
+                });
+
+                describe("showing component", function() {
+                    describe("when container is hidden", function() {
+                        it("should not fire", function() {
+                            makeCls(true, true);
+                            ct = new Ext.Container({
+                                renderTo: Ext.getBody(),
+                                hidden: true,
+                                items: [component]
+                            });
+                            spyOn(component, 'fn1');
+
+                            component.whenVisible('fn1');
+                            component.show();
+
+                            expect(component.fn1).not.toHaveBeenCalled();
+                        });
+                    });
+
+                    describe("when container is visible", function() {
+                        it("should fire", function() {
+                            makeCls(true, true);
+                            ct = new Ext.Container({
+                                renderTo: Ext.getBody(),
+                                items: [component]
+                            });
+                            spyOn(component, 'fn1');
+
+                            component.whenVisible('fn1');
+                            component.show();
+
+                            expect(component.fn1.callCount).toBe(1);
+                        });
+                    });
+                });
+            });
+
+            describe("when a component in another hierarchy is shown", function() {
+                it("should not fire", function() {
+                    makeCls(false, true);
+                    ct = new Ext.Container({
+                        renderTo: Ext.getBody(),
+                        hidden: true,
+                        items: [component]
+                    });
+                    spyOn(component, 'fn1');
+
+                    component.whenVisible('fn1');
+
+                    var other = new Ext.Component({
+                        renderTo: Ext.getBody(),
+                        hidden: true
+                    });
+
+                    other.show();
+                    expect(component.fn1).not.toHaveBeenCalled();
+                    other.destroy();
+                    ct.show();
+                    expect(component.fn1.callCount).toBe(1);
+                });
+            });
+        });
+    });
 });

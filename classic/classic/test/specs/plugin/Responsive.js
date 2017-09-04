@@ -1,6 +1,8 @@
-describe('Ext.plugin.Responsive', function () {
+topSuite("Ext.plugin.Responsive",
+    ['Ext.container.Viewport', 'Ext.Panel', 'Ext.layout.container.Border'],
+function() {
     var Responsive,
-        oldGetOrientation, oldGetViewWidth, oldGetViewHeight,
+        oldGetOrientation, oldGetViewWidth, oldGetViewHeight, oldResponsiveContext,
         environments = {
             ipad: {
                 landscape: {
@@ -24,6 +26,8 @@ describe('Ext.plugin.Responsive', function () {
         oldGetViewWidth = Ext.dom.Element.getViewportWidth;
         oldGetViewHeight = Ext.dom.Element.getViewportHeight;
 
+        oldResponsiveContext = Responsive.context;
+
         Ext.dom.Element.getOrientation = function () {
             return env.orientation;
         };
@@ -42,12 +46,14 @@ describe('Ext.plugin.Responsive', function () {
         Ext.dom.Element.getViewportWidth = oldGetViewWidth;
         Ext.dom.Element.getViewportHeight = oldGetViewHeight;
 
+        Responsive.context = oldResponsiveContext;
+
         expect(Responsive.active).toBe(false);
         expect(Responsive.count).toBe(0);
     });
 
     describe('responsive border region', function () {
-        var panel;
+        var child, panel, plugin;
 
         beforeEach(function () {
             env = environments.ipad.landscape;
@@ -55,13 +61,13 @@ describe('Ext.plugin.Responsive', function () {
                 platform: {
                     tablet: true
                 }
-            }
+            };
         });
         afterEach(function () {
-            panel = Ext.destroy(panel);
+            child = panel = plugin = Ext.destroy(panel, child, plugin);
         });
 
-        function createPanel (plugin) {
+        function createPanel (pluginCfg) {
             panel = Ext.create({
                 xtype: 'panel',
                 layout: 'border',
@@ -73,7 +79,7 @@ describe('Ext.plugin.Responsive', function () {
                 items: [{
                     reference: 'child',
                     title: 'Some Title',
-                    plugins: plugin,
+                    plugins: pluginCfg,
 
                     responsiveFormulas: {
                         narrow: function (state) {
@@ -101,12 +107,16 @@ describe('Ext.plugin.Responsive', function () {
                     region: 'center'
                 }]
             });
+
+            child = panel.lookupReference('child');
+            plugin = child.findPlugin('responsive');
         }
 
         it('respond to size change', function () {
             createPanel('responsive');
 
-            var child = panel.lookupReference('child');
+            expect(plugin).not.toBeUndefined();
+
             expect(child.region).toBe('west');
             expect(child.title).toBe('Title - Not Narrow');
 
@@ -117,13 +127,14 @@ describe('Ext.plugin.Responsive', function () {
             expect(child.title).toBe('Title - Narrow');
         });
 
-        describe('creation', function (){
+        describe('creation', function () {
             it('should be created using config object', function () {
                 createPanel({
                     ptype: 'responsive'
                 });
 
-                var child = panel.lookupReference('child');
+                expect(plugin).not.toBeUndefined();
+
                 expect(child.region).toBe('west');
             });
 
@@ -132,8 +143,37 @@ describe('Ext.plugin.Responsive', function () {
                     ptype: 'responsive'
                 }]);
 
-                var child = panel.lookupReference('child');
+                expect(plugin).not.toBeUndefined();
+
                 expect(child.region).toBe('west');
+            });
+
+            it('should be created using object form', function () {
+                createPanel({
+                    responsive: true
+                });
+
+                expect(plugin).not.toBeUndefined();
+
+                // tests to make sure plugin didn't set plugin configs
+                // onto the component see EXTJS-25719
+                expect(child.getId()).not.toBe('responsive');
+            });
+
+            it('should be created using object form passing a config object', function () {
+                createPanel({
+                    responsive: {
+                        foo: 'bar'
+                    }
+                });
+
+                expect(plugin).not.toBeUndefined();
+
+                // tests to make sure plugin didn't set plugin configs
+                // onto the component see EXTJS-25719
+                expect(panel.getId()).not.toBe('responsive');
+
+                expect(plugin.foo).toBe('bar');
             });
         });
     });

@@ -146,20 +146,6 @@ Ext.define('Ext.form.trigger.Trigger', {
         '</div>'
     ],
 
-    statics: {
-        /**
-         * Comparison function for sorting an array of triggers in ascending order
-         * @param {Ext.form.field.Trigger} triggerA
-         * @param {Ext.form.field.Trigger} triggerB
-         * @return {Number}
-         * @private
-         * @static
-         */
-        weightComparator: function(triggerA, triggerB) {
-            return triggerA.weight - triggerB.weight;
-        }
-    },
-
     constructor: function(config) {
         var me = this,
             cls;
@@ -348,7 +334,7 @@ Ext.define('Ext.form.trigger.Trigger', {
         e.preventDefault();
     },
 
-    onClickRepeaterMouseUp: function(e) {
+    onClickRepeaterMouseUp: function(clickRepeater, e) {
         var me = this,
             field = me.field;
 

@@ -99,13 +99,6 @@ Ext.define('Ext.chart.axis.Time', {
     ],
     config: {
         /**
-         * @cfg {Boolean} calculateByLabelSize
-         * The minimum value drawn by the axis. If not set explicitly, the axis
-         * minimum will be calculated automatically.
-         */
-        calculateByLabelSize: true,
-
-        /**
          * @cfg {String} dateFormat
          * Indicates the format the date will be rendered in.
          * For example: 'M d' will render the dates as 'Jan 30'.

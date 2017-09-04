@@ -46,33 +46,23 @@ Ext.define('Ext.drag.proxy.Placeholder', {
      * @inheritdoc
      */
     cleanup: function() {
-        var el = this.element;
-        if (el) {
-            el.hide();
-        }
+        this.element = Ext.destroy(this.element);
     },
 
     /**
      * @inheritdoc
      */
-    getElement: function(source) {
-        var me = this,
-            el = me.element;
+    getElement: function() {
+        var el = Ext.getBody().createChild({
+            cls: this.getCls(),
+            html: this.getHtml()
+        });
+        el.addCls(this.placeholderCls);
 
-        if (!el) {
-            me.element = el = Ext.getBody().createChild({
-                cls: me.getCls(),
-                html: me.getHtml()
-            });
-            el.addCls(me.placeholderCls);
-            
-            el.setTouchAction({
-                panX: false,
-                panY: false
-            });
-
-        }
-        el.show();
+        el.setTouchAction({
+            panX: false,
+            panY: false
+        });
 
         return el;
     },

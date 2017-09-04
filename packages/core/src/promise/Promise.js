@@ -148,6 +148,33 @@ return {
         },
 
         /**
+         * Returns a promise that resolves or rejects as soon as one of the promises in the array resolves
+         * or rejects, with the value or reason from that promise.
+         * @param {Ext.promise.Promise[]} promises The promises.
+         * @return {Ext.promise.Promise} The promise to be resolved when the race completes.
+         *
+         * @private
+         * @static
+         * @since 6.5.0
+         */
+        race: function(promises) {
+            //<debug>
+            if (!Ext.isArray(promises)) {
+                Ext.raise('Invalid parameter: expected an Array.');
+            }
+            //</debug>
+
+            var deferred = new Deferred(),
+                len = promises.length,
+                i;
+
+            for (i = 0; i < len; ++i) {
+                deferred.resolve(promises[i]);
+            }
+            return deferred.promise;
+        },
+
+        /**
          * Rethrows the specified Error on the next turn of the event loop.
          * @static
          * @private
@@ -168,7 +195,7 @@ return {
          * The public API's to use instead of this method are `{@link Ext.Promise#resolve}`
          * and `{@link Ext.Deferred#resolved}`.
          *
-         * @param {Mixed} promiseOrValue A Promise (or third-party Promise or then()-able)
+         * @param {Mixed} value A Promise (or third-party Promise or then()-able)
          * or value.
          * @return {Ext.Promise} A Promise of the specified Promise or value.
          *
@@ -176,7 +203,7 @@ return {
          * @private
          */
         when: function (value) {
-            var deferred = new Ext.promise.Deferred();
+            var deferred = new Deferred();
 
             deferred.resolve(value);
 
@@ -236,15 +263,15 @@ return {
 
         if (scope) {
             if (onFulfilled) {
-                onFulfilled = Ext.Function.bind(onFulfilled, scope);
+                onFulfilled = onFulfilled.bind(scope);
             }
             
             if (onRejected) {
-                onRejected = Ext.Function.bind(onRejected, scope);
+                onRejected = onRejected.bind(scope);
             }
             
             if (onProgress) {
-                onProgress = Ext.Function.bind(onProgress, scope);
+                onProgress = onProgress.bind(scope);
             }
         }
 
@@ -262,8 +289,10 @@ return {
      * @param {Function} onRejected Callback to execute to transform a rejection reason.
      * @param {Object} scope Optional scope for the callback.
      * @return {Ext.promise.Promise} Promise of the transformed future value.
+     *
+     * @since 6.5.0
      */
-    otherwise: function (onRejected, scope) {
+    'catch': function(onRejected, scope) {
         var ref;
 
         if (arguments.length === 1 && Ext.isObject(arguments[0])) {
@@ -273,10 +302,18 @@ return {
         }
 
         if (scope != null) {
-            onRejected = Ext.Function.bind(onRejected, scope);
+            onRejected = onRejected.bind(scope);
         }
 
         return this.owner.then(null, onRejected);
+    },
+
+    /**
+     * An alias for the {@link #catch} method. To be used for browsers
+     * where catch cannot be used as a method name.
+     */
+    otherwise: function (onRejected, scope) {
+        return this['catch'].apply(this, arguments);
     },
 
     /**
@@ -303,7 +340,7 @@ return {
         }
 
         if (scope != null) {
-            onCompleted = Ext.Function.bind(onCompleted, scope);
+            onCompleted = onCompleted.bind(scope);
         }
 
         return this.owner.then(function (value) {
@@ -405,7 +442,7 @@ return {
             throw reason;
         });
     }
-}},
+};},
 function (ExtPromise) {
     ExtPromise._ready();
 });

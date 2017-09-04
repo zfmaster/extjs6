@@ -193,8 +193,8 @@ Ext.define('Ext.util.MixedCollection', {
 
     /**
      * Sorts this collection by <b>key</b>s.
-     * @param {String} direction (optional) 'ASC' or 'DESC'. Defaults to 'ASC'.
-     * @param {Function} fn (optional) Comparison function that defines the sort order.
+     * @param {"ASC"/"DESC"} [dir="ASC"] 'ASC' or 'DESC'. Defaults to 'ASC'.
+     * @param {Function} [fn] Comparison function that defines the sort order.
      * Defaults to sorting by case insensitive string.
      */
     sortByKey : function(dir, fn){

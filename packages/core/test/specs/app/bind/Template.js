@@ -1,4 +1,4 @@
-describe('Ext.app.bind.Template', function () {
+topSuite("Ext.app.bind.Template", function () {
     var BindTemplate;
 
     function getNumFragments (tpl) {

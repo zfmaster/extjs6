@@ -1,5 +1,4 @@
-describe("Ext.data.validator.Range", function() {
-    
+topSuite("Ext.data.validator.Range", function() {
     var v;
     
     function validate(value, min, max) {
