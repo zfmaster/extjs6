@@ -707,6 +707,9 @@ Ext.define('Ext.chart.series.Series', {
             i, ln, sprite, items, markers;
 
         me.getStyle();
+        // Make sure the 'markers' sprite has been created,
+        // so that we can set the 'style' config of its 'highlight' modifier here.
+        me.getMarker();
 
         if (!Ext.Object.isEmpty(highlight)) {
 
@@ -746,8 +749,15 @@ Ext.define('Ext.chart.series.Series', {
         }
     },
 
-    applyItemInstancing: function (instancing, oldInstancing) {
-        return Ext.merge(oldInstancing || {}, instancing);
+    applyItemInstancing: function (config, oldConfig) {
+        if (config && oldConfig && (!config.type || config.type === oldConfig.type)) {
+            // Have to merge to a new object, or the updater won't be called.
+            config = Ext.merge({}, oldConfig, config);
+        }
+        if (config && !config.type) {
+            config = null;
+        }
+        return config;
     },
 
     setAttributesForItem: function (item, change) {
@@ -1028,7 +1038,19 @@ Ext.define('Ext.chart.series.Series', {
                 style['data' + fieldCategory[i]] = data;
             }
 
-            dataRange = Ext.chart.Util.validateRange(dataRange, me.defaultRange);
+            // We don't want to expand the range that has a span of 0 here
+            // (e.g. [5, 5] that we'd get if all values for a field are 5).
+            // We only want to do this in the Axis, when we calculate the
+            // combined range.
+            // This is because, if we try to expand the range of values here,
+            // and we have multiple fields, the combined range for the axis
+            // may not represent the actual range of the data.
+            // E.g. if other fields have non-zero span ranges like [4.95, 5.03],
+            // [4.91, 5.08], and if the `padding` param to `validateRange` is 0.5,
+            // the range of the axis will end up being [4.5, 5.5], because the
+            // [5, 5] range of one of the series was expanded to [4.5, 5.5]
+            // which encompasses the rest of the ranges.
+            dataRange = Ext.chart.Util.validateRange(dataRange, me.defaultRange, 0);
 
             // See `dataRange` docs.
             me.dataRange[directionOffset] = dataRange[0];
@@ -1439,8 +1461,7 @@ Ext.define('Ext.chart.series.Series', {
             surface = me.getSurface(),
             itemInstancing = me.getItemInstancing(),
             sprite = surface.add(me.getDefaultSpriteConfig()),
-            markerCfg = me.getMarker(),
-            marker, animation, label;
+            animation, label;
 
         sprite.setAttributes(me.getStyle());
         sprite.setSeries(me);
@@ -1449,21 +1470,7 @@ Ext.define('Ext.chart.series.Series', {
             me.createItemInstancingSprite(sprite, itemInstancing);
         }
 
-        if (sprite.bindMarker) { // if sprite is a MarkerHolder
-            if (markerCfg) {
-                marker = new Ext.chart.Markers();
-                markerCfg = Ext.Object.merge({
-                    modifiers: 'highlight'
-                }, markerCfg);
-                marker.setTemplate(markerCfg);
-                marker.getTemplate().getAnimation().setCustomDurations({
-                    translationX: 0,
-                    translationY: 0
-                });
-                sprite.dataMarker = marker;
-                sprite.bindMarker('markers', marker);
-                me.getOverlaySurface().add(marker);
-            }
+        if (sprite.isMarkerHolder) {
             label = me.getLabel();
             if (label && label.getTemplate().getField()) {
                 sprite.bindMarker('labels', label);
@@ -1487,7 +1494,7 @@ Ext.define('Ext.chart.series.Series', {
      * @method
      * Returns the read-only array of sprites the are used to draw this series.
      */
-    getSprites: Ext.emptyFn,
+    getSprites: null,
 
     /**
      * @private
@@ -1571,15 +1578,78 @@ Ext.define('Ext.chart.series.Series', {
     },
 
     applyMarker: function (marker, oldMarker) {
-        var type = (marker && marker.type) || (oldMarker && oldMarker.type) || 'circle',
-            cls = Ext.ClassManager.get(Ext.ClassManager.getNameByAlias('sprite.' + type));
+        var type, cls;
 
-        if (cls && cls.def) {
-            marker = cls.def.normalize(Ext.isObject(marker) ? marker : {}, true);
-            marker.type = type;
+        if (marker) {
+            if (!Ext.isObject(marker)) {
+                marker = {};
+            }
+            type = marker.type || 'circle';
+
+            if (oldMarker && type === oldMarker.type) {
+                marker = Ext.merge({}, oldMarker, marker);
+                // Note: reusing the `oldMaker` like `Ext.merge(oldMarker, marker)`
+                // isn't possible because the `updateMarker` won't be called.
+            }
         }
 
-        return Ext.merge(oldMarker || {}, marker);
+        if (type) {
+            cls = Ext.ClassManager.get(Ext.ClassManager.getNameByAlias('sprite.' + type));
+        }
+
+        if (cls && cls.def) {
+            marker = cls.def.normalize(marker, true);
+            marker.type = type;
+        } else {
+            marker = null;
+            //<debug>
+            Ext.log.warn('Invalid series marker type: ' + type);
+            //</debug>
+        }
+
+        return marker;
+    },
+
+    updateMarker: function (marker) {
+        var me = this,
+            sprites = me.getSprites(),
+            seriesSprite, markerSprite, markerTplConfig,
+            i, ln;
+
+        for (i = 0, ln = sprites.length; i < ln; i++) {
+            seriesSprite = sprites[i];
+            if (!seriesSprite.isMarkerHolder) {
+                continue;
+            }
+            markerSprite = seriesSprite.getMarker('markers');
+            if (marker) {
+                if (!markerSprite) {
+                    markerSprite = new Ext.chart.Markers();
+                    seriesSprite.bindMarker('markers', markerSprite);
+                    me.getOverlaySurface().add(markerSprite);
+                }
+                markerTplConfig = Ext.Object.merge({
+                    modifiers: 'highlight'
+                }, marker);
+                markerSprite.setTemplate(markerTplConfig);
+                markerSprite.getTemplate().getAnimation().setCustomDurations({
+                    translationX: 0,
+                    translationY: 0
+                });
+            } else if (markerSprite) {
+                seriesSprite.releaseMarker('markers');
+                me.getOverlaySurface().remove(markerSprite, true);
+            }
+            seriesSprite.setDirty(true);
+        }
+
+        // If we call, for example, `series.setMarker({type: 'circle'})` on a series
+        // that has been already constructed, the newly added marker still has to be
+        // themed, and the 'style' config of its 'highlight' modifier has to be set.
+        if (!me.isConfiguring) {
+            me.doUpdateStyles();
+            me.updateHighlight(me.getHighlight());
+        }
     },
 
     applyMarkerSubStyle: function (marker, oldMarker) {
@@ -1770,23 +1840,24 @@ Ext.define('Ext.chart.series.Series', {
         var me = this,
             sprites = me.sprites,
             itemInstancing = me.getItemInstancing(),
-            i = 0, ln = sprites && sprites.length,
+            ln = sprites && sprites.length,
             // 'showMarkers' updater calls 'series.getSprites()',
             // which we don't want to call here.
             showMarkers = me.getConfig('showMarkers', true),
-            markerCfg = me.getMarker(),
-            style;
+            style, sprite, marker, i;
 
-        // TODO: make sure all series work nicely with the below change
-//        me.setAnimation(me.getChart().getAnimation());
-        for (; i < ln; i++) {
+        for (i = 0; i < ln; i++) {
+            sprite = sprites[i];
+
             style = me.getStyleByIndex(i);
             if (itemInstancing) {
-                sprites[i].getMarker('items').getTemplate().setAttributes(style);
+                sprite.getMarker('items').getTemplate().setAttributes(style);
             }
-            sprites[i].setAttributes(style);
-            if (markerCfg && sprites[i].dataMarker) {
-                sprites[i].dataMarker.getTemplate().setAttributes(me.getMarkerStyleByIndex(i));
+            sprite.setAttributes(style);
+
+            marker = sprite.isMarkerHolder && sprite.getMarker('markers');
+            if (marker) {
+                marker.getTemplate().setAttributes(me.getMarkerStyleByIndex(i));
             }
         }
     },

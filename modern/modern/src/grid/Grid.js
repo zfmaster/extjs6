@@ -287,7 +287,7 @@ Ext.define('Ext.grid.Grid', {
         columns: null,
 
         /**
-         * @cfg {Object} [columnMenu]
+         * @cfg {Object} columnMenu
          * This is a config object which is used by columns in this grid to create their
          * header menus.
          *
@@ -374,26 +374,28 @@ Ext.define('Ext.grid.Grid', {
         },
 
         /**
-         * @cfg {Boolean} [sortable=true]
-         * Configure as `false` to disable column sorting via clicking the header and via the Sorting menu items.
+         * @cfg {Boolean} sortable
+         * Configure as `false` to disable column sorting via clicking the header and via
+         * the Sorting menu items.
          */
         sortable: true,
 
         /**
-         * @cfg {Boolean} [multiColumnSort=false]
+         * @cfg {Boolean} multiColumnSort
          * Configure as `true` to have columns retain their sorted state after other
          * columns have been clicked upon to sort.
          *
          * As subsequent columns are clicked upon, they become the new primary sort key.
          *
-         * Clicking on an already sorted column which is *not* the primary sort key does not
-         * toggle its direction. Analogous to bringing a window to the top by clicking it,
-         * this makes that column's field the primary sort key. Subsequent clicks then toggle it.
+         * Clicking on an already sorted column which is *not* the primary sort key does
+         * not toggle its direction. Analogous to bringing a window to the top by
+         * clicking it, this makes that column's field the primary sort key. Subsequent
+         * clicks then toggle it.
          *
          * Clicking on a primary key column toggles `ASC` -> `DESC` -> no sorter.
          *
          * The column sorting menu items may be used to toggle the direction without
-         * affacting the sorter priority.
+         * affecting the sorter priority.
          *
          * The maximum number of sorters allowed in a Store is configurable via its
          * underlying data collection. See {@link Ext.util.Collection#multiSortLimit}
@@ -449,12 +451,16 @@ Ext.define('Ext.grid.Grid', {
         xtype: 'gridrow'
     },
 
+    /**
+     * @cfg groupHeader
+     * @inheritdoc
+     */
     groupHeader: {
         xtype: 'rowheader'
     },
 
     /**
-     * @cfg {Boolean} infinite
+     * @cfg infinite
      * @inheritdoc
      */
     infinite: true,
@@ -462,16 +468,28 @@ Ext.define('Ext.grid.Grid', {
     // The type of navigationMode to create
     navigationModel: 'grid',
 
+    /**
+     * @cfg pinnedHeader
+     * @inheritdoc
+     */
     pinnedHeader: {
         xtype: 'rowheader'
     },
 
+    /**
+     * @cfg scrollable
+     * @inheritdoc
+     */
     scrollable: true,
 
+    /**
+     * @cfg scrollToTopOnRefresh
+     * @inheritdoc
+     */
     scrollToTopOnRefresh: false,
 
     /**
-     * @cfg {Boolean} striped
+     * @cfg striped
      * @inheritdoc
      */
     striped: true,
@@ -494,7 +512,7 @@ Ext.define('Ext.grid.Grid', {
     },
 
     /**
-     * @cfg {Object} [selectable]
+     * @cfg {Object} selectable
      * A configuration object which allows passing of configuration options to create or
      * reconfigure a {@link Ext.dataview.selection.Model selection model}.
      *
@@ -590,6 +608,10 @@ Ext.define('Ext.grid.Grid', {
      */
     selectionModel: 'grid',
 
+    /**
+     * @property classCls
+     * @inheritdoc
+     */
     classCls: Ext.baseCSSPrefix + 'grid',
     columnLinesCls: Ext.baseCSSPrefix + 'column-lines',
 
@@ -907,6 +929,10 @@ Ext.define('Ext.grid.Grid', {
 
             me.onColumnChange('columnshow', [me, column]);
         }
+    },
+
+    onColumnSort: function(container, column, direction) {
+        this.fireEvent('columnsort', this, column, direction);
     },
 
     onRender: function() {
@@ -1295,6 +1321,7 @@ Ext.define('Ext.grid.Grid', {
                     columnadd: 'onColumnAdd',
                     columnmove: 'onColumnMove',
                     columnremove: 'onColumnRemove',
+                    columnsort: 'onColumnSort',
                     scope: this
                 });
             }

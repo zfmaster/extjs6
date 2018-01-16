@@ -102,6 +102,43 @@ function() {
                 expect(grid.rowLines).toBe(true);
                 expect(grid.lockedGrid.rowLines).toBe(false);
             });
+
+            it("should set both sides with xtype gridpanel when creating form extended classes", function() {
+                grid.destroy();
+
+                Ext.define('BaseGrid',{
+                    extend: 'Ext.grid.Panel',
+                    xtype: 'base-grid',
+                    title: 'foo'
+                });
+
+                Ext.define('MyGrid', {
+                    extend: 'BaseGrid',
+                    xtype: 'mygrid',
+                    columns: [{
+                        dataIndex: 'foo',
+                        locked: true
+                    },{
+                        dataIndex:'bar'
+                    }]
+                });
+
+                grid = Ext.create('MyGrid',{
+                    renderTo: document.body,
+                    store: {
+                        data: {
+                            foo: 1,
+                            bar: 2
+                        }
+                    }
+                });
+
+                expect(grid.lockedGrid.isXType('base-grid')).not.toBe(true);
+                expect(grid.lockedGrid.isXType('gridpanel')).toBe(true);
+
+                Ext.undefine('BaseGrid');
+                Ext.undefine('MyGrid');
+            });
         });
 
         describe("when stateful", function () {

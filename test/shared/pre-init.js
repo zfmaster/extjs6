@@ -67,8 +67,3 @@ jasmine.installDependenciesCallback = function(callback) {
     // becase we want `uses` classes to finish loading, too
     Ext.onReady(callback, null, { priority: -9000 });
 };
-
-// Native Promises are really annoying in that they're throwing "unhandled rejection"
-// exceptions whenever a Promise is rejected and is not handled. This makes writing
-// tests too complicated, so we use Ext promises instead for tests.
-Ext.useExtPromises = true;

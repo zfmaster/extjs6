@@ -372,7 +372,7 @@ Ext.define('Ext.menu.Item', {
     },
 
     updateTarget: function (target) {
-        this.el.dom.target = target;
+        this.bodyElement.dom.target = target;
     },
 
     updateIcon: function (icon) {

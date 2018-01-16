@@ -430,7 +430,17 @@ Ext.define('Ext.field.Date', {
         return this.callParent([value, errors]);
     },
 
-    transformValue: Ext.identityFn,
+    transformValue: function (value) {
+        if (Ext.isObject(value)) {
+            value = new Date(value.year, value.month, value.day);
+
+            if (isNaN(value.getTime())) {
+                value = null;
+            }
+        }
+
+        return value;
+    },
 
     doDestroy: function() {
         var picker = this._picker;

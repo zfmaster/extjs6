@@ -87,6 +87,16 @@ topSuite("Ext.data.Model", [
                 expect(orders.getAt(1).id).toBe(102);
                 expect(orders.getAt(1).get('discountCode')).toBe('xyz');
             });
+
+            it("should maintain phantom state based on id", function() {
+                var a = create({
+                    id: 1
+                });
+                expect(a.phantom).toBe(false);
+
+                var b = create({});
+                expect(b.phantom).toBe(true);
+            });
         });
 
         describe("with session", function() {

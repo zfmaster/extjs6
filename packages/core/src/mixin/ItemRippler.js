@@ -49,7 +49,7 @@ Ext.define('Ext.mixin.ItemRippler', {
             release = itemRipple && itemRipple.release,
             isRelease = release === true,
             el = item.isWidget ? item.el : item,
-            pos, delta, rs;
+            pos, delta, rs, rippledItems;
 
         // If this is a release based ripple lets track the start point
         // so we can ignore the ripple if this becomes a drag
@@ -62,7 +62,9 @@ Ext.define('Ext.mixin.ItemRippler', {
         // Are we in the right event (start or end)?
         // do we have an element to ripple with?
         if (itemRipple && el && ((!start && isRelease) || (start && release !== true))) {
+            rippledItems = me.$rippledItems || (me.$rippledItems = []);
             rs = me.$rippleStart;
+
             if (rs) {
                 pos = e.getXY();
                 // determine the distance from the start point
@@ -71,12 +73,20 @@ Ext.define('Ext.mixin.ItemRippler', {
 
                 if (delta <= 8) {
                     el.ripple(e, itemRipple);
+                    rippledItems.push(el);
                 }
             } else {
                 el.ripple(e, itemRipple);
+                rippledItems.push(el);
             }
 
             me.$rippleStart = null;
+        }
+    },
+
+    destroyAllRipples: function () {
+        for (var items = this.$rippledItems; items && items.length; ) {
+            items.pop().destroyAllRipples();
         }
     },
 

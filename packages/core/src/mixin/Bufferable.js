@@ -211,10 +211,10 @@ Ext.define('Ext.mixin.Bufferable', function (Bufferable) { return {
                     else if (timer.asap) {
                         Ext.unasap(id);
                     }
-                    else if (def.idle) {
+                    else if (timer.idle) {
                         Ext.un('idle', id, null, Bufferable.SINGLE);
                     }
-                    else if (def.raf) {
+                    else if (timer.raf) {
                         Ext.unraf(id);
                     }
 
@@ -227,7 +227,7 @@ Ext.define('Ext.mixin.Bufferable', function (Bufferable) { return {
 
             _invoker: function () {
                 var timer = this, // this fn is "invoke()" on timer instances
-                    args = timer.args,
+                    args = timer.args || Ext.emptyArray,
                     target = timer.target;
 
                 //<debug>
@@ -346,4 +346,4 @@ Ext.define('Ext.mixin.Bufferable', function (Bufferable) { return {
             }
         } // statics
     } // privates
-}});
+};});

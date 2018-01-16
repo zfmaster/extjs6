@@ -168,14 +168,14 @@
 /* /mnt/web/www/extjs/ext-6.2.0/packages/core/sass/src/dom/Element.scss:36 */
 .x6-pressed .x6-ripple-transition,
 .x6-pressing .x6-ripple-transition {
-    transition: background-color 0.15s 0.28s cubic-bezier(0.4, 0, 0.2, 1), color 0.15s 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background-color 0.15s 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.15s 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/packages/core/sass/src/dom/Element.scss:40 */
 .x6-pressed .x6-ripple-transition .x6-icon-el,
 .x6-pressed .x6-ripple-transition .x6-arrow-el,
 .x6-pressing .x6-ripple-transition .x6-icon-el,
 .x6-pressing .x6-ripple-transition .x6-arrow-el {
-    transition: background-color 0.15s 0.28s cubic-bezier(0.4, 0, 0.2, 1), color 0.15s 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background-color 0.15s 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.15s 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/packages/core/sass/src/dom/Element.scss:45 */
 .x6-rippling {
@@ -2130,20 +2130,44 @@ td.x6-frame-mc {
     display: inline-flex;
     vertical-align: top;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-base/sass/src/form/field/Text.scss:25 */
+/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-base/sass/src/form/field/Text.scss:28 */
+.x6-gecko .x6-form-type-text.x6-has-min-height {
+    height: 1px;
+}
+/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-base/sass/src/form/field/Text.scss:32 */
+.x6-form-type-text.x6-has-min-height .x6-form-text-field-body,
+.x6-form-type-text.x6-has-min-height .x6-form-trigger-wrap,
+.x6-form-type-text.x6-has-min-height .x6-form-text-wrap {
+    min-height: inherit;
+}
+/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-base/sass/src/form/field/Text.scss:40 */
+.x6-ie8 .x6-form-type-text.x6-has-min-height .x6-form-text-field-body,
+.x6-ie8 .x6-form-type-text.x6-has-min-height .x6-form-trigger-wrap,
+.x6-ie8 .x6-form-type-text.x6-has-min-height .x6-form-text-wrap {
+    min-height: inherit;
+}
+/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-base/sass/src/form/field/Text.scss:47 */
+.x6-ie8 .x6-form-type-text.x6-has-min-height .x6-form-text {
+    min-height: inherit;
+}
+/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-base/sass/src/form/field/Text.scss:52 */
+.x6-form-type-text.x6-has-min-height .x6-form-text {
+    height: 100%;
+}
+/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-base/sass/src/form/field/Text.scss:57 */
 .x6-form-text-wrap {
     display: table-cell;
     overflow: hidden;
     height: 100%;
     position: relative;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-base/sass/src/form/field/Text.scss:33 */
+/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-base/sass/src/form/field/Text.scss:65 */
 .x6-gecko .x6-form-text-wrap {
     display: block;
     -moz-box-flex: 1;
     flex: 1;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-base/sass/src/form/field/Text.scss:40 */
+/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-base/sass/src/form/field/Text.scss:72 */
 .x6-form-text-wrap .x6-placeholder-label {
     position: absolute;
     top: 0;
@@ -2152,12 +2176,12 @@ td.x6-frame-mc {
     white-space: nowrap;
     overflow: hidden;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-base/sass/src/form/field/Text.scss:52 */
+/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-base/sass/src/form/field/Text.scss:84 */
 .x6-form-item-body.x6-form-text-grow {
     min-width: inherit;
     max-width: inherit;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-base/sass/src/form/field/Text.scss:57 */
+/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-base/sass/src/form/field/Text.scss:89 */
 .x6-form-text {
     border: 0;
     margin: 0;
@@ -2171,7 +2195,7 @@ td.x6-frame-mc {
     width: 100%;
     height: 100%;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-base/sass/src/form/field/Text.scss:67 */
+/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-base/sass/src/form/field/Text.scss:99 */
 .x6-form-trigger {
     display: table-cell;
     vertical-align: top;
@@ -2182,21 +2206,21 @@ td.x6-frame-mc {
     line-height: 0;
     white-space: nowrap;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-base/sass/src/form/field/Text.scss:79 */
+/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-base/sass/src/form/field/Text.scss:111 */
 .x6-item-disabled .x6-form-trigger {
     cursor: default;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-base/sass/src/form/field/Text.scss:82 */
+/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-base/sass/src/form/field/Text.scss:114 */
 .x6-form-trigger.x6-form-trigger-cmp {
     background: none;
     border: 0;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-base/sass/src/form/field/Text.scss:91 */
+/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-base/sass/src/form/field/Text.scss:123 */
 .x6-form-trigger.x6-form-trigger-cmp.x6-rtl {
     background: none;
     border: 0;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-base/sass/src/form/field/Text.scss:99 */
+/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-base/sass/src/form/field/Text.scss:131 */
 .x6-gecko .x6-form-trigger {
     display: block;
 }

@@ -23,8 +23,8 @@ Ext.define('Ext.MessageBox', {
 
     config: {
         /**
-         * @cfg {String} iconCls
-         * @inheritdoc Ext.Button#iconCls
+         * @cfg iconCls
+         * @inheritdoc Ext.Button#cfg-iconCls
          * @accessor
          */
         iconCls: null,
@@ -87,8 +87,16 @@ Ext.define('Ext.MessageBox', {
         multiLine: null
     },
 
+    /**
+     * @property classCls
+     * @inheritdoc
+     */
     classCls: Ext.baseCSSPrefix + 'messagebox',
 
+    /**
+     * @cfg closeAction
+     * @inheritdoc
+     */
     closeAction: 'hide',
 
     headerCls: [
@@ -604,6 +612,7 @@ Ext.define('Ext.MessageBox', {
     }
 }, function(MessageBox) {
     Ext.onInternalReady(function() {
+        // #define Ext.Msg
         /**
          * @class Ext.Msg
          * @extends Ext.MessageBox

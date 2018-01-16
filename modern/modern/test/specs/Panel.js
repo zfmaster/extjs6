@@ -717,6 +717,113 @@ topSuite("Ext.Panel", ['Ext.app.ViewModel', 'Ext.Button'], function() {
                     expect(item.getText()).toBe('Bar');
                 });
 
+                it("should not create a toolbar if the config is set to null", function() {
+                    var config = {};
+                    config[property] = null;
+
+                    createPanel(config);
+                    expect(panel.down('toolbar')).toBeNull();
+                });
+
+                describe("dynamic", function() {
+                    var setter = Ext.Config.get(property).names.set;
+                    describe("setting a value", function() {
+                        it("should be able to set an array", function() {
+                            createPanel();
+                            panel[setter]([{
+                                id: 'a',
+                                text: 'Foo'
+                            }]);
+
+                            var tb = panel.down('toolbar');
+                            expect(tb).not.toBeNull();
+                            expect(tb.isAncestor(Ext.getCmp('a'))).toBe(true);
+                        });
+
+                        it("should be able to set an object", function() {
+                            createPanel();
+                            panel[setter]({
+                                itemId: 'tb',
+                                items: [{
+                                    id: 'a',
+                                    text: 'Foo'
+                                }]
+                            });
+
+                            var tb = panel.down('toolbar');
+                            expect(tb).not.toBeNull();
+                            expect(panel.down('#tb')).toBe(tb);
+                            expect(tb.isAncestor(Ext.getCmp('a'))).toBe(true);
+                        });
+                    });
+
+                    describe("clearing a value", function() {
+                        it("should be able to clear the value", function() {
+                            var config = {},
+                                tb;
+
+                            config[property] = [{
+                                text: 'Foo'
+                            }];
+                            createPanel(config);
+                            tb = panel.down('toolbar');
+                            panel[setter](null);
+                            expect(tb.destroyed).toBe(true);
+                            expect(panel.down('toolbar')).toBeNull();
+
+                        });
+                    });
+
+                    describe("changing a value", function() {
+                        it("should be able to set an array", function() {
+                            var config = {},
+                                old, tb;
+
+                            config[property] = [{
+                                text: 'OldButton'
+                            }];
+
+                            createPanel(config);
+                            old = panel.down('toolbar');
+                            panel[setter]([{
+                                id: 'a',
+                                text: 'Foo'
+                            }]);
+
+                            tb = panel.down('toolbar');
+                            expect(old.destroyed).toBe(true);
+                            expect(tb).not.toBeNull();
+                            expect(tb).not.toBe(old);
+                            expect(tb.isAncestor(Ext.getCmp('a'))).toBe(true);
+                        });
+
+                        it("should be able to set an object", function() {
+                            var config = {},
+                                old, tb;
+
+                            config[property] = [{
+                                text: 'OldButton'
+                            }];
+
+                            createPanel(config);
+                            old = panel.down('toolbar');
+                            panel[setter]({
+                                itemId: 'tb',
+                                items: [{
+                                    id: 'a',
+                                    text: 'Foo'
+                                }]
+                            });
+
+                            tb = panel.down('toolbar');
+                            expect(tb).not.toBeNull();
+                            expect(panel.down('#tb')).toBe(tb);
+                            expect(tb).not.toBe(old);
+                            expect(tb.isAncestor(Ext.getCmp('a'))).toBe(true);
+                        });
+                    });
+                });
+
                 if (options.buttonAlign) {
                     it('should use buttonAlign config with an array', function() {
                         var config = {

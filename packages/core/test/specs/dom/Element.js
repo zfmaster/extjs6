@@ -2205,6 +2205,19 @@ topSuite("Ext.dom.Element", function() {
             it("should not wrap a text node", function() {
                 expect(Ext.fly(document.createTextNode(('foo')))).toBe(null);
             });
+
+            it("should wrap an Ext.dom.Element instance", function() {
+                var el = Ext.getBody().createChild();
+                expect(Ext.fly(el).dom).toBe(el.dom);
+                el.destroy();
+            });
+
+            it("should wrap a fly", function() {
+                var div = document.createElement('div'),
+                    other = Ext.fly(div, '_named');
+
+                expect(Ext.fly(other).dom).toBe(div);
+            });
         });
 
         describe("aliases", function() {
@@ -5208,7 +5221,9 @@ topSuite("Ext.dom.Element", function() {
                     el2.dom.innerHTML = '<!--comment--> bar';
     
                     expect(function () {el1.syncContent(el2);}).not.toThrow();
-                    expect(el1.dom.innerHTML).toEqual('<!--comment--> bar');
+                    expect(el1.dom.innerHTML).toEqual(
+                        (Ext.isIE8 ? '' : '<!--comment--> ') + 'bar'
+                    );
                 });
             });
         });

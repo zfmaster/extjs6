@@ -675,6 +675,17 @@ function() {
                 component.setValue(['value 1', 'value not in store']);
                 expect(component.inputEl.dom.value).toEqual('text 1');
             });
+            it("should display the valueNotFoundText when setting as a single value with a custom displayField", function() {
+                makeComponent({
+                    valueField: 'foo',
+                    forceSelection: true,
+                    valueNotFoundText: 'oops!',
+                    displayField: 'display',
+                    renderTo: Ext.getBody()
+                });
+                component.setValue(1234);
+                expect(component.inputEl.dom.value).toEqual('oops!');
+            });
             it("should update the expanded dropdown's selection - single select", function() {
                 makeComponent({
                     valueField: 'val',

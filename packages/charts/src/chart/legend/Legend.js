@@ -23,6 +23,12 @@ Ext.define('Ext.chart.legend.Legend', {
          * toggled by interaction with the legend items.
          */
         toggleable: true
+
+        /**
+         * @cfg {Ext.chart.legend.store.Store} store
+         * The {@link Ext.chart.legend.store.Store} to bind this legend to.
+         * @private
+         */
     },
 
     baseCls: Ext.baseCSSPrefix + 'legend',

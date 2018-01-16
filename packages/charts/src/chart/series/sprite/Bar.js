@@ -260,42 +260,6 @@ Ext.define('Ext.chart.series.sprite.Bar', {
                 translationY: surfaceMatrix.y(center, top)
             }, i, true);
         }
-    },
-
-    getIndexNearPoint: function (x, y) {
-        var sprite = this,
-            attr = sprite.attr,
-            dataX = attr.dataX,
-            surface = sprite.getSurface(),
-            surfaceRect = surface.getRect() || [0,0,0,0],
-            surfaceHeight = surfaceRect[3],
-            hitX, hitY,
-            i, bbox,
-            index = -1;
-
-        // The "items" sprites that draw the bars work in a reverse vertical coordinate system
-        // starting with 0 at the bottom and increasing the Y coordinate toward the top.
-        // See also Ext.chart.series.Bar.getItemForPoint(x,y) regarding the chart's innerPadding.
-        if (attr.flipXY) {
-            hitX = surfaceHeight - y;
-            if (surface.getInherited().rtl) {
-                hitY = surfaceRect[2] - x;
-            } else {
-                hitY = x;
-            }
-        } else {
-            hitX = x;
-            hitY = surfaceHeight - y;
-        }
-
-        for (i = 0; i < dataX.length; i++) {
-            bbox = sprite.getMarkerBBox('items', i);
-            if (Ext.draw.Draw.isPointInBBox(hitX, hitY, bbox)) {
-                index = i;
-                break;
-            }
-        }
-        return index;
     }
 
 });

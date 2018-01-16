@@ -136,8 +136,16 @@ Ext.define('Ext.Dialog', {
     isDialog: true,
     isWindow: true,  // classic compat
 
+    /**
+     * @property ariaRole
+     * @inheritdoc
+     */
     ariaRole: 'dialog',
 
+    /**
+     * @property classCls
+     * @inheritdoc
+     */
     classCls: Ext.baseCSSPrefix + 'dialog',
 
     /**
@@ -340,13 +348,46 @@ Ext.define('Ext.Dialog', {
         // minimized: null,
     },
 
+    /**
+     * @cfg border
+     * @inheritdoc
+     */
     border: true,
+    
+    /**
+     * @cfg bodyBorder
+     * @inheritdoc
+     */
     bodyBorder: false,
+    
+    /**
+     * @cfg centered
+     * @inheritdoc
+     */
     centered: true,
+    
+    /**
+     * @cfg floated
+     * @inheritdoc
+     */
     floated: true,
+    
+    /**
+     * @property focusable
+     * @inheritdoc
+     */
     focusable: false,
+    
+    /**
+     * @cfg tabIndex
+     * @inheritdoc
+     */
     tabIndex: -1,
 
+    /**
+     * @cfg draggable
+     * @inheritdoc
+     */
     draggable: {
         handle: '.' + Ext.baseCSSPrefix + 'draggable',
         listeners: {
@@ -355,19 +396,23 @@ Ext.define('Ext.Dialog', {
         }
     },
 
+    /**
+     * @cfg keyMap
+     * @inheritdoc
+     */
     keyMap: {
         ESC: 'onEscape',
         scope: 'this'
     },
 
     /**
-     * @cfg {Boolean} modal
+     * @cfg modal
      * @inheritdoc
      */
     modal: true,
 
     /**
-     * @cfg {Boolean} shadow
+     * @cfg shadow
      * @inheritdoc
      */
     shadow: true,
@@ -379,6 +424,10 @@ Ext.define('Ext.Dialog', {
         Ext.baseCSSPrefix + 'dialogtool'
     ],
     
+    /**
+     * @cfg hideMode
+     * @inheritdoc
+     */
     hideMode: 'offsets',
 
     /**
@@ -402,25 +451,25 @@ Ext.define('Ext.Dialog', {
     },
 
     //------------------------------
-    
+
     initialize: function() {
-        this.callParent();
-        
-        if (this.tabGuard) {
-            this.addPlugin({
+        var me = this;
+
+        me.callParent();
+
+        if (me.tabGuard) {
+            me.addPlugin({
                 type: 'tabguard',
-                tabGuardBeforeIndex: this.tabGuardBeforeIndex,
-                tabGuardAfterIndex: this.tabGuardAfterIndex
+                tabGuardBeforeIndex: me.tabGuardBeforeIndex,
+                tabGuardAfterIndex: me.tabGuardAfterIndex
             });
         }
     },
 
     doDestroy: function () {
-        var me = this;
+        Ext.destroy(this.maximizeTool, this.restoreTool);
 
-        Ext.destroy(me.maximizeTool, me.restoreTool);
-
-        me.callParent();
+        this.callParent();
     },
 
     close: function (event) {

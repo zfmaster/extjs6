@@ -484,10 +484,14 @@ Ext.define('Ext.dataview.List', {
         syncVerticalOverflow: 1
     },
 
+    /**
+     * @property classCls
+     * @inheritdoc
+     */
     classCls: Ext.baseCSSPrefix + 'list',
 
     /**
-     * @cfg {Object/Ext.Component} itemConfig
+     * @cfg itemConfig
      * @inheritdoc
      */
     itemConfig: {
@@ -512,6 +516,10 @@ Ext.define('Ext.dataview.List', {
      */
     rowHeight: 0,
 
+    /**
+     * @cfg scrollable
+     * @inheritdoc
+     */
     scrollable: {
         x: false,
         y: true
@@ -522,6 +530,10 @@ Ext.define('Ext.dataview.List', {
         totalcountchange: 'onStoreTotalCountChange'
     },
 
+    /**
+     * @property template
+     * @inheritdoc
+     */
     template: [{
         reference: 'bodyElement',
         cls: Ext.baseCSSPrefix + 'body-el',
@@ -1143,7 +1155,11 @@ Ext.define('Ext.dataview.List', {
     },
 
     privates: {
-        toolSelector: '.' + Ext.baseCSSPrefix + 'tool',
+        // This is a selector which excludes Tool elements from triggering List child
+        // events. Clicks on Tools are handled entirely by the Tool and do not cause
+        // List child events. Tools which are configured passive: true are excluded from this;
+        // they do not react to any events, they are display-only.
+        toolSelector: '.' + Ext.baseCSSPrefix + 'tool:not(.' + Ext.baseCSSPrefix + 'passive)',
 
         infiniteCls: Ext.baseCSSPrefix + 'infinite',
         groupFirstCls: Ext.baseCSSPrefix + 'group-first',

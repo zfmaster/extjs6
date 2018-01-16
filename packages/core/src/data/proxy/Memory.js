@@ -147,7 +147,10 @@ Ext.define('Ext.data.proxy.Memory', {
      */
     read: function(operation) {
         var me = this,
-            resultSet = me.getReader().read(me.getData()),
+            reader = me.getReader(),
+            resultSet = reader.read(me.getData(), {
+                recordCreator: reader.defaultRecordCreatorFromServer
+            }),
             records = resultSet.getRecords(),
             sorters = operation.getSorters(),
             grouper = operation.getGrouper(),

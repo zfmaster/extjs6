@@ -333,7 +333,11 @@ Ext.define('Ext.data.proxy.Proxy', {
             batch = new Ext.data.Batch(options.batch);
         }
 
-        batch.on('complete', Ext.bind(me.onBatchComplete, me, [options], 0));
+        // Use single so that the listener gets removed upon completion.
+        batch.on('complete', Ext.bind(me.onBatchComplete, me, [options], 0), null, {
+            single: true,
+            priority: 1000
+        });
 
         actions = me.getBatchOrder().split(',');
         aLen    = actions.length;

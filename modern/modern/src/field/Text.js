@@ -129,14 +129,13 @@ Ext.define('Ext.field.Text', {
 
     config: {
         /**
-         * @cfg {Boolean}
+         * @cfg {Boolean} clearable
          * `true` to show a clear trigger in this field when it has a non-empty value
-         * @accessor
          */
         clearable: true,
 
         /**
-         * @cfg {'top'/'left'/'bottom'/'right'/'placeholder'} labelAlign
+         * @cfg labelAlign
          * When value is `'placeholder'`, the label text will be rendered as placeholder
          * text inside the empty input and will animated to "top" alignment when the input
          * is focused or contains text.
@@ -144,13 +143,13 @@ Ext.define('Ext.field.Text', {
          */
 
         /**
-         * @cfg {String}
+         * @cfg {String} placeholder
          * A string value displayed in the input when the control is empty.
          */
         placeholder: null,
 
         /**
-         * @cfg {Number}
+         * @cfg {Number} maxLength
          * The maximum number of permitted input characters.
          */
         maxLength: null,
@@ -163,13 +162,13 @@ Ext.define('Ext.field.Text', {
         autoComplete: null,
 
         /**
-         * @cfg {Boolean}
+         * @cfg {Boolean} autoCapitalize
          * True to set the field's DOM element autocapitalize attribute to "on", false to set to "off".
          */
         autoCapitalize: null,
 
         /**
-         * @cfg {Boolean}
+         * @cfg {Boolean} autoCorrect
          * True to set the field DOM element autocorrect attribute to "on", false to set to "off".
          */
         autoCorrect: null,
@@ -192,7 +191,7 @@ Ext.define('Ext.field.Text', {
         inputMask: null,
 
         /**
-         * @cfg {String}
+         * @cfg {String} pattern
          * The value for the HTML5 `pattern` attribute. You can use this to change which
          * keyboard layout will be used.
          *
@@ -266,9 +265,10 @@ Ext.define('Ext.field.Text', {
         },
 
         /**
-         * @cfg {Boolean} [editable=true]
-         * Configure as `false` to prevent the user from typing text directly into the field;
-         * the field can only have its value set programmatically or via an action invoked by a trigger.
+         * @cfg {Boolean} editable
+         * Configure as `false` to prevent the user from typing text directly into the
+         * field; the field can only have its value set programmatically or via an action
+         * invoked by a trigger.
          *
          * Contrast with {@link #cfg!readOnly} which disables all mutation via the UI.
          */
@@ -276,6 +276,10 @@ Ext.define('Ext.field.Text', {
 
         bubbleEvents: ['action'],
 
+        /**
+         * @cfg bodyAlign
+         * @hide
+         */
         bodyAlign: 'stretch',
 
         /**
@@ -295,7 +299,7 @@ Ext.define('Ext.field.Text', {
 
     cachedConfig: {
         /**
-         * @cfg {Boolean}
+         * @cfg {Boolean} animateUnderline
          * 'true' to animate the underline of a field when focused
          */
         animateUnderline: false,
@@ -322,21 +326,38 @@ Ext.define('Ext.field.Text', {
      * @hide
      */
 
+    /**
+     * @property defaultBindProperty
+     * @inheritdoc
+     */
     defaultBindProperty: 'value',
+
+    /**
+     * @cfg twoWayBindable
+     * @inheritdoc
+     */
     twoWayBindable: {
         value: 1
     },
 
     /**
-     * @cfg
+     * @cfg publishes
      * @inheritdoc
      */
     publishes: {
         value: 1
     },
 
+    /**
+     * @cfg inputType
+     * @inheritdoc
+     */
     inputType: 'text',
 
+    /**
+     * @property classCls
+     * @inheritdoc
+     */
     classCls: Ext.baseCSSPrefix + 'textfield',
     focusedCls: Ext.baseCSSPrefix + 'focused',
     emptyCls: Ext.baseCSSPrefix + 'empty',
@@ -370,6 +391,10 @@ Ext.define('Ext.field.Text', {
 
     initialize: function () {
         var me = this;
+
+        if (Ext.isRobot) {
+            me.focusedInputDelay = 0;
+        }
 
         me.callParent();
 
@@ -786,6 +811,7 @@ Ext.define('Ext.field.Text', {
         var me = this,
             inputMask = me.getInputMask();
 
+        me.lastKeyTime = Date.now();
         if (inputMask) {
             inputMask.onKeyDown(me, me.getValue(), event);
         }
@@ -976,7 +1002,12 @@ Ext.define('Ext.field.Text', {
      * @chainable
      */
     select: function (start, end, direction) {
-        this.inputElement.selectText(start, end, direction);
+        // Safari has a bug where selecting text in an input element focuses that
+        // input element. If we do not contain focus, do nothing. We select on focus
+        // anyway.
+        if (this.containsFocus) {
+            this.inputElement.selectText(start, end, direction);
+        }
 
         return this;
     },
@@ -996,12 +1027,12 @@ Ext.define('Ext.field.Text', {
     },
 
     trimValueToMaxLength: function () {
-        var maxLength = this.getMaxLength();
-        if (maxLength) {
-            var value = this.getValue();
-            if (value.length > this.getMaxLength()) {
-                this.setValue(value.slice(0, maxLength));
-            }
+        var me = this,
+            maxLength = me.getMaxLength(),
+            value = me.getValue();
+
+        if (maxLength && value.length > maxLength) {
+            me.setValue(value.slice(0, maxLength));
         }
     },
 
@@ -1060,8 +1091,10 @@ Ext.define('Ext.field.Text', {
     },
 
     privates: {
+        focusedInputDelay: 300,
         forceInputChange: false,
         hasMask: false,
+        lastKeyTime: 0,
 
         applyParseValidator: function (config) {
             return this.decodeValidator(config);
@@ -1086,11 +1119,21 @@ Ext.define('Ext.field.Text', {
             this.toggleCls(Ext.baseCSSPrefix + 'animate-underline', value);
         },
 
-        canSetInputValue: function() {
-            return this.hasMask || this.forceInputChange || this.callParent();
+        canSetInputValue: function () {
+            var me = this;
+            // If we're using an inputMask, the field is updated dynamically
+            // as typing occurs. forceInputChange is for when the component wants
+            // to force the value to change, for example selecting from a picker,
+            // or after consuming a paste. If we are focused, make sure enough
+            // of a delay has passed so that we're not overwriting the value
+            // as the user is typing, which typically means the value will
+            // have come from a setValue call elsewhere, as opposed to
+            // from typing.
+            return me.hasMask || me.forceInputChange || !me.hasFocus ||
+                Date.now() - me.lastKeyTime > me.focusedInputDelay;
         },
 
-        doPositionPlaceholder: function(inside, doAnimate) {
+        doPositionPlaceholder: function (inside, doAnimate) {
             var me = this,
                 labelElement = me.labelElement,
                 anim, animation, info, insideInfo, outsideInfo;
@@ -1123,10 +1166,11 @@ Ext.define('Ext.field.Text', {
         },
 
         getPlaceholderLabel: function () {
-            var label = this.getLabel();
+            var me = this,
+                label = me.getLabel();
 
-            if (label && this.getRequired()) {
-                label += ' ' + this.requiredIndicator;
+            if (label && me.getRequired()) {
+                label += ' ' + me.requiredIndicator;
             }
 
             return label;
@@ -1164,7 +1208,7 @@ Ext.define('Ext.field.Text', {
             };
         },
 
-        handlePaste: function(e) {
+        handlePaste: function (e) {
             var me = this,
                 inputMask = me.getInputMask();
 
@@ -1354,5 +1398,18 @@ Ext.define('Ext.field.Text', {
                 setPlaceHolder: 'setPlaceholder'
             }
         }
+    }
+},
+function() {
+    // Fix for android active field not scrolled into view when keyboard is shown
+    if (Ext.os.is.Android) {
+        window.addEventListener('resize', function () {
+            var el = document.activeElement,
+                tag = el && el.tagName;
+            
+            if (tag === 'INPUT' || tag === 'TEXTAREA') {
+                el.scrollIntoView();
+            }
+        });
     }
 });

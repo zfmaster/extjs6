@@ -2212,7 +2212,7 @@ topSuite("Ext.data.Store", [
                     createStore({
                         data: [abeRaw]
                     });
-                    expect(store.loadCount).toBe(1);
+                    expect(store.loadCount).toBe(2);
                 });
 
                 it("should increment the loadCount when passing data with a memory proxy", function() {
@@ -2222,7 +2222,7 @@ topSuite("Ext.data.Store", [
                         },
                         data: [abeRaw]
                     });
-                    expect(store.loadCount).toBe(1);
+                    expect(store.loadCount).toBe(2);
                 });
             });
 
@@ -2233,12 +2233,12 @@ topSuite("Ext.data.Store", [
 
                 it("should increment when using loadRecords", function() {
                     store.loadRecords([makeUser('foo@sencha.com')]);
-                    expect(store.loadCount).toBe(1);
+                    expect(store.loadCount).toBe(2);
                 });
 
                 it("should increment when using loadData", function() {
                     store.loadData([tommyRaw]);
-                    expect(store.loadCount).toBe(1);
+                    expect(store.loadCount).toBe(2);
                 });
             });
 
@@ -2261,7 +2261,7 @@ topSuite("Ext.data.Store", [
                 it("should increment on a successful load with records", function() {
                     store.load();
                     completeWithData([abeRaw, aaronRaw]);
-                    expect(store.loadCount).toBe(1);
+                    expect(store.loadCount).toBe(2);
                 });
 
                 it("should not increment on an unsuccessful load", function() {
@@ -2615,6 +2615,14 @@ topSuite("Ext.data.Store", [
                         });
                         expect(result).toBe(false);
                         expect(store.getCount()).toBe(0);
+                    });
+
+                    it("should maintain the phantom state based on the data", function() {
+                        store.loadRawData({
+                            data: [{ email: 'foo@sencha.com' }, {}]
+                        });
+                        expect(store.first().phantom).toBe(false);
+                        expect(store.last().phantom).toBe(true);
                     });
                 });
                 

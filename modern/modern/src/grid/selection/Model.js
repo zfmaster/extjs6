@@ -1391,15 +1391,16 @@ Ext.define('Ext.grid.selection.Model', {
          * @private
          */
         updateRows: function(rows) {
-            var me = this,
-                sel = me.getSelection(),
-                checkHeader = me.getCheckbox();
+            var sel;
 
-            if (checkHeader) {
-                checkHeader.setHidden(!rows);
-            }
-            if (!rows && sel && sel.isRows) {
-                sel.clear();
+            if (!rows) {
+                // checkboxSelect depends on rowsSelect
+                this.setCheckbox(false);
+
+                sel = this.getSelection()
+                if (sel && sel.isRows) {
+                    sel.clear();
+                }
             }
         },
 
@@ -1557,6 +1558,8 @@ Ext.define('Ext.grid.selection.Model', {
 
                 if (checkbox) {
                     view.registerColumn(checkbox);
+                    // rows selection is required so force it
+                    me.setRows(true);
                 }
             }
         },

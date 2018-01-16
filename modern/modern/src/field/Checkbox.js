@@ -68,17 +68,29 @@ Ext.define('Ext.field.Checkbox', {
     qsaLeftRe: /[\[]/g,
     qsaRightRe: /[\]]/g,
 
+    /**
+     * @cfg shareableName
+     * @inheritdoc
+     */
     shareableName: true,
     isCheckbox: true,
 
+    /**
+     * @property defaultBindProperty
+     * @inheritdoc
+     */
     defaultBindProperty: 'checked',
 
+    /**
+     * @cfg twoWayBindable
+     * @inheritdoc
+     */
     twoWayBindable: {
         checked: 1
     },
 
     /**
-     * @cfg
+     * @cfg publishes
      * @inheritdoc
      */
     publishes: {
@@ -107,14 +119,16 @@ Ext.define('Ext.field.Checkbox', {
 
     config: {
         /**
-         * @cfg {String} value The string value to submit if the item is in a checked state.
+         * @cfg {String} value
+         * The string value to submit if the item is in a checked state.
          * @accessor
          */
         value: '',
 
 
         /**
-         * @cfg {Boolean} checked `true` if the checkbox should render initially checked.
+         * @cfg {Boolean} checked
+         * `true` if the checkbox should render initially checked.
          * @accessor
          */
         checked: false
@@ -131,6 +145,10 @@ Ext.define('Ext.field.Checkbox', {
 
     inputType: 'checkbox',
 
+    /**
+     * @property classCls
+     * @inheritdoc
+     */
     classCls: Ext.baseCSSPrefix + 'checkboxfield',
     checkedCls: Ext.baseCSSPrefix + 'checked',
 

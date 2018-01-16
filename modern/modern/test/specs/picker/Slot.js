@@ -5,7 +5,6 @@ topSuite("Ext.picker.Slot", ['Ext.viewport.Default', 'Ext.picker.Picker'], funct
 
     afterEach(function () {
         Ext.Viewport = viewport = picker = slot = Ext.destroy(slot, picker, viewport, Ext.Viewport);
-        Ext.scroll.Scroller.viewport = Ext.destroy(Ext.scroll.Scroller.viewport);
     });
 
     function makePicker (value, dataSize) {

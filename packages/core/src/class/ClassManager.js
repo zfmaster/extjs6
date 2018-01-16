@@ -1083,7 +1083,7 @@ var makeCtor = Ext.Class.makeCtor,
     });
 
     /**
-     * @cfg {String} xtype
+     * @cfg xtype
      * @member Ext.Class
      * @inheritdoc Ext.Component#cfg-xtype
      */
@@ -1639,9 +1639,9 @@ var makeCtor = Ext.Class.makeCtor,
         },
 
         /**
-         * @inheritdoc Ext.ClassManager#instantiateByAlias
-         * @member Ext
          * @method createByAlias
+         * @inheritdoc Ext.ClassManager#method-instantiateByAlias
+         * @member Ext
          */
         createByAlias: alias(Manager, 'instantiateByAlias'),
 
@@ -1967,9 +1967,9 @@ var makeCtor = Ext.Class.makeCtor,
         },
 
         /**
-         * @inheritdoc Ext.ClassManager#getName
-         * @member Ext
          * @method getClassName
+         * @inheritdoc Ext.ClassManager#method-getName
+         * @member Ext
          */
         getClassName: alias(Manager, 'getName'),
 
@@ -1997,9 +1997,9 @@ var makeCtor = Ext.Class.makeCtor,
         },
 
         /**
-         * @inheritdoc Ext.ClassManager#getClass
-         * @member Ext
          * @method getClass
+         * @inheritdoc Ext.ClassManager#method-getClass
+         * @member Ext
          */
         getClass: alias(Manager, 'getClass'),
 
@@ -2079,10 +2079,10 @@ var makeCtor = Ext.Class.makeCtor,
     Ext.createWidget = Ext.widget;
 
     /**
-     * Convenient alias for {@link Ext#namespace Ext.namespace}.
-     * @inheritdoc Ext#namespace
-     * @member Ext
      * @method ns
+     * Convenient alias for {@link Ext#namespace Ext.namespace}.
+     * @inheritdoc Ext#method-namespace
+     * @member Ext
      */
     Ext.ns = Ext.namespace;
 

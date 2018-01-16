@@ -123,7 +123,7 @@ Ext.define('Ext.form.field.ComboBox', {
         selection: null,
 
         /**
-         * @cfg {String} [valueNotFoundText]
+         * @cfg {String} valueNotFoundText
          * When using a name/value combo, if the value passed to setValue is not found in the store, valueNotFoundText will
          * be displayed as the field text if defined. If this default text is used, it means there
          * is no value set and no validation will occur on this field.
@@ -131,7 +131,7 @@ Ext.define('Ext.form.field.ComboBox', {
         valueNotFoundText: null,
 
         /**
-         * @cfg {String/String[]/Ext.XTemplate} [displayTpl]
+         * @cfg {String/String[]/Ext.XTemplate} displayTpl
          * The template to be used to display selected records inside the text field. An array of the selected records' data
          * will be passed to the template. Defaults to:
          *
@@ -165,14 +165,19 @@ Ext.define('Ext.form.field.ComboBox', {
     },
 
     /**
-     * @cfg
+     * @cfg publishes
      * @inheritdoc
      */
     publishes: ['selection'],
+    
+    /**
+     * @cfg twoWayBindable
+     * @inheritdoc
+     */
     twoWayBindable: ['selection'],
 
     /**
-     * @cfg {String} [triggerCls='x-form-arrow-trigger']
+     * @cfg {String} triggerCls
      * An additional CSS class used to style the trigger button. The trigger will always get the {@link Ext.form.trigger.Trigger#baseCls}
      * by default and `triggerCls` will be **appended** if specified.
      */
@@ -196,7 +201,7 @@ Ext.define('Ext.form.field.ComboBox', {
      */
     
     /**
-     * @cfg {Boolean} [collapseOnSelect=false]
+     * @cfg {Boolean} collapseOnSelect
      * Has no effect if {@link #multiSelect} is `false`
      *
      * Configure as true to automatically collapse the pick list after a selection is made.
@@ -212,14 +217,27 @@ Ext.define('Ext.form.field.ComboBox', {
 
     /**
      * @private
-     * @cfg {String}
+     * @cfg {String} hiddenDataCls
      * CSS class used to find the {@link #hiddenDataEl}
      */
     hiddenDataCls: Ext.baseCSSPrefix + 'hidden-display ' + Ext.baseCSSPrefix + 'form-data-hidden',
     
+    /**
+     * @property ariaRole
+     * @inheritdoc
+     */
     ariaRole: 'combobox',
+    
+    /**
+     * @property autoDestroyBoundStore
+     * @inheritdoc
+     */
     autoDestroyBoundStore: true,
 
+    /**
+     * @cfg childEls
+     * @inheritdoc
+     */
     childEls: {
         'hiddenDataEl': true
     },
@@ -384,7 +402,7 @@ Ext.define('Ext.form.field.ComboBox', {
     queryMode: 'remote',
 
     /**
-     * @cfg {Boolean} [queryCaching=true]
+     * @cfg {Boolean} queryCaching
      * When true, this prevents the combo from re-querying (either locally or remotely) when the current query
      * is the same as the previous query.
      */
@@ -426,13 +444,13 @@ Ext.define('Ext.form.field.ComboBox', {
      */
 
     /**
-     * @cfg {Boolean} [anyMatch=false]
+     * @cfg {Boolean} anyMatch
      * Configure as `true` to allow matching of the typed characters at any position in the {@link #valueField}'s value.
      */
     anyMatch: false,
 
     /**
-     * @cfg {Boolean} [caseSensitive=false]
+     * @cfg {Boolean} caseSensitive
      * Configure as `true` to make the filtering match with exact case matching
      */
     caseSensitive: false,
@@ -447,10 +465,11 @@ Ext.define('Ext.form.field.ComboBox', {
     autoSelect: true,
     
     /**
-     * @cfg {Boolean} [autoSelectLast=true] When `true`, the last selected record in the dropdown
-     * list will be re-selected upon {@link #autoSelect}. Set to `false` to always select the first
-     * record in the drop-down list.
-     * For accessible applications it is recommended to set this option to `false`.
+     * @cfg {Boolean} autoSelectLast
+     * When `true`, the last selected record in the dropdown list will be re-selected
+     * upon {@link #autoSelect}. Set to `false` to always select the first record in the
+     * drop-down list. For accessible applications it is recommended to set this option
+     * to `false`.
      */
     autoSelectLast: true,
 
@@ -828,11 +847,13 @@ Ext.define('Ext.form.field.ComboBox', {
     
     applyValueNotFoundText: function(v) {
         var me = this,
-            valueNotFoundRecord = me.valueNotFoundRecord || (me.valueNotFoundRecord = new Ext.data.Model());
+            valueNotFoundRecord = me.valueNotFoundRecord || (me.valueNotFoundRecord = new Ext.data.Model()),
+            displayField = me.getDisplayField(),
+            valueField = me.valueField;
 
-        valueNotFoundRecord.set(me.displayField, v);
-        if (me.valueField && me.displayField !== me.valueField) {
-            valueNotFoundRecord.set(me.valueField, v);
+        valueNotFoundRecord.set(displayField, v);
+        if (valueField && displayField !== valueField) {
+            valueNotFoundRecord.set(valueField, v);
         }
 
         return v;

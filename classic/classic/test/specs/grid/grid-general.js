@@ -198,7 +198,35 @@ function() {
                     }, undefined, false);
 
                     expect(grid.getScrollable()).not.toBe(true);
+                });
 
+                it("should keep scroll position when adding a scrolled grid to a container", function() {
+                    var scrollable;
+                    var win = Ext.create('Ext.window.Window',{
+                        width: 500,
+                        height: 500,
+                        title: 'Foo',
+                        layout: 'fit',
+                        x: 0,
+                        y: 0
+                    }).show();
+
+                    makeGrid(undefined, 100, {
+                        scrollable: true
+                    }, undefined, false);
+
+                    scrollable = grid.getScrollable();
+                    scrollable.scrollTo(null, 1000);
+
+                    waitsFor(function() {
+                        return scrollable.getPosition().y === 1000;
+                    });
+
+                    runs(function() {
+                        win.add(grid);
+                        expect(scrollable.getPosition().y).toBe(1000);
+                        win.destroy();
+                    });
                 });
                 
                 // EXTJS-14858
@@ -689,6 +717,16 @@ function() {
                 describe("when to display", function() {
                     it("should display on first refresh with deferEmptyText: false", function() {
                         makeGrid(null, null, {
+                            viewConfig: {
+                                emptyText: 'Foo',
+                                deferEmptyText: false
+                            }
+                        });
+                        expect(getEmpty()).not.toBeNull();
+                    });
+
+                    it("should display on first refresh with deferEmptyText: false and not columns defined", function() {
+                        makeGrid([], null, {
                             viewConfig: {
                                 emptyText: 'Foo',
                                 deferEmptyText: false

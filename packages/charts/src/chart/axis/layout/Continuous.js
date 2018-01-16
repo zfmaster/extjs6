@@ -19,6 +19,7 @@ Ext.define('Ext.chart.axis.layout.Continuous', {
     },
 
     /**
+     * @method snapEnds
      * @inheritdoc
      */
     snapEnds: function (context, min, max, estStepSize) {

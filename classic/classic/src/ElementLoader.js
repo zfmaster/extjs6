@@ -175,11 +175,14 @@ Ext.define('Ext.ElementLoader', {
     constructor: function(config) {
         var me = this,
             autoLoad;
+        
+        //<debug>
+        me.callParent([config]);
+        //</debug>
 
         me.mixins.observable.constructor.call(me, config);
 
         me.setTarget(me.target);
-
 
         if (me.autoLoad) {
             autoLoad = me.autoLoad;
@@ -253,9 +256,13 @@ Ext.define('Ext.ElementLoader', {
      * class defaults.
      */
     load: function(options) {
+        if (this.destroying || this.destroyed) {
+            return;
+        }
+        
         //<debug>
         if (!this.target) {
-            Ext.raise('A valid target is required when loading content');
+            Ext.raise('A valid target is required when loading content for ' + this.id);
         }
         //</debug>
 

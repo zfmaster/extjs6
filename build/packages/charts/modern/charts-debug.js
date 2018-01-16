@@ -4948,6 +4948,7 @@ Ext.define('Ext.draw.sprite.Instancing', {extend:'Ext.draw.sprite.Sprite', alias
   template.setSurface(this.getSurface());
   template.ownAttr = template.attr;
   this.clearAll();
+  this.setDirty(true);
 }, updateInstances:function(instances) {
   this.clearAll();
   if (Ext.isArray(instances)) {
@@ -7752,7 +7753,7 @@ Ext.define('Ext.chart.Util', {singleton:true, expandRange:function(range, data) 
   var length = data.length, min = range[0], max = range[1], i, value;
   for (i = 0; i < length; i++) {
     value = data[i];
-    if (!isFinite(value)) {
+    if (value == null || !isFinite(value)) {
       continue;
     }
     if (value < min || !isFinite(min)) {
@@ -7764,18 +7765,40 @@ Ext.define('Ext.chart.Util', {singleton:true, expandRange:function(range, data) 
   }
   range[0] = min;
   range[1] = max;
-}, validateRange:function(range, defaultRange, padding) {
-  if (!range) {
+}, defaultRange:[0, 1], validateRange:function(range, defaultRange, padding) {
+  defaultRange = defaultRange || this.defaultRange.slice();
+  if (!(padding === 0 || padding > 0)) {
+    padding = 0.5;
+  }
+  if (!range || range.length !== 2) {
     return defaultRange;
   }
-  if (range[0] === range[1]) {
-    padding = padding || 0.5;
+  range = [range[0], range[1]];
+  if (!range[0]) {
+    range[0] = 0;
+  }
+  if (!range[1]) {
+    range[1] = 0;
+  }
+  if (padding && range[0] === range[1]) {
     range = [range[0] - padding, range[0] + padding];
+    if (range[0] === range[1]) {
+      return defaultRange;
+    }
   }
-  if (range[0] === range[1]) {
+  var isFin0 = isFinite(range[0]);
+  var isFin1 = isFinite(range[1]);
+  if (!isFin0 && !isFin1) {
     return defaultRange;
   }
-  return [isFinite(range[0]) ? range[0] : defaultRange[0], isFinite(range[1]) ? range[1] : defaultRange[1]];
+  if (isFin0 && !isFin1) {
+    range[1] = range[0] + Ext.Number.sign(range[1]) * (defaultRange[1] - defaultRange[0]);
+  } else {
+    if (isFin1 && !isFin0) {
+      range[0] = range[1] + Ext.Number.sign(range[0]) * (defaultRange[1] - defaultRange[0]);
+    }
+  }
+  return [Math.min(range[0], range[1]), Math.max(range[0], range[1])];
 }, applyAnimation:function(animation, oldAnimation) {
   if (!animation) {
     animation = {duration:0};
@@ -7808,6 +7831,10 @@ Ext.define('Ext.chart.Markers', {extend:'Ext.draw.sprite.Instancing', isMarkers:
   } else {
     this.revisions[category]++;
   }
+}, clearAll:function() {
+  this.callParent();
+  this.categories = {};
+  this.revisions = {};
 }, putMarkerFor:function(category, attr, index, bypassNormalization, keepRevision) {
   category = category || this.defaultCategory;
   var me = this, categoryInstances = me.categories[category] || (me.categories[category] = {}), instance;
@@ -8033,6 +8060,7 @@ store:null, label:null, labelOverflowPadding:null, showMarkers:true, marker:null
 }, updateHighlight:function(highlight) {
   var me = this, sprites = me.sprites, highlightCfg = me.getHighlightCfg(), i, ln, sprite, items, markers;
   me.getStyle();
+  me.getMarker();
   if (!Ext.Object.isEmpty(highlight)) {
     me.addItemHighlight();
     for (i = 0, ln = sprites.length; i < ln; i++) {
@@ -8057,8 +8085,14 @@ store:null, label:null, labelOverflowPadding:null, showMarkers:true, marker:null
   if (!this.isConfiguring && !Ext.Object.equals(highlightCfg, this.defaultConfig.highlightCfg)) {
     this.addItemHighlight();
   }
-}, applyItemInstancing:function(instancing, oldInstancing) {
-  return Ext.merge(oldInstancing || {}, instancing);
+}, applyItemInstancing:function(config, oldConfig) {
+  if (config && oldConfig && (!config.type || config.type === oldConfig.type)) {
+    config = Ext.merge({}, oldConfig, config);
+  }
+  if (config && !config.type) {
+    config = null;
+  }
+  return config;
 }, setAttributesForItem:function(item, change) {
   var sprite = item && item.sprite, i;
   if (sprite) {
@@ -8206,7 +8240,7 @@ store:null, label:null, labelOverflowPadding:null, showMarkers:true, marker:null
       Ext.chart.Util.expandRange(dataRange, data);
       style['data' + fieldCategory[i]] = data;
     }
-    dataRange = Ext.chart.Util.validateRange(dataRange, me.defaultRange);
+    dataRange = Ext.chart.Util.validateRange(dataRange, me.defaultRange, 0);
     me.dataRange[directionOffset] = dataRange[0];
     me.dataRange[directionOffset + directionCount] = dataRange[1];
     style['dataMin' + direction] = dataRange[0];
@@ -8442,22 +8476,13 @@ store:null, label:null, labelOverflowPadding:null, showMarkers:true, marker:null
     markers.getTemplate().setAttributes({hidden:!showMarkers});
   }
 }, createSprite:function() {
-  var me = this, surface = me.getSurface(), itemInstancing = me.getItemInstancing(), sprite = surface.add(me.getDefaultSpriteConfig()), markerCfg = me.getMarker(), marker, animation, label;
+  var me = this, surface = me.getSurface(), itemInstancing = me.getItemInstancing(), sprite = surface.add(me.getDefaultSpriteConfig()), animation, label;
   sprite.setAttributes(me.getStyle());
   sprite.setSeries(me);
   if (itemInstancing) {
     me.createItemInstancingSprite(sprite, itemInstancing);
   }
-  if (sprite.bindMarker) {
-    if (markerCfg) {
-      marker = new Ext.chart.Markers;
-      markerCfg = Ext.Object.merge({modifiers:'highlight'}, markerCfg);
-      marker.setTemplate(markerCfg);
-      marker.getTemplate().getAnimation().setCustomDurations({translationX:0, translationY:0});
-      sprite.dataMarker = marker;
-      sprite.bindMarker('markers', marker);
-      me.getOverlaySurface().add(marker);
-    }
+  if (sprite.isMarkerHolder) {
     label = me.getLabel();
     if (label && label.getTemplate().getField()) {
       sprite.bindMarker('labels', label);
@@ -8471,7 +8496,7 @@ store:null, label:null, labelOverflowPadding:null, showMarkers:true, marker:null
   animation.on('animationend', 'onSpriteAnimationEnd', me);
   me.sprites.push(sprite);
   return sprite;
-}, getSprites:Ext.emptyFn, getSprite:function() {
+}, getSprites:null, getSprite:function() {
   var sprites = this.getSprites();
   return sprites && sprites[0];
 }, withSprite:function(fn) {
@@ -8513,12 +8538,56 @@ store:null, label:null, labelOverflowPadding:null, showMarkers:true, marker:null
   }
   return Ext.merge({}, oldSubStyle, subStyle);
 }, applyMarker:function(marker, oldMarker) {
-  var type = marker && marker.type || oldMarker && oldMarker.type || 'circle', cls = Ext.ClassManager.get(Ext.ClassManager.getNameByAlias('sprite.' + type));
-  if (cls && cls.def) {
-    marker = cls.def.normalize(Ext.isObject(marker) ? marker : {}, true);
-    marker.type = type;
+  var type, cls;
+  if (marker) {
+    if (!Ext.isObject(marker)) {
+      marker = {};
+    }
+    type = marker.type || 'circle';
+    if (oldMarker && type === oldMarker.type) {
+      marker = Ext.merge({}, oldMarker, marker);
+    }
   }
-  return Ext.merge(oldMarker || {}, marker);
+  if (type) {
+    cls = Ext.ClassManager.get(Ext.ClassManager.getNameByAlias('sprite.' + type));
+  }
+  if (cls && cls.def) {
+    marker = cls.def.normalize(marker, true);
+    marker.type = type;
+  } else {
+    marker = null;
+    Ext.log.warn('Invalid series marker type: ' + type);
+  }
+  return marker;
+}, updateMarker:function(marker) {
+  var me = this, sprites = me.getSprites(), seriesSprite, markerSprite, markerTplConfig, i, ln;
+  for (i = 0, ln = sprites.length; i < ln; i++) {
+    seriesSprite = sprites[i];
+    if (!seriesSprite.isMarkerHolder) {
+      continue;
+    }
+    markerSprite = seriesSprite.getMarker('markers');
+    if (marker) {
+      if (!markerSprite) {
+        markerSprite = new Ext.chart.Markers;
+        seriesSprite.bindMarker('markers', markerSprite);
+        me.getOverlaySurface().add(markerSprite);
+      }
+      markerTplConfig = Ext.Object.merge({modifiers:'highlight'}, marker);
+      markerSprite.setTemplate(markerTplConfig);
+      markerSprite.getTemplate().getAnimation().setCustomDurations({translationX:0, translationY:0});
+    } else {
+      if (markerSprite) {
+        seriesSprite.releaseMarker('markers');
+        me.getOverlaySurface().remove(markerSprite, true);
+      }
+    }
+    seriesSprite.setDirty(true);
+  }
+  if (!me.isConfiguring) {
+    me.doUpdateStyles();
+    me.updateHighlight(me.getHighlight());
+  }
 }, applyMarkerSubStyle:function(marker, oldMarker) {
   var type = marker && marker.type || oldMarker && oldMarker.type || 'circle', cls = Ext.ClassManager.get(Ext.ClassManager.getNameByAlias('sprite.' + type));
   if (cls && cls.def) {
@@ -8622,15 +8691,17 @@ store:null, label:null, labelOverflowPadding:null, showMarkers:true, marker:null
 }, updateThemeStyle:function() {
   this.doUpdateStyles();
 }, doUpdateStyles:function() {
-  var me = this, sprites = me.sprites, itemInstancing = me.getItemInstancing(), i = 0, ln = sprites && sprites.length, showMarkers = me.getConfig('showMarkers', true), markerCfg = me.getMarker(), style;
-  for (; i < ln; i++) {
+  var me = this, sprites = me.sprites, itemInstancing = me.getItemInstancing(), ln = sprites && sprites.length, showMarkers = me.getConfig('showMarkers', true), style, sprite, marker, i;
+  for (i = 0; i < ln; i++) {
+    sprite = sprites[i];
     style = me.getStyleByIndex(i);
     if (itemInstancing) {
-      sprites[i].getMarker('items').getTemplate().setAttributes(style);
+      sprite.getMarker('items').getTemplate().setAttributes(style);
     }
-    sprites[i].setAttributes(style);
-    if (markerCfg && sprites[i].dataMarker) {
-      sprites[i].dataMarker.getTemplate().setAttributes(me.getMarkerStyleByIndex(i));
+    sprite.setAttributes(style);
+    marker = sprite.isMarkerHolder && sprite.getMarker('markers');
+    if (marker) {
+      marker.getTemplate().setAttributes(me.getMarkerStyleByIndex(i));
     }
   }
 }, getStyleWithTheme:function() {
@@ -10152,6 +10223,8 @@ majorTickSteps:0, minorTickSteps:0, adjustByMajorUnit:true, title:null, expandRa
     me.oldRange = range;
   }
   return range;
+}, isSingleDataPoint:function(range) {
+  return range[0] + this.rangePadding === 0 && range[1] - this.rangePadding === 0;
 }, calculateRange:function() {
   var me = this, boundSeries = me.boundSeries, layout = me.getLayout(), segmenter = me.getSegmenter(), minimum = me.getMinimum(), maximum = me.getMaximum(), visibleRange = me.getVisibleRange(), getRangeMethod = 'get' + me.getDirection() + 'Range', expandRangeBy = me.getExpandRangeBy(), context, attr, majorTicks, series, i, ln, seriesRange, range = [NaN, NaN];
   for (i = 0, ln = boundSeries.length; i < ln; i++) {
@@ -10165,7 +10238,7 @@ majorTickSteps:0, minorTickSteps:0, adjustByMajorUnit:true, title:null, expandRa
     }
   }
   range = Ext.chart.Util.validateRange(range, me.defaultRange, me.rangePadding);
-  if (expandRangeBy && range[0] + me.rangePadding !== range[1] - me.rangePadding) {
+  if (expandRangeBy && !me.isSingleDataPoint(range)) {
     range[0] -= expandRangeBy;
     range[1] += expandRangeBy;
   }
@@ -10962,6 +11035,7 @@ hidden:false}, sprites:null, spriteZIndexes:{background:0, border:1, item:2}, do
   if (surface) {
     markerConfig = series.getMarkerStyleByIndex(data.index);
     markerConfig.fillStyle = data.mark;
+    markerConfig.hidden = false;
     if (seriesMarker && seriesMarker.type) {
       markerConfig.type = seriesMarker.type;
     }
@@ -11010,6 +11084,7 @@ hidden:false}, sprites:null, spriteZIndexes:{background:0, border:1, item:2}, do
     sprite.setConfig({series:data.series, record:record});
     markerConfig = series.getMarkerStyleByIndex(data.index);
     markerConfig.fillStyle = data.mark;
+    markerConfig.hidden = false;
     Ext.apply(markerConfig, this.getMarker());
     marker = sprite.getMarker();
     marker.setAttributes({fillStyle:markerConfig.fillStyle, strokeStyle:markerConfig.strokeStyle});
@@ -11716,7 +11791,7 @@ series:[], axes:[], legend:null, colors:null, insetPadding:{top:10, left:10, rig
   }
   this.setSeries(newSeries);
 }, applySeries:function(newSeries, oldSeries) {
-  var me = this, theme = me.getTheme(), result = [], oldMap, oldSeriesItem, i, ln, series;
+  var me = this, result = [], oldMap, oldSeriesItem, i, ln, series;
   me.animationSuspendCount++;
   me.getAxes();
   if (oldSeries) {
@@ -11748,7 +11823,6 @@ series:[], axes:[], legend:null, colors:null, insetPadding:{top:10, left:10, rig
             series = {type:series};
           }
           series.chart = me;
-          series.theme = theme;
           series = Ext.create(series.xclass || 'series.' + series.type, series);
         }
       }
@@ -12002,25 +12076,32 @@ series:[], axes:[], legend:null, colors:null, insetPadding:{top:10, left:10, rig
   }
   return chartRect;
 }, getEventXY:function(e) {
-  return this.getSurface().getEventXY(e);
+  return this.getSurface('series').getEventXY(e);
 }, getItemForPoint:function(x, y) {
-  var me = this, seriesList = me.getSeries(), rect = me.getMainRect(), ln = seriesList.length, item = null, i;
+  var me = this, seriesList = me.getSeries(), rect = me.getMainRect(), ln = seriesList.length, minDistance = Infinity, result = null, i, item;
   if (!(me.hasFirstLayout && rect && x >= 0 && x <= rect[2] && y >= 0 && y <= rect[3])) {
     return null;
   }
   for (i = ln - 1; i >= 0; i--) {
     item = seriesList[i].getItemForPoint(x, y);
     if (item) {
-      break;
+      if (!item.distance) {
+        result = item;
+        break;
+      }
+      if (item.distance < minDistance) {
+        minDistance = item.distance;
+        result = item;
+      }
     }
   }
-  return item;
+  return result;
 }, getItemsForPoint:function(x, y) {
   var me = this, seriesList = me.getSeries(), ln = seriesList.length, i = me.hasFirstLayout ? ln - 1 : -1, items = [], series, item;
   for (; i >= 0; i--) {
     series = seriesList[i];
     item = series.getItemForPoint(x, y);
-    if (item) {
+    if (item && item.category === 'items') {
       items.push(item);
     }
   }
@@ -13267,14 +13348,19 @@ Ext.define('Ext.chart.interactions.ItemHighlight', {extend:'Ext.chart.interactio
   item.series.showTooltip(item, e);
   this.oldItem = item;
 }, showUntracked:function(item) {
-  var marker = item.sprite.getMarker(item.category), surface, surfaceXY, isInverseY, itemBBox;
+  var marker = item.sprite.getMarker(item.category), surface, surfaceXY, isInverseY, itemBBox, matrix;
   if (marker) {
     surface = marker.getSurface();
     isInverseY = surface.matrix.elements[3] < 0;
     surfaceXY = surface.element.getXY();
     itemBBox = Ext.clone(marker.getBBoxFor(item.index));
     if (isInverseY) {
-      itemBBox = surface.inverseMatrix.transformBBox(itemBBox);
+      if (surface.getInherited().rtl) {
+        matrix = surface.inverseMatrix.clone().flipX().translate(item.sprite.attr.innerWidth, 0, true);
+      } else {
+        matrix = surface.inverseMatrix;
+      }
+      itemBBox = matrix.transformBBox(itemBBox);
     }
     itemBBox.x += surfaceXY[0];
     itemBBox.y += surfaceXY[1];
@@ -13371,8 +13457,8 @@ Ext.define('Ext.chart.interactions.ItemEdit', {extend:'Ext.chart.interactions.It
   me.showTooltip(e, me.target, item);
   surface.renderFrame();
 }, onDragScatter:function(e) {
-  var me = this, chart = me.getChart(), isRtl = chart.getInherited().rtl, flipXY = chart.isCartesian && chart.getFlipXY(), item = chart.getHighlightItem(), marker = item.sprite.getMarker('items'), instance = marker.getMarkerFor(item.sprite.getId(), item.index), surface = item.sprite.getSurface(), surfaceRect = surface.getRect(), xy = surface.getEventXY(e), matrix = item.sprite.attr.matrix, xAxis = item.series.getXAxis(), isEditableX = xAxis && xAxis.getLayout().isContinuous, renderer = me.getRenderer(), 
-  style, changes, params, positionX, positionY;
+  var me = this, chart = me.getChart(), isRtl = chart.getInherited().rtl, flipXY = chart.isCartesian && chart.getFlipXY(), item = chart.getHighlightItem(), marker = item.sprite.getMarker('markers'), instance = marker.getMarkerFor(item.sprite.getId(), item.index), surface = item.sprite.getSurface(), surfaceRect = surface.getRect(), xy = surface.getEventXY(e), matrix = item.sprite.attr.matrix, xAxis = item.series.getXAxis(), isEditableX = xAxis && xAxis.getLayout().isContinuous, renderer = me.getRenderer(), 
+  style, changes, params, positionX, positionY, hintX, hintY;
   if (flipXY) {
     positionY = isRtl ? surfaceRect[2] - xy[0] : xy[0];
   } else {
@@ -13387,7 +13473,19 @@ Ext.define('Ext.chart.interactions.ItemEdit', {extend:'Ext.chart.interactions.It
   } else {
     positionX = instance.translationX;
   }
-  style = {translationX:positionX, translationY:positionY, scalingX:instance.scalingX, scalingY:instance.scalingY, r:instance.r, fillStyle:'none', lineDash:[4, 4], zIndex:100};
+  if (isEditableX) {
+    hintX = xy[0];
+    hintY = xy[1];
+  } else {
+    if (flipXY) {
+      hintX = xy[0];
+      hintY = instance.translationY;
+    } else {
+      hintX = instance.translationX;
+      hintY = xy[1];
+    }
+  }
+  style = {translationX:hintX, translationY:hintY, scalingX:instance.scalingX, scalingY:instance.scalingY, r:instance.r, fillStyle:'none', lineDash:[4, 4], zIndex:100};
   Ext.apply(style, me.getStyle());
   me.target = {index:item.index, yField:item.field, yValue:(positionY - matrix.getDY()) / matrix.getYY()};
   if (isEditableX) {
@@ -13398,7 +13496,7 @@ Ext.define('Ext.chart.interactions.ItemEdit', {extend:'Ext.chart.interactions.It
   if (changes) {
     Ext.apply(style, changes);
   }
-  item.sprite.putMarker('items', style, 'itemedit');
+  item.sprite.putMarker('markers', style, 'itemedit');
   me.showTooltip(e, me.target, item);
   surface.renderFrame();
 }, showTooltip:function(e, target, item) {
@@ -14003,7 +14101,7 @@ Ext.define('Ext.chart.navigator.Navigator', {extend:'Ext.chart.navigator.Navigat
   }
   this.callParent();
 }});
-Ext.define('Ext.chart.navigator.Container', {extend:'Ext.chart.navigator.ContainerBase', requires:['Ext.chart.CartesianChart', 'Ext.chart.navigator.Navigator'], xtype:'chartnavigator', config:{layout:'fit', chart:null, navigator:{}}, applyChart:function(chart, oldChart) {
+Ext.define('Ext.chart.navigator.Container', {extend:'Ext.chart.navigator.ContainerBase', requires:['Ext.chart.CartesianChart', 'Ext.chart.navigator.Navigator'], xtype:'chartnavigator', config:{chart:null, navigator:{}}, layout:'fit', applyChart:function(chart, oldChart) {
   if (oldChart) {
     oldChart.destroy();
   }
@@ -14012,7 +14110,9 @@ Ext.define('Ext.chart.navigator.Container', {extend:'Ext.chart.navigator.Contain
       Ext.raise('Only cartesian charts are supported.');
     }
     if (!chart.isChart) {
+      chart.$initParent = this;
       chart = new Ext.chart.CartesianChart(chart);
+      delete chart.$initParent;
     }
   }
   return chart;
@@ -14144,19 +14244,11 @@ Ext.define('Ext.chart.series.Cartesian', {extend:'Ext.chart.series.Series', conf
 }, coordinateY:function() {
   return this.coordinate('Y', 1, 2);
 }, getItemForPoint:function(x, y) {
-  if (this.getSprites()) {
-    var me = this, sprite = me.getSprites()[0], store = me.getStore(), item, index;
-    if (me.getHidden()) {
-      return null;
-    }
-    if (sprite) {
-      index = sprite.getIndexNearPoint(x, y);
-      if (index !== -1) {
-        item = {series:me, index:index, category:me.getItemInstancing() ? 'items' : 'markers', record:store.getData().items[index], field:me.getYField(), sprite:sprite};
-        return item;
-      }
-    }
+  var me = this, sprite = me.getSprites()[0], store = me.getStore(), point;
+  if (sprite && !me.getHidden()) {
+    point = sprite.getNearestDataPoint(x, y);
   }
+  return point ? {series:me, sprite:sprite, category:me.getItemInstancing() ? 'items' : 'markers', index:point.index, record:store.getData().items[point.index], field:me.getYField(), distance:point.distance} : null;
 }, createSprite:function() {
   var me = this, sprite = me.callParent(), chart = me.getChart(), xAxis = me.getXAxis();
   sprite.setAttributes({flipXY:chart.getFlipXY(), xAxis:xAxis});
@@ -14339,22 +14431,24 @@ Ext.define('Ext.chart.series.StackedCartesian', {extend:'Ext.chart.series.Cartes
   }
   return sprites;
 }, getItemForPoint:function(x, y) {
-  var sprites = this.getSprites();
-  if (!sprites) {
-    return null;
-  }
-  var me = this, store = me.getStore(), hidden = me.getHidden(), item = null, index, yField, i, ln, sprite;
+  var me = this, sprites = me.getSprites(), store = me.getStore(), hidden = me.getHidden(), minDistance = Infinity, item = null, spriteIndex = -1, pointIndex = -1, point, yField, sprite, i, ln;
   for (i = 0, ln = sprites.length; i < ln; i++) {
     if (hidden[i]) {
       continue;
     }
     sprite = sprites[i];
-    index = sprite.getIndexNearPoint(x, y);
-    if (index !== -1) {
-      yField = me.getYField();
-      item = {series:me, index:index, category:me.getItemInstancing() ? 'items' : 'markers', record:store.getData().items[index], field:typeof yField === 'string' ? yField : yField[i], sprite:sprite};
-      break;
+    point = sprite.getNearestDataPoint(x, y);
+    if (point) {
+      if (point.distance < minDistance) {
+        minDistance = point.distance;
+        pointIndex = point.index;
+        spriteIndex = i;
+      }
     }
+  }
+  if (spriteIndex > -1) {
+    yField = me.getYField();
+    item = {series:me, sprite:sprites[spriteIndex], category:me.getItemInstancing() ? 'items' : 'markers', index:pointIndex, record:store.getData().items[pointIndex], field:typeof yField === 'string' ? yField : yField[spriteIndex], distance:minDistance};
   }
   return item;
 }, provideLegendInfo:function(target) {
@@ -14401,16 +14495,17 @@ triggers:{dataX:'dataX,bbox', dataY:'dataY,bbox', visibleMinX:'panzoom', visible
   this.processDataY();
 }, panzoom:function(attr) {
   var dx = attr.visibleMaxX - attr.visibleMinX, dy = attr.visibleMaxY - attr.visibleMinY, innerWidth = attr.flipXY ? attr.innerHeight : attr.innerWidth, innerHeight = !attr.flipXY ? attr.innerHeight : attr.innerWidth, surface = this.getSurface(), isRtl = surface ? surface.getInherited().rtl : false;
-  if (isRtl && !attr.flipXY) {
-    attr.translationX = innerWidth + attr.visibleMinX * innerWidth / dx;
-  } else {
-    attr.translationX = -attr.visibleMinX * innerWidth / dx;
-  }
-  attr.translationY = -attr.visibleMinY * innerHeight / dy;
-  attr.scalingX = (isRtl && !attr.flipXY ? -1 : 1) * innerWidth / dx;
-  attr.scalingY = innerHeight / dy;
   attr.scalingCenterX = 0;
   attr.scalingCenterY = 0;
+  attr.scalingX = innerWidth / dx;
+  attr.scalingY = innerHeight / dy;
+  attr.translationX = -(attr.visibleMinX * attr.scalingX);
+  attr.translationY = -(attr.visibleMinY * attr.scalingY);
+  if (isRtl && !attr.flipXY) {
+    attr.scalingX *= -1;
+    attr.translationX *= -1;
+    attr.translationX += innerWidth;
+  }
   this.applyTransformations(true);
 }}}}, processDataY:Ext.emptyFn, processDataX:Ext.emptyFn, updatePlainBBox:function(plain) {
   var attr = this.attr;
@@ -14456,23 +14551,53 @@ triggers:{dataX:'dataX,bbox', dataY:'dataY,bbox', visibleMinX:'panzoom', visible
   dataClipRect = dataClipRect[0].concat(dataClipRect[1]);
   me.renderClipped(surface, ctx, dataClipRect, surfaceClipRect);
 }, renderClipped:Ext.emptyFn, getIndexNearPoint:function(x, y) {
-  var me = this, matrix = me.attr.matrix, dataX = me.attr.dataX, dataY = me.attr.dataY, selectionTolerance = me.attr.selectionTolerance, dx = Infinity, dy = Infinity, index = -1, inverseMatrix = matrix.clone().prependMatrix(me.surfaceMatrix).inverse(), center = inverseMatrix.transformPoint([x, y]), hitboxBL = inverseMatrix.transformPoint([x - selectionTolerance, y - selectionTolerance]), hitboxTR = inverseMatrix.transformPoint([x + selectionTolerance, y + selectionTolerance]), left = Math.min(hitboxBL[0], 
-  hitboxTR[0]), right = Math.max(hitboxBL[0], hitboxTR[0]), bottom = Math.min(hitboxBL[1], hitboxTR[1]), top = Math.max(hitboxBL[1], hitboxTR[1]), xi, yi, i, ln;
-  for (i = 0, ln = dataX.length; i < ln; i++) {
-    xi = dataX[i];
-    yi = dataY[i];
-    if (xi >= left && xi < right && yi >= bottom && yi < top) {
-      if (index === -1 || Math.abs(xi - center[0]) < dx && Math.abs(yi - center[1]) < dy) {
-        dx = Math.abs(xi - center[0]);
-        dy = Math.abs(yi - center[1]);
+  var result = this.getNearestDataPoint(x, y);
+  return result ? result.index : -1;
+}, getNearestDataPoint:function(x, y) {
+  var me = this, attr = me.attr, series = me.getSeries(), surface = me.getSurface(), items = me.boundMarkers.items, matrix = attr.matrix, dataX = attr.dataX, dataY = attr.dataY, selectionTolerance = attr.selectionTolerance, minDistance = Infinity, index = -1, result = null, distance, dx, dy, xy, i, ln, end, inc;
+  if (items) {
+    ln = dataX.length;
+    if (series.reversedSpriteZOrder) {
+      i = ln - 1;
+      end = -1;
+      inc = -1;
+    } else {
+      i = 0;
+      end = ln;
+      inc = 1;
+    }
+    for (; i !== end; i += inc) {
+      var bbox = me.getMarkerBBox('items', i);
+      xy = surface.inverseMatrix.transformPoint([x, y]);
+      if (Ext.draw.Draw.isPointInBBox(xy[0], xy[1], bbox)) {
+        index = i;
+        minDistance = 0;
+        break;
+      }
+    }
+  } else {
+    for (i = 0, ln = dataX.length; i < ln; i++) {
+      xy = matrix.transformPoint([dataX[i], dataY[i]]);
+      xy = surface.matrix.transformPoint(xy);
+      dx = x - xy[0];
+      dy = y - xy[1];
+      distance = Math.sqrt(dx * dx + dy * dy);
+      if (selectionTolerance && distance > selectionTolerance) {
+        continue;
+      }
+      if (distance < minDistance) {
+        minDistance = distance;
         index = i;
       }
     }
   }
-  return index;
+  if (index > -1) {
+    result = {index:index, distance:minDistance};
+  }
+  return result;
 }});
 Ext.define('Ext.chart.series.sprite.StackedCartesian', {extend:'Ext.chart.series.sprite.Cartesian', inheritableStatics:{def:{processors:{groupCount:'number', groupOffset:'number', dataStartY:'data'}, defaults:{selectionTolerance:20, groupCount:1, groupOffset:0, dataStartY:null}, triggers:{dataStartY:'dataY,bbox'}}}});
-Ext.define('Ext.chart.series.sprite.Area', {alias:'sprite.areaSeries', extend:'Ext.chart.series.sprite.StackedCartesian', inheritableStatics:{def:{processors:{step:'bool'}, defaults:{step:false}}}, renderClipped:function(surface, ctx, dataClipRect) {
+Ext.define('Ext.chart.series.sprite.Area', {alias:'sprite.areaSeries', extend:'Ext.chart.series.sprite.StackedCartesian', inheritableStatics:{def:{processors:{step:'bool'}, defaults:{selectionTolerance:0, step:false}}}, renderClipped:function(surface, ctx, dataClipRect) {
   var me = this, store = me.getStore(), series = me.getSeries(), attr = me.attr, dataX = attr.dataX, dataY = attr.dataY, dataStartY = attr.dataStartY, matrix = attr.matrix, x, y, i, lastX, lastY, startX, startY, xx = matrix.elements[0], dx = matrix.elements[4], yy = matrix.elements[3], dy = matrix.elements[5], surfaceMatrix = me.surfaceMatrix, markerCfg = {}, min = Math.min(dataClipRect[0], dataClipRect[2]), max = Math.max(dataClipRect[0], dataClipRect[2]), start = Math.max(0, this.binarySearch(min)), 
   end = Math.min(dataX.length - 1, this.binarySearch(max) + 1), renderer = attr.renderer, rendererData = {store:store}, rendererChanges;
   ctx.beginPath();
@@ -14685,34 +14810,13 @@ Ext.define('Ext.chart.series.sprite.Bar', {alias:'sprite.barSeries', extend:'Ext
     }
     me.putMarker('markers', {translationX:surfaceMatrix.x(center, top), translationY:surfaceMatrix.y(center, top)}, i, true);
   }
-}, getIndexNearPoint:function(x, y) {
-  var sprite = this, attr = sprite.attr, dataX = attr.dataX, surface = sprite.getSurface(), surfaceRect = surface.getRect() || [0, 0, 0, 0], surfaceHeight = surfaceRect[3], hitX, hitY, i, bbox, index = -1;
-  if (attr.flipXY) {
-    hitX = surfaceHeight - y;
-    if (surface.getInherited().rtl) {
-      hitY = surfaceRect[2] - x;
-    } else {
-      hitY = x;
-    }
-  } else {
-    hitX = x;
-    hitY = surfaceHeight - y;
-  }
-  for (i = 0; i < dataX.length; i++) {
-    bbox = sprite.getMarkerBBox('items', i);
-    if (Ext.draw.Draw.isPointInBBox(hitX, hitY, bbox)) {
-      index = i;
-      break;
-    }
-  }
-  return index;
 }});
 Ext.define('Ext.chart.series.Bar', {extend:'Ext.chart.series.StackedCartesian', alias:'series.bar', type:'bar', seriesType:'barSeries', isBar:true, requires:['Ext.chart.series.sprite.Bar', 'Ext.draw.sprite.Rect'], config:{itemInstancing:{type:'rect', animation:{customDurations:{x:0, y:0, width:0, height:0, radius:0}}}}, getItemForPoint:function(x, y) {
-  if (this.getSprites()) {
-    var me = this, chart = me.getChart(), padding = chart.getInnerPadding(), isRtl = chart.getInherited().rtl;
+  if (this.getSprites().length) {
+    var chart = this.getChart(), padding = chart.getInnerPadding(), isRtl = chart.getInherited().rtl;
     arguments[0] = x + (isRtl ? padding.right : -padding.left);
     arguments[1] = y + padding.bottom;
-    return me.callParent(arguments);
+    return this.callParent(arguments);
   }
 }, updateXAxis:function(xAxis) {
   if (!this.is3D && !xAxis.isCategory) {
@@ -14897,27 +15001,6 @@ Ext.define('Ext.chart.series.Bar3D', {extend:'Ext.chart.series.Bar', requires:['
 }, getDepth:function() {
   var sprite = this.getSprites()[0];
   return sprite ? sprite.depth || 0 : 0;
-}, getItemForPoint:function(x, y) {
-  var sprites = this.getSprites();
-  if (!sprites) {
-    return null;
-  }
-  var me = this, itemInstancing = me.getItemInstancing(), store = me.getStore(), hidden = me.getHidden(), chart = me.getChart(), padding = chart.getInnerPadding(), isRtl = chart.getInherited().rtl, item = null, index, yField, i, sprite;
-  x = x + (isRtl ? padding.right : -padding.left);
-  y = y + padding.bottom;
-  for (i = sprites.length - 1; i >= 0; i--) {
-    if (hidden[i]) {
-      continue;
-    }
-    sprite = sprites[i];
-    index = sprite.getIndexNearPoint(x, y);
-    if (index !== -1) {
-      yField = me.getYField();
-      item = {series:me, index:index, category:itemInstancing ? 'items' : 'markers', record:store.getData().items[index], field:typeof yField === 'string' ? yField : yField[i], sprite:sprite};
-      break;
-    }
-  }
-  return item;
 }});
 Ext.define('Ext.chart.series.sprite.BoxPlot', {alias:'sprite.boxplotSeries', extend:'Ext.chart.series.sprite.Cartesian', inheritableStatics:{def:{processors:{dataLow:'data', dataQ1:'data', dataQ3:'data', dataHigh:'data', minBoxWidth:'number', maxBoxWidth:'number', minGapWidth:'number'}, aliases:{dataMedian:'dataY'}, defaults:{minBoxWidth:2, maxBoxWidth:40, minGapWidth:5}}}, renderClipped:function(surface, ctx, dataClipRect) {
   if (this.cleanRedraw) {
@@ -14949,27 +15032,6 @@ Ext.define('Ext.chart.series.sprite.BoxPlot', {alias:'sprite.boxplotSeries', ext
     }
     me.putMarker('items', itemCfg, i, !renderer);
   }
-}, getIndexNearPoint:function(x, y) {
-  var sprite = this, attr = sprite.attr, dataX = attr.dataX, surface = sprite.getSurface(), surfaceRect = surface.getRect() || [0, 0, 0, 0], surfaceHeight = surfaceRect[3], index = -1, hitX, hitY, i, bbox;
-  if (attr.flipXY) {
-    hitX = surfaceHeight - y;
-    if (surface.getInherited().rtl) {
-      hitY = surfaceRect[2] - x;
-    } else {
-      hitY = x;
-    }
-  } else {
-    hitX = x;
-    hitY = surfaceHeight - y;
-  }
-  for (i = 0; i < dataX.length; i++) {
-    bbox = sprite.getMarkerBBox('items', i);
-    if (Ext.draw.Draw.isPointInBBox(hitX, hitY, bbox)) {
-      index = i;
-      break;
-    }
-  }
-  return index;
 }});
 Ext.define('Ext.chart.sprite.BoxPlot', {extend:'Ext.draw.sprite.Sprite', alias:'sprite.boxplot', type:'boxplot', inheritableStatics:{def:{processors:{x:'number', low:'number', q1:'number', median:'number', q3:'number', high:'number', boxWidth:'number', whiskerWidth:'number', crisp:'bool'}, triggers:{x:'bbox', low:'bbox', high:'bbox', boxWidth:'bbox', whiskerWidth:'bbox', crisp:'bbox'}, defaults:{x:0, low:-20, q1:-10, median:0, q3:10, high:20, boxWidth:12, whiskerWidth:0.5, crisp:true, fillStyle:'#ccc', 
 strokeStyle:'#000'}}}, updatePlainBBox:function(plain) {
@@ -16009,7 +16071,7 @@ list:null, curveUpdater:function(attr) {
     }
   }
 }});
-Ext.define('Ext.chart.series.Line', {extend:'Ext.chart.series.Cartesian', alias:'series.line', type:'line', seriesType:'lineSeries', isLine:true, requires:['Ext.chart.series.sprite.Line'], config:{selectionTolerance:5, curve:{type:'linear'}, smooth:null, step:null, nullStyle:'gap', fill:undefined, aggregator:{strategy:'double'}}, themeMarkerCount:function() {
+Ext.define('Ext.chart.series.Line', {extend:'Ext.chart.series.Cartesian', alias:'series.line', type:'line', seriesType:'lineSeries', isLine:true, requires:['Ext.chart.series.sprite.Line'], config:{selectionTolerance:20, curve:{type:'linear'}, smooth:null, step:null, nullStyle:'gap', fill:undefined, aggregator:{strategy:'double'}}, themeMarkerCount:function() {
   return 1;
 }, getDefaultSpriteConfig:function() {
   var me = this, parentConfig = me.callParent(arguments), style = Ext.apply({}, me.getStyle()), styleWithTheme, fillArea = false;
@@ -16337,21 +16399,22 @@ Ext.define('Ext.chart.series.Pie', {extend:'Ext.chart.series.Polar', requires:['
   }
   return null;
 }, getItemForPoint:function(x, y) {
-  var me = this, sprites = me.getSprites();
-  if (sprites) {
-    var center = me.getCenter(), offsetX = me.getOffsetX(), offsetY = me.getOffsetY(), dx = x - center[0] + offsetX, dy = y - center[1] + offsetY, store = me.getStore(), donut = me.getDonut(), records = store.getData().items, direction = Math.atan2(dy, dx) - me.getRotation(), radius = Math.sqrt(dx * dx + dy * dy), startRadius = me.getRadius() * donut * 0.01, hidden = me.getHidden(), i, ln, attr;
-    for (i = 0, ln = records.length; i < ln; i++) {
-      if (!hidden[i]) {
-        attr = sprites[i].attr;
-        if (radius >= startRadius + attr.margin && radius <= attr.endRho + attr.margin) {
-          if (me.betweenAngle(direction, attr.startAngle, attr.endAngle)) {
-            return {series:me, sprite:sprites[i], index:i, record:records[i], field:me.getXField()};
-          }
-        }
-      }
+  var me = this, sprites = me.getSprites(), center = me.getCenter(), offsetX = me.getOffsetX(), offsetY = me.getOffsetY(), dx = x - center[0] + offsetX, dy = y - center[1] + offsetY, store = me.getStore(), donut = me.getDonut(), records = store.getData().items, direction = Math.atan2(dy, dx) - me.getRotation(), radius = Math.sqrt(dx * dx + dy * dy), startRadius = me.getRadius() * donut * 0.01, hidden = me.getHidden(), result = null, i, ln, attr, sprite;
+  for (i = 0, ln = records.length; i < ln; i++) {
+    if (hidden[i]) {
+      continue;
     }
-    return null;
+    sprite = sprites[i];
+    if (!sprite) {
+      break;
+    }
+    attr = sprite.attr;
+    if (radius >= startRadius + attr.margin && radius <= attr.endRho + attr.margin && me.betweenAngle(direction, attr.startAngle, attr.endAngle)) {
+      result = {series:me, sprite:sprites[i], index:i, record:records[i], field:me.getXField()};
+      break;
+    }
   }
+  return result;
 }, provideLegendInfo:function(target) {
   var me = this, store = me.getStore();
   if (store) {
@@ -17100,7 +17163,7 @@ Ext.define('Ext.chart.series.sprite.Scatter', {alias:'sprite.scatterSeries', ext
   if (this.cleanRedraw) {
     return;
   }
-  var me = this, attr = me.attr, dataX = attr.dataX, dataY = attr.dataY, labels = attr.labels, series = me.getSeries(), isDrawLabels = labels && me.getMarker('labels'), matrix = me.attr.matrix, xx = matrix.getXX(), yy = matrix.getYY(), dx = matrix.getDX(), dy = matrix.getDY(), markerCfg = {}, changes, params, xScalingDirection = surface.getInherited().rtl && !attr.flipXY ? -1 : 1, left, right, top, bottom, x, y, i;
+  var me = this, attr = me.attr, dataX = attr.dataX, dataY = attr.dataY, labels = attr.labels, series = me.getSeries(), isDrawLabels = labels && me.getMarker('labels'), surfaceMatrix = me.surfaceMatrix, matrix = me.attr.matrix, xx = matrix.getXX(), yy = matrix.getYY(), dx = matrix.getDX(), dy = matrix.getDY(), markerCfg = {}, changes, params, xScalingDirection = surface.getInherited().rtl && !attr.flipXY ? -1 : 1, left, right, top, bottom, x, y, i;
   if (attr.flipXY) {
     left = surfaceClipRect[1] - xx * xScalingDirection;
     right = surfaceClipRect[1] + surfaceClipRect[3] + xx * xScalingDirection;
@@ -17119,15 +17182,15 @@ Ext.define('Ext.chart.series.sprite.Scatter', {alias:'sprite.scatterSeries', ext
     y = y * yy + dy;
     if (left <= x && x <= right && top <= y && y <= bottom) {
       if (attr.renderer) {
-        markerCfg = {type:'items', translationX:x, translationY:y};
+        markerCfg = {type:'markers', translationX:surfaceMatrix.x(x, y), translationY:surfaceMatrix.y(x, y)};
         params = [me, markerCfg, {store:me.getStore()}, i];
         changes = Ext.callback(attr.renderer, null, params, 0, series);
         markerCfg = Ext.apply(markerCfg, changes);
       } else {
-        markerCfg.translationX = x;
-        markerCfg.translationY = y;
+        markerCfg.translationX = surfaceMatrix.x(x, y);
+        markerCfg.translationY = surfaceMatrix.y(x, y);
       }
-      me.putMarker('items', markerCfg, i, !attr.renderer);
+      me.putMarker('markers', markerCfg, i, !attr.renderer);
       if (isDrawLabels && labels[i]) {
         me.drawLabel(labels[i], x, y, i, surfaceClipRect);
       }
@@ -17173,12 +17236,8 @@ Ext.define('Ext.chart.series.sprite.Scatter', {alias:'sprite.scatterSeries', ext
   }
   me.putMarker('labels', labelCfg, labelId);
 }});
-Ext.define('Ext.chart.series.Scatter', {extend:'Ext.chart.series.Cartesian', alias:'series.scatter', type:'scatter', seriesType:'scatterSeries', requires:['Ext.chart.series.sprite.Scatter'], config:{itemInstancing:{animation:{customDurations:{translationX:0, translationY:0}}}}, themeMarkerCount:function() {
+Ext.define('Ext.chart.series.Scatter', {extend:'Ext.chart.series.Cartesian', alias:'series.scatter', type:'scatter', seriesType:'scatterSeries', requires:['Ext.chart.series.sprite.Scatter'], config:{itemInstancing:null}, themeMarkerCount:function() {
   return 1;
-}, applyMarker:function(marker, oldMarker) {
-  this.getItemInstancing();
-  this.setItemInstancing(marker);
-  return this.callParent(arguments);
 }, provideLegendInfo:function(target) {
   var me = this, style = me.getMarkerStyleByIndex(0), fill = style.fillStyle;
   target.push({name:me.getTitle() || me.getYField() || me.getId(), mark:(Ext.isObject(fill) ? fill.stops && fill.stops[0].color : fill) || style.strokeStyle || 'black', disabled:me.getHidden(), series:me.getId(), index:0});

@@ -187,7 +187,7 @@ Ext.define('Ext.grid.plugin.RowEditing', {
         }
 
         if (editor.beforeEdit() !== false) {
-            context = me.getEditingContext(record, columnHeader);
+            context = me.getEditingContext(record, columnHeader, true);
             if (context && me.beforeEdit(context) !== false && me.fireEvent('beforeedit', me, context) !== false && !context.cancel) {
                 me.context = context;
 

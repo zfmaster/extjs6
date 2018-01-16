@@ -2603,7 +2603,7 @@ topSuite("Ext.data.Session", [
                             });
                             var posts = user.posts();
                             expect(posts.getCount()).toBe(1);
-                            expect(posts.loadCount).toBe(1);
+                            expect(posts.loadCount).toBe(2);
                             expect(posts.complete).toBe(true);
                             expect(spy).not.toHaveBeenCalled();
                         });

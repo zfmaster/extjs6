@@ -38,13 +38,13 @@ Ext.define('Ext.Toast', {
 
     config: {
         /**
-         * @cfg
+         * @cfg centered
          * @inheritdoc
          */
         centered: false,
 
         /**
-         * @cfg
+         * @cfg showAnimation
          * @inheritdoc
          */
         showAnimation: {
@@ -54,7 +54,7 @@ Ext.define('Ext.Toast', {
         },
 
         /**
-         * @cfg
+         * @cfg hideAnimation
          * @inheritdoc
          */
         hideAnimation: {
@@ -96,18 +96,19 @@ Ext.define('Ext.Toast', {
         messageAnimation: true,
 
         /**
-         * @cfg {Boolean} hideOnMaskTap
+         * @cfg hideOnMaskTap
          * @inheritdoc
          */
         hideOnMaskTap: true,
 
         /**
+         * @cfg modal
          * @hide
          */
         modal: false,
 
         /**
-         * @cfg
+         * @cfg layout
          * @inheritdoc
          */
         layout: {
@@ -116,6 +117,10 @@ Ext.define('Ext.Toast', {
         }
     },
 
+    /**
+     * @property classCls
+     * @inheritdoc
+     */
     classCls: Ext.baseCSSPrefix + 'toast',
 
     /**

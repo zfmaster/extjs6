@@ -548,9 +548,14 @@ $tool-boxscroller-tabbar-ui: dynamic((
         }
 
         &.#{$prefix}disabled {
+            cursor: $disabled-cursor;
+        }
+
+        // Passive (purely decorative) Tools are set disabled, but they must not
+        // *appear* disabled.
+        &.#{$prefix}disabled:not(.#{$prefix}passive) {
             color: $disabled-color;
             background-color: $disabled-background-color;
-            cursor: $disabled-cursor;
 
             .#{$prefix}icon-el {
                 opacity: $disabled-opacity;

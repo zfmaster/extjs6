@@ -128,7 +128,7 @@ Ext.define('Ext.data.virtual.PageMap', {
 
         if (pages) {
             for (pg in pages) {
-                pages[pg].destroy();
+                me.destroyPage(pages[pg]);
             }
         }
     },
@@ -218,7 +218,6 @@ Ext.define('Ext.data.virtual.PageMap', {
 
     updatePageCount: function (pageCount, oldPageCount) {
         var pages = this.pages,
-            store = this.store,
             pageNumber, page;
 
         if (oldPageCount === null || pageCount < oldPageCount) {
@@ -227,8 +226,7 @@ Ext.define('Ext.data.virtual.PageMap', {
                 page = pages[pageNumber];
                 if (page.number >= pageCount) {
                     this.clearPage(page);
-                    store.onPageDestroy(page);
-                    page.destroy();
+                    this.destroyPage(page);
                 }
             }
         }
@@ -252,6 +250,11 @@ Ext.define('Ext.data.virtual.PageMap', {
             if (!fromCache) {
                 Ext.Array.remove(me.cache, page);
             }
+        },
+
+        destroyPage: function(page) {
+            this.store.onPageDestroy(page);
+            page.destroy();
         },
 
         loadNext: function () {
@@ -342,8 +345,7 @@ Ext.define('Ext.data.virtual.PageMap', {
                     page = cache.shift();
                     me.clearPage(page, true); // remove LRU item
                     store.onPageEvicted(page);
-                    store.onPageDestroy(page);
-                    page.destroy();
+                    me.destroyPage(page);
                 }
             }
         },

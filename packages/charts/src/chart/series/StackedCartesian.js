@@ -294,39 +294,50 @@ Ext.define('Ext.chart.series.StackedCartesian', {
     },
 
     getItemForPoint: function (x, y) {
-        var sprites = this.getSprites();
-
-        if (!sprites) {
-            return null;
-        }
-
         var me = this,
+            sprites = me.getSprites(),
             store = me.getStore(),
             hidden = me.getHidden(),
+            minDistance = Infinity,
             item = null,
-            index, yField,
-            i, ln, sprite;
+            spriteIndex = -1,
+            pointIndex = -1,
+            point,
+            yField,
+            sprite,
+            i, ln;
 
         for (i = 0, ln = sprites.length; i < ln; i++) {
             if (hidden[i]) {
                 continue;
             }
             sprite = sprites[i];
-            index = sprite.getIndexNearPoint(x, y);
-            if (index !== -1) {
-                yField = me.getYField();
-                item = {
-                    series: me,
-                    index: index,
-                    category: me.getItemInstancing() ? 'items' : 'markers',
-                    record: store.getData().items[index],
-                    // Handle the case where we're stacked but a single segment
-                    field: typeof yField === 'string' ? yField : yField[i],
-                    sprite: sprite
-                };
-                break;
+            point = sprite.getNearestDataPoint(x, y);
+            // Don't stop when the first matching point is found.
+            // Keep looking for the nearest point.
+            if (point) {
+                if (point.distance < minDistance) {
+                    minDistance = point.distance;
+                    pointIndex = point.index;
+                    spriteIndex = i;
+                }
             }
         }
+
+        if (spriteIndex > -1) {
+            yField = me.getYField();
+            item = {
+                series: me,
+                sprite: sprites[spriteIndex],
+                category: me.getItemInstancing() ? 'items' : 'markers',
+                index: pointIndex,
+                record: store.getData().items[pointIndex],
+                // Handle the case where we're stacked but a single segment
+                field: typeof yField === 'string' ? yField : yField[spriteIndex],
+                distance: minDistance
+            };
+        }
+
         return item;
     },
 

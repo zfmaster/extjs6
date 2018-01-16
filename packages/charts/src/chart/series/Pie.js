@@ -466,43 +466,46 @@ Ext.define('Ext.chart.series.Pie', {
 
     getItemForPoint: function (x, y) {
         var me = this,
-            sprites = me.getSprites();
+            sprites = me.getSprites(),
+            center = me.getCenter(),
+            offsetX = me.getOffsetX(),
+            offsetY = me.getOffsetY(),
+            // Distance from the center of the series to the cursor.
+            dx = x - center[0] + offsetX,
+            dy = y - center[1] + offsetY,
+            store = me.getStore(),
+            donut = me.getDonut(),
+            records = store.getData().items,
+            direction = Math.atan2(dy, dx) - me.getRotation(),
+            radius = Math.sqrt(dx * dx + dy * dy),
+            startRadius = me.getRadius() * donut * 0.01,
+            hidden = me.getHidden(),
+            result = null,
+            i, ln, attr, sprite;
 
-        if (sprites) {
-            var center = me.getCenter(),
-                offsetX = me.getOffsetX(),
-                offsetY = me.getOffsetY(),
-                // Distance from the center of the series to the cursor.
-                dx = x - center[0] + offsetX,
-                dy = y - center[1] + offsetY,
-                store = me.getStore(),
-                donut = me.getDonut(),
-                records = store.getData().items,
-                direction = Math.atan2(dy, dx) - me.getRotation(),
-                radius = Math.sqrt(dx * dx + dy * dy),
-                startRadius = me.getRadius() * donut * 0.01,
-                hidden = me.getHidden(),
-                i, ln, attr;
-
-            for (i = 0, ln = records.length; i < ln; i++) {
-                if (!hidden[i]) {
-                    // Fortunately, item's id equals its index in the instances list.
-                    attr = sprites[i].attr;
-                    if (radius >= startRadius + attr.margin && radius <= attr.endRho + attr.margin) {
-                        if (me.betweenAngle(direction, attr.startAngle, attr.endAngle)) {
-                            return {
-                                series: me,
-                                sprite: sprites[i],
-                                index: i,
-                                record: records[i],
-                                field: me.getXField()
-                            };
-                        }
-                    }
-                }
+        for (i = 0, ln = records.length; i < ln; i++) {
+            if (hidden[i]) {
+                continue;
             }
-            return null;
+            sprite = sprites[i];
+            if (!sprite) {
+                break;
+            }
+            attr = sprite.attr;
+            if (radius >= startRadius + attr.margin &&
+                radius <= attr.endRho + attr.margin &&
+                me.betweenAngle(direction, attr.startAngle, attr.endAngle)) {
+                    result = {
+                        series: me,
+                        sprite: sprites[i],
+                        index: i,
+                        record: records[i],
+                        field: me.getXField()
+                    };
+                    break;
+            }
         }
+        return result;
     },
 
     provideLegendInfo: function (target) {

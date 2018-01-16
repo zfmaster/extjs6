@@ -101,7 +101,7 @@ Ext.define('Ext.ux.statusbar.StatusBar', {
      * If not specified, the value set for {@link #defaultText} will be used.
      */
     /**
-     * @cfg {String} [iconCls='']
+     * @cfg [iconCls='']
      * @inheritdoc Ext.panel.Header#cfg-iconCls
      * @localdoc **Note:** This CSS class will be **initially** set as the status bar 
      * icon.  See also {@link #defaultIconCls} and {@link #busyIconCls}.

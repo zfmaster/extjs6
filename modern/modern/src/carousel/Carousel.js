@@ -191,24 +191,6 @@ Ext.define('Ext.carousel.Carousel', {
         this.getTranslatable().setActiveIndex(size);
     },
 
-    getRefItems: function (deep) {
-        var ret = this.callParent([deep]),
-            carouselItems = this.carouselItems,
-            n = carouselItems.length,
-            i, item;
-
-        for (i = 0; i < n; ++i) {
-            item = carouselItems[i];
-            ret.push(item);
-
-            if (deep && item.getRefItems) {
-                ret.push.apply(ret, item.getRefItems(deep));
-            }
-        }
-
-        return ret;
-    },
-
     onSizeChange: function() {
         this.refreshSizing();
         this.refreshCarouselItems();

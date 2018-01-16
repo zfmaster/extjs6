@@ -2820,7 +2820,24 @@ jasmine.Env.prototype.checkResourceLeaks = function(spec) {
     var body = document.body,
         fail = false,
         specName, focusPublisher, items, i, len;
-    
+
+    // Check that once the viewport scroller has been created, it is left alone
+    // and never destroyed. Viewports may come and go, but the global document
+    // scroller should not be destroyed.
+    if (Ext.scroll) {
+        if (!jasmine.viewportScroller) {
+            jasmine.viewportScroller = Ext.scroll.Scroller.viewport;
+        }
+        // TODO: Fix the persistence of the body/Viewport scroller in classic.
+        else if (Ext.isModern) {
+            if (!Ext.scroll.Scroller.viewport) {
+                spec.fail('Removed the Ext.scroll.Scroller.viewport reference');
+            } else if (Ext.scroll.Scroller.viewport.destroyed) {
+                spec.fail('Destroyed the Ext.scroll.Scroller.viewport reference');
+            }
+        }
+    }
+
     specName = spec.getFullName(true);
 
     // Clear any tracked touches.
@@ -6089,7 +6106,7 @@ jasmine.Suite.prototype.finish = function(onComplete) {
         // before advancing the queue. We only do this for top level suites
         // to avoid the performance penalty.
         if (me.isTopSuite) {
-            var fireEmUp = jasmine._setImmediate || jasmine._setTimeout;
+            var fireEmUp = jasmine._setTimeout;
             
             fireEmUp(onComplete, 0);
         }
@@ -6544,6 +6561,12 @@ jasmine.Spec.prototype.addBeforesAndAftersToQueue = function() {
 };
 
 jasmine.Spec.prototype.finish = function(onComplete) {
+
+    // TouchMode is decided upon the time since the last touch gesture.
+    // Between tests, that needs to be reset. Also reset keyboard mode.
+    Ext.lastTouchTime = 0;
+    Ext.keyboardMode = false;
+
     this.removeAllSpies();
 
     // Complete destruction of dead objects
@@ -7679,7 +7702,7 @@ jasmine.firePointerEvent = function(target, type, pointerId, x, y, button, shift
     if (relatedTarget) {
         relatedTarget = Ext.getDom(relatedTarget);
     } else {
-        if (type === 'mouseover' || type === 'mouseout' || type === 'mousenter' || type === 'mouseleave') {
+        if (Ext.String.endsWith(type, 'over') || Ext.String.endsWith(type, 'out') || Ext.String.endsWith(type, 'enter') || Ext.String.endsWith(type, 'leave')) {
             relatedTarget = target.parentNode;
         } else {
             relatedTarget = null;
@@ -7693,7 +7716,7 @@ jasmine.firePointerEvent = function(target, type, pointerId, x, y, button, shift
     if (!target) {
         throw 'Cannot fire pointer event on null element';
     }
-    
+
     // Ensure the pointer position is registered at the point of contact
     if (type === 'mousedown') {
         jasmine.firePointerEvent(doc.defaultView || doc.parentWindow, 'mousemove', x, y);
@@ -8813,8 +8836,12 @@ jasmine.env.addStartupHook(function() {
 
     // Prevent the iOS inactive webview watchdog timer from firing at 500ms intervals
     // throughout the test suite and injecting spurious idle events.
-    Ext.uninterval(Ext.TaskQueue.watchdogTimer);
-    Ext.uninterval(Ext.AnimationQueue.watchdogTimer);
+    if (Ext.TaskQueue) {
+        Ext.uninterval(Ext.TaskQueue.watchdogTimer);
+    }
+    if (Ext.AnimationQueue) {
+        Ext.uninterval(Ext.AnimationQueue.watchdogTimer);
+    }
 
     if (Ext.isModern) {
         // all tests run in normal mode by default regardless of the device
@@ -8934,6 +8961,9 @@ jasmine.env.addStartupHook(function() {
     // We don't want ARIA warnings to pollute the console
     Ext._ariaWarn = Ext.ariaWarn;
     Ext.ariaWarn = Ext.emptyFn;
+    
+    // We want to catch when something tries to fire events on destroyed objects
+    Ext.raiseOnDestroyed = true;
 
     // We would love to catch runaway Promises, too, but there's a tiny problem
     // of what to do with them when that happens. See comment in checkResourceLeaks()
@@ -8960,6 +8990,9 @@ jasmine.env.addStartupHook(function() {
 //     }
 
     if (Ext.isClassic) {
+        // We want layout run errors to fail tests
+        Ext.devMode = 2;
+        
         // Our test suite assumes that unspecified header text will still show headers.
         // 6.2 sets hideHeaders if there is no header text, no grouped headers,
         // and hideHeaders is not in the class.

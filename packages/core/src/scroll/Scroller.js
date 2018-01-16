@@ -7,7 +7,10 @@ Ext.define('Ext.scroll.Scroller', {
     extend: 'Ext.Evented',
     alias: 'scroller.scroller',
 
-    mixins: [ 'Ext.mixin.Factoryable' ],
+    mixins: [
+        'Ext.mixin.Factoryable',
+        'Ext.mixin.Bufferable'
+    ],
 
     requires: [
         'Ext.util.CSS',
@@ -17,6 +20,10 @@ Ext.define('Ext.scroll.Scroller', {
 
     factoryConfig: {
         defaultType: 'scroller'
+    },
+
+    bufferableMethods: {
+        onDomScrollEnd: 100
     },
 
     isScroller: true,
@@ -165,8 +172,6 @@ Ext.define('Ext.scroll.Scroller', {
     elementCls: Ext.baseCSSPrefix + 'scroller',
     spacerCls: Ext.baseCSSPrefix + 'scroller-spacer',
     noScrollbarsCls: Ext.baseCSSPrefix + 'no-scrollbars',
-    
-    scrollEndBuffer: 100,
 
     statics: {
         /**
@@ -239,9 +244,6 @@ Ext.define('Ext.scroll.Scroller', {
         me.position = { x: 0, y: 0 };
 
         me.callParent([config]);
-
-        me.bufferedOnDomScrollEnd =
-            Ext.Function.createBuffered(me.onDomScrollEnd, me.scrollEndBuffer, me);
     },
 
     destroy: function() {
@@ -250,7 +252,6 @@ Ext.define('Ext.scroll.Scroller', {
             key;
 
         Ext.undefer(me.restoreTimer);
-        Ext.undefer(me.bufferedOnDomScrollEnd.timer);
 
         // Clear any overflow styles
         me.setX(Ext.emptyString);
@@ -273,9 +274,8 @@ Ext.define('Ext.scroll.Scroller', {
         // Remove element listeners, this will cause scrollElement to
         // be cleared also.
         me.setElement(null);
-        
-        me.bufferedOnDomScrollEnd = me._partners = me.component = null;
-        
+        me._partners = me.component = null;
+
         if (me.translatable) {
             me.translatable.destroy();
             me.translatable = null;
@@ -1568,7 +1568,7 @@ Ext.define('Ext.scroll.Scroller', {
 
                     me.fireScroll(x, y, xDelta, yDelta);
 
-                    me.bufferedOnDomScrollEnd(x, y, xDelta, yDelta);
+                    me.onDomScrollEnd(x, y, xDelta, yDelta);
                 }
             }
 
@@ -1583,9 +1583,7 @@ Ext.define('Ext.scroll.Scroller', {
         syncWithPartners: function() {
             var me = this,
                 partners = me._partners,
-                id,
-                partner,
-                position;
+                id, partner, position;
 
             me.suspendPartnerSync();
             for (id in partners) {
@@ -1615,7 +1613,7 @@ Ext.define('Ext.scroll.Scroller', {
             }
         },
 
-        onDomScrollEnd: function(x, y, xDelta, yDelta) {
+        doOnDomScrollEnd: function(x, y, xDelta, yDelta) {
             var me = this;
 
             // Could be destroyed by this time
@@ -1624,6 +1622,11 @@ Ext.define('Ext.scroll.Scroller', {
             }
 
             me.isScrolling = Ext.isScrolling = false;
+
+            // if this is being flushed we only need to set the scrolling status to false
+            if (x === undefined) {
+                return;
+            }
             me.trackingScrollLeft = x;
             me.trackingScrollTop = y;
             me.fireScrollEnd(x, y, xDelta, yDelta);
@@ -1649,10 +1652,12 @@ Ext.define('Ext.scroll.Scroller', {
         },
 
         onPartnerScrollEnd: function(partner, x, y, xDelta, yDelta) {
+            // manually clearing the buffer queue before calling the method without buffering
+            this.cancelOnDomScrollEnd();
             // Pass the signal on immediately to all partners.
-            // We are called by the bufferedOnDomScrollEnd of our controller
-            // so we must not add another delay.
-            this.onDomScrollEnd(x, y, xDelta, yDelta);
+            // We are called by the onDomScrollEnd of our controller
+            // so we must not add another delay and call doOnScrollEnd directly.
+            this.doOnDomScrollEnd(x, y, xDelta, yDelta);
         },
 
         removeSnapStylesheet: function() {
@@ -1702,7 +1707,12 @@ Ext.define('Ext.scroll.Scroller', {
         // always exist regardless of whether or not there is a Viewport component in use
         // so that global scroll events will still fire.  Menus and some other floating
         // things use these scroll events to hide themselves.
-        return Scroller.viewport || (Scroller.viewport = new Scroller());
+        var scroller = Scroller.viewport;
+        if (!scroller) {
+            Scroller.viewport = scroller = new Scroller();
+            Scroller.initViewportScroller();
+        }
+        return scroller;
     };
 
     /**
@@ -1712,7 +1722,10 @@ Ext.define('Ext.scroll.Scroller', {
     Ext.setViewportScroller = function(scroller) {
         if (Scroller.viewport !== scroller) {
             Ext.destroy(Scroller.viewport);
-            Scroller.viewport = scroller.isScroller ? scroller : new Scroller(scroller);
+            if (scroller && !scroller.isScroller) {
+                scroller = new Scroller(scroller);
+            }
+            Scroller.viewport = scroller;
         }
     };
 

@@ -5288,14 +5288,21 @@ Ext.define('Ext.ux.TreePicker', {extend:'Ext.form.field.Picker', xtype:'treepick
     this.setRawValue(rec.get(display));
   }
 }});
-Ext.define('Ext.ux.colorpick.Selection', {mixinId:'colorselection', config:{format:'hex6', value:'FF0000', color:null, previousColor:null}, applyColor:function(color) {
+Ext.define('Ext.ux.colorpick.Selection', {mixinId:'colorselection', config:{format:'hex6', value:'FF0000', color:null, previousColor:null, alphaDecimalFormat:'#.##'}, applyColor:function(color) {
   var c = color;
   if (Ext.isString(c)) {
-    c = Ext.ux.colorpick.ColorUtils.parseColor(color);
+    c = Ext.ux.colorpick.ColorUtils.parseColor(color, this.getAlphaDecimalFormat());
   }
   return c;
+}, applyFormat:function(format) {
+  var formats = Ext.ux.colorpick.ColorUtils.formats;
+  if (!formats.hasOwnProperty(format)) {
+    Ext.raise('The specified format "' + format + '" is invalid.');
+    return;
+  }
+  return format;
 }, applyValue:function(color) {
-  var c = Ext.ux.colorpick.ColorUtils.parseColor(color || '#000000');
+  var c = Ext.ux.colorpick.ColorUtils.parseColor(color || '#000000', this.getAlphaDecimalFormat());
   return this.formatColor(c);
 }, formatColor:function(color) {
   return Ext.ux.colorpick.ColorUtils.formats[this.getFormat()](color);
@@ -5329,7 +5336,11 @@ Ext.define('Ext.ux.colorpick.ColorUtils', function(ColorUtils) {
       var tpl = Ext.XTemplate.getTpl(ColorUtils, 'backgroundTpl'), data = {rgba:ColorUtils.getRGBAString(color)}, bgStyle = tpl.apply(data);
       el.applyStyles(bgStyle);
     }
-  }, formats:{HEX6:function(colorO) {
+  }, formats:{RGB:function(colorO) {
+    return ColorUtils.getRGBString(colorO).toUpperCase();
+  }, RGBA:function(colorO) {
+    return ColorUtils.getRGBAString(colorO).toUpperCase();
+  }, HEX6:function(colorO) {
     return ColorUtils.rgb2hex(colorO.r, colorO.g, colorO.b);
   }, HEX8:function(colorO) {
     var hex = ColorUtils.rgb2hex(colorO.r, colorO.g, colorO.b), opacityHex = Math.round(colorO.a * 255).toString(16);
@@ -5338,7 +5349,7 @@ Ext.define('Ext.ux.colorpick.ColorUtils', function(ColorUtils) {
     }
     hex += opacityHex.toUpperCase();
     return hex;
-  }}, hexRe:/#?([0-9a-f]{3,8})/i, rgbaAltRe:/rgba\(\s*([\w#\d]+)\s*,\s*([\d\.]+)\s*\)/, rgbaRe:/rgba\(\s*([\d\.]+)\s*,\s*([\d\.]+)\s*,\s*([\d\.]+)\s*,\s*([\d\.]+)\s*\)/, rgbRe:/rgb\(\s*([\d\.]+)\s*,\s*([\d\.]+)\s*,\s*([\d\.]+)\s*\)/, parseColor:function(color) {
+  }}, hexRe:/^#?(([0-9a-f]{8})|((?:[0-9a-f]{3}){1,2}))$/i, rgbaAltRe:/^rgba\(\s*([\w#\d]+)\s*,\s*([\d\.]+)\s*\)$/i, rgbaRe:/^rgba\(\s*([\d\.]+)\s*,\s*([\d\.]+)\s*,\s*([\d\.]+)\s*,\s*([\d\.]+)\s*\)$/i, rgbRe:/^rgb\(\s*([\d\.]+)\s*,\s*([\d\.]+)\s*,\s*([\d\.]+)\s*\)$/i, parseColor:function(color, alphaFormat) {
     if (!color) {
       return null;
     }
@@ -5384,8 +5395,13 @@ Ext.define('Ext.ux.colorpick.ColorUtils', function(ColorUtils) {
         }
       }
     }
+    if (alphaFormat) {
+      ret.a = Ext.util.Format.number(ret.a, alphaFormat);
+    }
     hsv = this.rgb2hsv(ret.r, ret.g, ret.b);
     return Ext.apply(ret, hsv);
+  }, isValid:function(color) {
+    return ColorUtils.parseColor(color) !== null;
   }, getRGBAString:function(rgba) {
     return 'rgba(' + rgba.r + ',' + rgba.g + ',' + rgba.b + ',' + rgba.a + ')';
   }, getRGBString:function(rgb) {
@@ -5584,7 +5600,7 @@ Ext.define('Ext.ux.colorpick.SelectorModel', {extend:'Ext.app.ViewModel', alias:
   result = Ext.ux.colorpick.ColorUtils.rgb2hex(r, g, b);
   return '#' + result;
 }, set:function(hex) {
-  var rgb = Ext.ux.colorpick.ColorUtils.hex2rgb(hex);
+  var rgb = Ext.ux.colorpick.ColorUtils.parseColor(hex);
   this.changeRGB(rgb);
 }}, red:{get:function(get) {
   return get('selectedColor.r');
@@ -5832,14 +5848,14 @@ Ext.define('Ext.ux.colorpick.SliderHue', {extend:'Ext.ux.colorpick.Slider', alia
   el.setStyle({top:top + 'px'});
 }});
 Ext.define('Ext.ux.colorpick.Selector', {extend:'Ext.container.Container', xtype:'colorselector', mixins:['Ext.ux.colorpick.Selection'], controller:'colorpick-selectorcontroller', requires:['Ext.layout.container.HBox', 'Ext.form.field.Text', 'Ext.form.field.Number', 'Ext.ux.colorpick.ColorMap', 'Ext.ux.colorpick.SelectorModel', 'Ext.ux.colorpick.SelectorController', 'Ext.ux.colorpick.ColorPreview', 'Ext.ux.colorpick.Slider', 'Ext.ux.colorpick.SliderAlpha', 'Ext.ux.colorpick.SliderSaturation', 'Ext.ux.colorpick.SliderValue', 
-'Ext.ux.colorpick.SliderHue'], width:580, height:337, cls:Ext.baseCSSPrefix + 'colorpicker', padding:10, layout:{type:'hbox', align:'stretch'}, defaultBindProperty:'value', twoWayBindable:['value'], fieldWidth:50, fieldPad:5, showPreviousColor:false, showOkCancelButtons:false, listeners:{resize:'onResize'}, constructor:function(config) {
+'Ext.ux.colorpick.SliderHue'], config:{hexReadOnly:true}, width:580, height:337, cls:Ext.baseCSSPrefix + 'colorpicker', padding:10, layout:{type:'hbox', align:'stretch'}, defaultBindProperty:'value', twoWayBindable:['value'], fieldWidth:50, fieldPad:5, showPreviousColor:false, showOkCancelButtons:false, listeners:{resize:'onResize'}, constructor:function(config) {
   var me = this, childViewModel = Ext.Factory.viewModel('colorpick-selectormodel');
   me.childViewModel = childViewModel;
   me.items = [me.getMapAndHexRGBFields(childViewModel), me.getSliderAndHField(childViewModel), me.getSliderAndSField(childViewModel), me.getSliderAndVField(childViewModel), me.getSliderAndAField(childViewModel), me.getPreviewAndButtons(childViewModel, config)];
   me.childViewModel.bind('{selectedColor}', function(color) {
     me.setColor(color);
   });
-  me.callParent(arguments);
+  me.callParent([config]);
 }, updateColor:function(color) {
   var me = this;
   me.mixins.colorselection.updateColor.call(me, color);
@@ -5852,7 +5868,8 @@ Ext.define('Ext.ux.colorpick.Selector', {extend:'Ext.container.Container', xtype
     if (this.isValid()) {
       Ext.form.field.Base.prototype.onChange.apply(this, arguments);
     }
-  }}, items:[{xtype:'textfield', fieldLabel:'HEX', flex:1, bind:'{hex}', margin:fieldMargin, readOnly:true}, {xtype:'numberfield', fieldLabel:'R', bind:'{red}', width:fieldWidth, hideTrigger:true, maxValue:255, minValue:0, margin:fieldMargin}, {xtype:'numberfield', fieldLabel:'G', bind:'{green}', width:fieldWidth, hideTrigger:true, maxValue:255, minValue:0, margin:fieldMargin}, {xtype:'numberfield', fieldLabel:'B', bind:'{blue}', width:fieldWidth, hideTrigger:true, maxValue:255, minValue:0, margin:0}]}]};
+  }}, items:[{xtype:'textfield', fieldLabel:'HEX', flex:1, bind:'{hex}', margin:fieldMargin, regex:/^#[0-9a-f]{6}$/i, readonly:me.getHexReadOnly()}, {xtype:'numberfield', fieldLabel:'R', bind:'{red}', width:fieldWidth, hideTrigger:true, maxValue:255, minValue:0, margin:fieldMargin}, {xtype:'numberfield', fieldLabel:'G', bind:'{green}', width:fieldWidth, hideTrigger:true, maxValue:255, minValue:0, margin:fieldMargin}, {xtype:'numberfield', fieldLabel:'B', bind:'{blue}', width:fieldWidth, hideTrigger:true, 
+  maxValue:255, minValue:0, margin:0}]}]};
 }, getSliderAndHField:function(childViewModel) {
   var me = this, fieldWidth = me.fieldWidth;
   return {xtype:'container', viewModel:childViewModel, cls:Ext.baseCSSPrefix + 'colorpicker-escape-overflow', width:fieldWidth, layout:{type:'vbox', align:'stretch'}, items:[{xtype:'colorpickersliderhue', reference:'hueSlider', flex:1, bind:{hue:'{selectedColor.h}'}, width:fieldWidth, listeners:{handledrag:'onHueSliderHandleDrag'}}, {xtype:'numberfield', fieldLabel:'H', labelAlign:'top', labelSeparator:'', bind:'{hue}', hideTrigger:true, maxValue:360, minValue:0, allowBlank:false, margin:0}]};
@@ -5929,7 +5946,11 @@ reference:'selector', showPreviousColor:true, showOkCancelButtons:true}}}}, defa
   }
 }});
 Ext.define('Ext.ux.colorpick.Field', {extend:'Ext.form.field.Picker', xtype:'colorfield', mixins:['Ext.ux.colorpick.Selection'], requires:['Ext.window.Window', 'Ext.ux.colorpick.Selector', 'Ext.ux.colorpick.ColorUtils', 'Ext.layout.container.Fit'], editable:false, matchFieldWidth:false, beforeBodyEl:['\x3cdiv class\x3d"' + Ext.baseCSSPrefix + 'colorpicker-field-swatch"\x3e' + '\x3cdiv id\x3d"{id}-swatchEl" data-ref\x3d"swatchEl" class\x3d"' + Ext.baseCSSPrefix + 'colorpicker-field-swatch-inner"\x3e\x3c/div\x3e' + 
-'\x3c/div\x3e'], cls:Ext.baseCSSPrefix + 'colorpicker-field', childEls:['swatchEl'], config:{popup:{lazy:true, $value:{xtype:'window', closeAction:'hide', referenceHolder:true, minWidth:540, minHeight:200, layout:'fit', header:false, resizable:true, items:{xtype:'colorselector', reference:'selector', showPreviousColor:true, showOkCancelButtons:true}}}}, afterRender:function() {
+'\x3c/div\x3e'], cls:Ext.baseCSSPrefix + 'colorpicker-field', childEls:['swatchEl'], checkChangeEvents:['change'], config:{popup:{lazy:true, $value:{xtype:'window', closeAction:'hide', referenceHolder:true, minWidth:540, minHeight:200, layout:'fit', header:false, resizable:true, items:{xtype:'colorselector', reference:'selector', showPreviousColor:true, showOkCancelButtons:true}}}}, initComponent:function() {
+  var me = this;
+  me.callParent();
+  me.on('change', me.onHexChange);
+}, afterRender:function() {
   this.callParent();
   this.updateValue(this.value);
 }, createPicker:function() {
@@ -5938,6 +5959,7 @@ Ext.define('Ext.ux.colorpick.Field', {extend:'Ext.form.field.Picker', xtype:'col
   me.colorPicker = picker = popup.lookupReference('selector');
   picker.setFormat(me.getFormat());
   picker.setColor(me.getColor());
+  picker.setHexReadOnly(!me.editable);
   picker.on({ok:'onColorPickerOK', cancel:'onColorPickerCancel', scope:me});
   popup.on({close:'onColorPickerCancel', scope:me});
   return me.colorPickerWindow;
@@ -5949,10 +5971,17 @@ Ext.define('Ext.ux.colorpick.Field', {extend:'Ext.form.field.Picker', xtype:'col
 }, onExpand:function() {
   var color = this.getColor();
   this.colorPicker.setPreviousColor(color);
+}, onHexChange:function(field) {
+  if (field.validate()) {
+    this.setValue(field.getValue());
+  }
 }, setValue:function(color) {
-  var me = this, c = me.applyValue(color);
-  me.callParent([c]);
-  me.updateValue(c);
+  var me = this;
+  if (Ext.ux.colorpick.ColorUtils.isValid(color)) {
+    color = me.applyValue(color);
+    me.callParent([color]);
+    me.updateValue(color);
+  }
 }, updateFormat:function(format) {
   var cp = this.colorPicker;
   if (cp) {
@@ -5966,10 +5995,17 @@ Ext.define('Ext.ux.colorpick.Field', {extend:'Ext.form.field.Picker', xtype:'col
     me.syncing = false;
   }
   c = me.getColor();
-  Ext.ux.colorpick.ColorUtils.setBackground(me.swatchEl, c);
-  if (me.colorPicker) {
-    me.colorPicker.setColor(c);
+  if (c) {
+    Ext.ux.colorpick.ColorUtils.setBackground(me.swatchEl, c);
+    if (me.colorPicker) {
+      me.colorPicker.setColor(c);
+    }
   }
+}, validator:function(val) {
+  if (!Ext.ux.colorpick.ColorUtils.isValid(val)) {
+    return this.invalidText;
+  }
+  return true;
 }});
 Ext.define('Ext.ux.data.PagingMemoryProxy', {extend:'Ext.data.proxy.Memory', alias:'proxy.pagingmemory', alternateClassName:'Ext.data.PagingMemoryProxy', constructor:function() {
   Ext.log.warn('Ext.ux.data.PagingMemoryProxy functionality has been merged into Ext.data.proxy.Memory by using the enablePaging flag.');

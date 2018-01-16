@@ -305,7 +305,8 @@ Ext.define('Ext.data.proxy.Server', {
             } else {
                 resultSet = reader.read(me.extractResponseData(response), {
                     // If we're doing an update, we want to construct the models ourselves.
-                    recordCreator: operation.getRecordCreator()
+                    recordCreator: operation.getRecordCreator() ||
+                    reader.defaultRecordCreatorFromServer
                 });
             }
 

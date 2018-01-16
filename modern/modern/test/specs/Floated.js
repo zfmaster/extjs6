@@ -229,7 +229,7 @@ topSuite("Ext.Widget.floated", [false, 'Ext.Panel'], function() {
             var f;
 
             // Global float root should be immediately after the viewport body
-            expect(Ext.Viewport.element.dom.lastChild).toBe(Ext.floatRoot.dom);
+            expect(Ext.Viewport.element.dom.nextSibling).toBe(Ext.floatRoot.dom);
 
             // Ensure correct start nesting positions.
             // Global float root contains the wrapping floatRoot elements of both global floateds
@@ -377,7 +377,7 @@ topSuite("Ext.Widget.floated", [false, 'Ext.Panel'], function() {
             // test above. Initial conditions should NOT have changed
 
             // Global float root should be immediately after the viewport body
-            expect(Ext.Viewport.element.dom.lastChild).toBe(Ext.floatRoot.dom);
+            expect(Ext.Viewport.element.dom.nextSibling).toBe(Ext.floatRoot.dom);
 
             // Ensure correct start nesting positions.
             // Global float root contains the wrapping floatRoot elements of both global floateds

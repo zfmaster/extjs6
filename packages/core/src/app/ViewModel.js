@@ -752,6 +752,34 @@ Ext.define('Ext.app.ViewModel', {
 
     expressionRe: /^(?:\{(?:(\d+)|([a-z_][\w\.]*))\})$/i,
 
+    statics: {
+        /**
+         * Escape bind strings so they are treated as literals.
+         * 
+         * @param {Object/String} value The value to escape. If the value is
+         * an object, any strings will be recursively escaped.
+         * @return {Object/String} The escaped value. Matches the type of the
+         * passed value.
+         *
+         * @since 6.5.2
+         * @private
+         */
+        escape: function(value) {
+            var ret = value,
+                key;
+
+            if (typeof value === 'string') {
+                ret = '~~' + value;
+            } else if (value && value.constructor === Object) {
+                ret = {};
+                for (key in value) {
+                    ret[key] = this.escape(value[key]);
+                }
+            }
+            return ret;
+        }
+    },
+
     $configStrict: false, // allow "formulas" to be specified on derived class body
     config: {
         /**
@@ -975,7 +1003,7 @@ Ext.define('Ext.app.ViewModel', {
             task = me.collectTask,
             children = me.children,
             bindings = me.bindings,
-            key, store, autoDestroy;
+            key, store, autoDestroy, storeBinding;
 
         me.destroying = true;
         if (task) {
@@ -996,11 +1024,15 @@ Ext.define('Ext.app.ViewModel', {
         if (stores) {
             for (key in stores) {
                 store = stores[key];
+
+                // Cache this property in case store is destroyed;
+                // Properties are cleared on destroy
+                storeBinding = store.$binding;
                 autoDestroy = store.autoDestroy;
                 if (autoDestroy || (!store.$wasInstance && autoDestroy !== false)) {
                     store.destroy();
                 }
-                Ext.destroy(store.$binding);
+                Ext.destroy(storeBinding);
             }
         }
 

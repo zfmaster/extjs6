@@ -39,17 +39,7 @@ Ext.define('Ext.viewport.Viewport', {
                 break;
         }
 
-        Ext.Viewport = viewport = Ext.create('Ext.viewport.' + viewportName, config);
-
-        // If there are already floated components at the global level, ensure the global floatRoot
-        // is top of the DOM otherwise the viewport body element occludes it.
-        if (Ext.floatRoot) {
-            viewport.floatWrap = Ext.floatRoot;
-            viewport.element.dom.appendChild(Ext.floatRoot.dom);
-            Ext.floatRoot.getData().component = viewport;
-        }
-        
-        return viewport;
+        return Ext.Viewport = viewport = Ext.create('Ext.viewport.' + viewportName, config);
     }
 });
 

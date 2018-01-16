@@ -2,7 +2,7 @@
   "name": "ext",
   "namespace": "Ext",
   "format": "1",
-  "version": "6.5.1.345",
+  "version": "6.5.2.463",
   "compatVersion": "6.5.0",
   "creator": "Sencha",
   "summary": "Ext JS",
@@ -12,10 +12,10 @@
     {
       "name": "Sencha",
       "uuid": "1d6b0d9c-3333-4e65-885f-5b07a1fc3198",
-      "created": "2017-07-19T00:27:04Z",
+      "created": "2017-09-20T22:35:52Z",
       "algorithm": "SHA1withRSA",
-      "nonce": "BhkVFMIBowA\u003d",
-      "signature": "E2MaibdBn8Nj3vPiWw50J0HinUTntwBzqBP/lZaErU9LS+czBaSA4e/Ks4aoaxtoHq3HBitpvLtSCDp6n4nZwXXhoDqkgtRbuKiMHmKI6YGD3lebDSCXSqwg2dSiA1MXkvKJfSWioSkCFlGlVGBnP6rSCaVdDSPYYbBQ7S8loVXf8InuASw/tkrchjzTNVez8bdE/XCwYZV82e+4aL0NykAVHWZlZGT/Ju0PthwizpiwqTXPIF8dV9YZsIMSM/Ki8Rn7fO9ZSAVgWp+4ZH3qek3pV+F880gFZi3qmUCdHMR8PNFU2UhsOdJiPUebqL1fsfXgGhaS2llCv2XHzGCnoA\u003d\u003d"
+      "nonce": "FkpOyMZ15Zo\u003d",
+      "signature": "l98RzmVHmAzyFxK6AKB8glml10XR7rntMG1iEGrWNbILxZGa5Sk5ulCKMkojpQStLcIKqgSd1U4fuqixerouorACM0HsU5vdcCOBMkGF8ypCCu+AjHoh/SxWj9RIU/PVY7zF8wTeqwD58aiuCvMelmzIF6eCgPwkilQwxH9KcKVuzpIJCL5ajsuQXkpdtluJyZr8xDnYws20X1DEHZSUZXOvigkA1Yc1hqiS9qr5ccm4rOd48xXzWp0LZmY5ltYzzJXrNU+qVe2NDKMkl/XvKnDI9qIjlag9iScFlQG9YgnGdfLRu2pXU844VMR/QmoY9ZU6wjOZ1XhPaf4Kzv0Oqw\u003d\u003d"
     }
   ],
   "output": "${package.dir}/build",
@@ -77,6 +77,13 @@
       "packages/font-pictos",
       "packages/font-ext"
     ]
+  },
+  "language": {
+    "js": {
+      "input": {
+        "version": "ES5"
+      }
+    }
   },
   "properties": {
     "skip.sass": 1,

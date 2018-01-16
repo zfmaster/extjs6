@@ -1,8 +1,5 @@
-/* /mnt/web/www/extjs/ext-6.2.0/packages/charts/sass/src/draw/Surface.scss:1 */
-.x-surface {
-    position: absolute;
-}
-/* /mnt/web/www/extjs/ext-6.2.0/packages/charts/sass/src/draw/Surface.scss:5 */
+/* /mnt/web/www/extjs/ext-6.2.0/packages/charts/sass/src/draw/Surface.scss:2 */
+.x-surface,
 .x-surface-canvas {
     position: absolute;
 }

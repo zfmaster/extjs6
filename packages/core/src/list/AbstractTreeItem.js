@@ -68,7 +68,7 @@ Ext.define('Ext.list.AbstractTreeItem', {
         expanded: false,
 
         /**
-         * @cfg {String} iconCls
+         * @cfg iconCls
          * @inheritdoc Ext.panel.Header#cfg-iconCls
          * @localdoc **Note:** This value is taken from the underlying {@link #node}.
          */
@@ -471,6 +471,7 @@ Ext.define('Ext.list.AbstractTreeItem', {
     removeItem: Ext.emptyFn,
 
     /**
+     * @method destroy
      * @inheritdoc
      */
     destroy: function () {

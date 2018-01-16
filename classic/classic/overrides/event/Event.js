@@ -379,6 +379,7 @@ Ext.define('Ext.overrides.event.Event', {
             mouseEnterRe: /(mouseover|mouseenter)/,
 
             /**
+             * @method enableIEAsync
              * @member Ext.event.Event
              * @inheritdoc Ext.event.Event#static-method-enableIEAsync
              * @private

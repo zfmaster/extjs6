@@ -11,21 +11,21 @@ Ext.define('Ext.panel.Title', {
 
     cachedConfig: {
         /**
-         * @cfg [textAlign='left']
+         * @cfg textAlign
          * @inheritdoc Ext.panel.Header#cfg-titleAlign
          * @accessor
          */
         textAlign: 'left',
 
         /**
-         * @cfg {'top'/'right'/'bottom'/'left'} [iconAlign='left']
-         * alignment of the icon
+         * @cfg iconAlign
+         * @inheritdoc Ext.panel.Header#cfg-iconAlign
          * @accessor
          */
         iconAlign: 'left',
 
         /**
-         * @cfg {'90'/'270'/'0'}
+         * @cfg {'90'/'270'/'0'} rotation
          * The rotation of the {@link #cfg-text}.
          *
          * - `'0'` - no rotation
@@ -44,7 +44,7 @@ Ext.define('Ext.panel.Title', {
 
     config: {
         /**
-         * @cfg {String}
+         * @cfg {String} text
          * The title's text (can contain html tags/entities)
          * @accessor
          */
@@ -65,15 +65,31 @@ Ext.define('Ext.panel.Title', {
         iconCls: null
     },
 
+    /**
+     * @cfg weight
+     * @inheritdoc
+     */
     weight: -10,
 
+    /**
+     * @property inheritUi
+     * @inheritdoc
+     */
     inheritUi: true,
 
+    /**
+     * @property element
+     * @inheritdoc
+     */
     element: {
         reference: 'element',
         cls: Ext.baseCSSPrefix + 'unselectable'
     },
 
+    /**
+     * @property template
+     * @inheritdoc
+     */
     template: [{
         reference: 'bodyElement',
         cls: Ext.baseCSSPrefix + 'body-el',
@@ -112,6 +128,10 @@ Ext.define('Ext.panel.Title', {
         270: Ext.baseCSSPrefix + 'rotate-270'
     },
 
+    /**
+     * @property classCls
+     * @inheritdoc
+     */
     classCls: Ext.baseCSSPrefix + 'paneltitle',
     _titleSuffix: '-title',
 

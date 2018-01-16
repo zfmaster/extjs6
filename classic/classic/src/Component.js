@@ -429,7 +429,7 @@ Ext.define('Ext.Component', {
      */
     renderConfig: {
         /**
-         * @cfg {Object}
+         * @cfg {Object} touchAction
          *
          * Emulates the behavior of the CSS
          * [touch-action](https://www.w3.org/TR/pointerevents/#the-touch-action-css-property)
@@ -485,10 +485,14 @@ Ext.define('Ext.Component', {
         touchAction: null
     },
 
+    /**
+     * @property defaultBindProperty
+     * @inheritdoc
+     */
     defaultBindProperty: 'html',
 
     /**
-     * @cfg {String} [alignTarget]
+     * @cfg {String} alignTarget
      * A Component or Element by which to position this component according to the {@link #defaultAlign}.
      * Defaults to the owning Container.
      *
@@ -499,7 +503,7 @@ Ext.define('Ext.Component', {
     alignTarget: null,
 
     /**
-     * @cfg {String} anchor
+     * @cfg anchor
      * @inheritDoc Ext.layout.container.Anchor#cfg-anchor
      */
 
@@ -573,7 +577,7 @@ Ext.define('Ext.Component', {
     autoShow: false,
 
     /**
-     * @cfg {String} [baseCls='x-component']
+     * @cfg {String} baseCls
      * The base CSS class to apply to this component's element. This will also be prepended to elements within this
      * component like Panel's body will get a class `x-panel-body`. This means that if you create a subclass of Panel, and
      * you want it to get all the Panels styling for the element and the body, you leave the `baseCls` `x-panel` and use
@@ -599,8 +603,8 @@ Ext.define('Ext.Component', {
      */
 
     /**
-     * @cfg {Object/String[]/Object[]} childEls
-     * @inheritdoc Ext.util.ElementContainer#childEls
+     * @cfg childEls
+     * @inheritdoc Ext.util.ElementContainer#cfg-childEls
      */
     childEls: {
         frameTable: { frame: true },
@@ -693,7 +697,7 @@ Ext.define('Ext.Component', {
      */
 
     /**
-     * @cfg {String} [defaultAlign="c-c"]
+     * @cfg {String} defaultAlign
      * The default {@link Ext.util.Positionable#getAlignToXY Ext.dom.Element#getAlignToXY} anchor position value for this component
      * relative to its {@link #alignTarget} (which defaults to its owning Container).
      *
@@ -727,7 +731,7 @@ Ext.define('Ext.Component', {
     }()),
 
     /**
-     * @cfg {String} [disabledCls='x-item-disabled']
+     * @cfg {String} disabledCls
      * CSS class to add when the Component is disabled.
      */
     disabledCls: Ext.baseCSSPrefix + 'item-disabled',
@@ -747,7 +751,7 @@ Ext.define('Ext.Component', {
      */
 
     /**
-     * @cfg {Boolean/Object} [draggable=false]
+     * @cfg {Boolean/Object} draggable
      * Specify as true to make a {@link #cfg-floating} Component draggable using the Component's encapsulating element as
      * the drag handle.
      *
@@ -967,7 +971,7 @@ Ext.define('Ext.Component', {
      */
 
     /**
-     * @cfg {String} [maskElement=null]
+     * @cfg {String} maskElement
      * Related to the {@link #cfg-childEls} configuration which specifies named properties which correspond to component sub-elements.
      *
      * The name of the element property in this component to mask when masked by a LoadMask.
@@ -1219,7 +1223,7 @@ Ext.define('Ext.Component', {
     resizeHandles: 'all',
 
     /**
-     * @cfg {Boolean/Number} [shrinkWrap=2]
+     * @cfg {Boolean/Number} shrinkWrap
      *
      * The possible values for shrinkWrap are:
      *
@@ -1251,7 +1255,7 @@ Ext.define('Ext.Component', {
     shrinkWrap: 2,
 
     /**
-     * @cfg {String[]} stateEvents
+     * @cfg stateEvents
      * @inheritdoc Ext.state.Stateful#cfg-stateEvents
      * @localdoc By default the following stateEvents are added:
      *
@@ -1304,7 +1308,7 @@ Ext.define('Ext.Component', {
      */
 
     /**
-     * @property {Boolean} [synthetic=false]
+     * @property {Boolean} synthetic
      * This property is `true` if the component was created internally by the framework
      * and is not explicitly user-defined. This is set for such things as `Splitter`
      * instances managed by `border` and `box` layouts.
@@ -1352,7 +1356,7 @@ Ext.define('Ext.Component', {
     userCls: null,
 
     /**
-     * @cfg {Number} [weight]
+     * @cfg {Number} weight
      * A value to control how Components are laid out in a {@link Ext.layout.container.Border Border} layout or as docked items.
      *
      * In a Border layout, this can control how the regions (not the center) region lay out if the west or east take full height
@@ -1524,8 +1528,8 @@ Ext.define('Ext.Component', {
      */
     
     /**
-     * @cfg {Number} [tabIndex] DOM tabIndex attribute for this component's
-     * {@link #focusEl}.
+     * @cfg {Number} tabIndex
+     * DOM tabIndex attribute for this component's {@link #focusEl}.
      */
 
     // ***********************************************************************************
@@ -1563,7 +1567,7 @@ Ext.define('Ext.Component', {
     componentLayoutCounter: 0,
 
     /**
-     * @property {String} [contentPaddingProperty='padding']
+     * @property {String} contentPaddingProperty
      * The name of the padding property that is used by the layout to manage
      * padding.  See {@link Ext.layout.container.Auto#managePadding managePadding}
      */
@@ -1622,7 +1626,7 @@ Ext.define('Ext.Component', {
     isComponent: true,
 
     /**
-     * @property {Boolean} [_isLayoutRoot=false]
+     * @property {Boolean} _isLayoutRoot
      * Setting this property to `true` causes the {@link #isLayoutRoot} method to return
      * `true` and stop the search for the top-most component for a layout.
      * @protected
@@ -1635,7 +1639,7 @@ Ext.define('Ext.Component', {
     layoutSuspendCount: 0,
 
     /**
-     * @cfg {Boolean}
+     * @cfg {Boolean} liquidLayout
      * Components that achieve their internal layout results using solely CSS with no JS
      * intervention must set this to true.  This allows the component to opt out of the
      * layout run when used inside certain container layouts such as {@link
@@ -4411,7 +4415,6 @@ Ext.define('Ext.Component', {
      */
     onRemoved: function(destroying) {
         var me = this,
-            refHolder,
             focusTarget;
 
         // Revert focus to closest sibling or ancestor unless we are being moved

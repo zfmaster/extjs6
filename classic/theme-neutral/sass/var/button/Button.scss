@@ -2591,7 +2591,7 @@ $button-grid-cell-inner-opacity-disabled: dynamic($button-inner-opacity-disabled
 
     .#{$prefix}btn-arrow-right > {
         .#{$prefix}btn-icon.#{$prefix}btn-no-text.#{$prefix}btn-button-#{$ui} {
-            padding-right: $text-padding;
+            padding-right: $icon-spacing;
         }
         .#{$prefix}btn-text.#{$prefix}btn-icon-right > .#{$prefix}btn-icon-el-#{$ui} {
             margin-right: $text-padding;
@@ -2746,7 +2746,7 @@ $button-grid-cell-inner-opacity-disabled: dynamic($button-inner-opacity-disabled
 
     .#{$prefix}btn-split-right > {
         .#{$prefix}btn-icon.#{$prefix}btn-no-text.#{$prefix}btn-button-#{$ui} {
-            padding-right: $text-padding;
+            padding-right: $icon-spacing;
         }
         .#{$prefix}btn-text.#{$prefix}btn-icon-right > .#{$prefix}btn-icon-el-#{$ui} {
             margin-right: $text-padding;

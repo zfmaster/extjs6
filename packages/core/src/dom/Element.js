@@ -674,7 +674,7 @@ Ext.define('Ext.dom.Element', function(Element) {
 
         inheritableStatics: {
             /**
-             * @property
+             * @property cache
              * @private
              * @static
              * @inheritable
@@ -682,7 +682,7 @@ Ext.define('Ext.dom.Element', function(Element) {
             cache: Ext.cache = {},
 
             /**
-             * @property
+             * @property editableSelector
              * @static
              * @private
              * @inheritable
@@ -690,7 +690,7 @@ Ext.define('Ext.dom.Element', function(Element) {
             editableSelector: 'input,textarea,[contenteditable="true"]',
 
             /**
-             * @property {Number}
+             * @property {Number} VISIBILITY
              * Visibility mode constant for use with {@link Ext.dom.Element#setVisibilityMode}.
              * Use the CSS 'visibility' property to hide the element.
              *
@@ -703,7 +703,7 @@ Ext.define('Ext.dom.Element', function(Element) {
             VISIBILITY: 1,
 
             /**
-             * @property {Number}
+             * @property {Number} DISPLAY
              * Visibility mode constant for use with {@link Ext.dom.Element#setVisibilityMode}.
              * Use the CSS 'display' property to hide the element.
              * @static
@@ -712,7 +712,7 @@ Ext.define('Ext.dom.Element', function(Element) {
             DISPLAY: 2,
 
             /**
-             * @property {Number}
+             * @property {Number} OFFSETS
              * Visibility mode constant for use with {@link Ext.dom.Element#setVisibilityMode}.
              * Use CSS absolute positioning and top/left offsets to hide the element.
              * @static
@@ -721,7 +721,7 @@ Ext.define('Ext.dom.Element', function(Element) {
             OFFSETS: 3,
 
             /**
-             * @property {Number}
+             * @property {Number} CLIP
              * Visibility mode constant for use with {@link Ext.dom.Element#setVisibilityMode}.
              * Use CSS `clip` property to reduce element's dimensions to 0px by 0px, effectively
              * making it hidden while not being truly invisible. This is useful when an element
@@ -732,7 +732,7 @@ Ext.define('Ext.dom.Element', function(Element) {
             CLIP: 4,
 
             /**
-             * @property {Number}
+             * @property {Number} OPACITY
              * Visibility mode constant for use with {@link Ext.dom.Element#setVisibilityMode}.
              * Use CSS `opacity` property to reduce element's opacity to 0
              * @static
@@ -741,7 +741,7 @@ Ext.define('Ext.dom.Element', function(Element) {
             OPACITY: 5,
 
             /**
-             * @property
+             * @property minKeyboardHeight
              * @static
              * @inheritable
              * @private
@@ -759,7 +759,7 @@ Ext.define('Ext.dom.Element', function(Element) {
             unitRe: unitRe,
 
             /**
-             * @property {Boolean}
+             * @property {Boolean} useDelegatedEvents
              * @private
              * @static
              * @inheritable
@@ -954,7 +954,8 @@ Ext.define('Ext.dom.Element', function(Element) {
             },
 
             /**
-             * @inheritdoc Ext#fly
+             * @method fly
+             * @inheritdoc Ext#method-fly
              * @inheritable
              * @static
              */
@@ -3662,6 +3663,11 @@ Ext.define('Ext.dom.Element', function(Element) {
                 child = Ext.getDom(el);
 
             if (dom && child) {
+                // This handles the window object, which is not a Node and throws an error
+                if (!child.nodeType) {
+                    return false;
+                }
+
                 if (dom.contains) {
                     return dom.contains(child);
                 } else if (dom.compareDocumentPosition) {
@@ -4168,7 +4174,8 @@ Ext.define('Ext.dom.Element', function(Element) {
         },
 
         /**
-         * @inheritdoc Ext.dom.Element#destroy
+         * @method remove
+         * @inheritdoc Ext.dom.Element#method-destroy
          * @deprecated 5.0.0 Please use {@link #destroy} instead.
          */
         remove: function () {
@@ -5689,7 +5696,8 @@ Ext.define('Ext.dom.Element', function(Element) {
         },
 
         /**
-         * @inheritdoc Ext.dom.Element#setHtml
+         * @method update
+         * @inheritdoc Ext.dom.Element#method-setHtml
          * @deprecated 5.0.0 Please use {@link #setHtml} instead.
          */
         update: function (html) {
@@ -6153,6 +6161,11 @@ Ext.define('Ext.dom.Element', function(Element) {
                         delete me.$ripples[rippleBubble.id];
                     }
 
+                    timeout = rippleParent.$rippleClearTimeout;
+                    if (timeout) {
+                        rippleParent.$rippleClearTimeout = Ext.undefer(timeout);
+                    }
+
                     if (unbound) {
                         // always destroy unbound ripple containers as they are never
                         // re-used. only the ripple-wrapper is reused
@@ -6178,10 +6191,6 @@ Ext.define('Ext.dom.Element', function(Element) {
                         }
                     }
 
-                    timeout = rippleParent.$rippleClearTimeout;
-                    if (timeout) {
-                        rippleParent.$rippleClearTimeout = Ext.undefer(timeout);
-                    }
                 };
 
                 rippleDestructionTimer = Ext.defer(rippleDestructor,
@@ -6203,9 +6212,10 @@ Ext.define('Ext.dom.Element', function(Element) {
 
         destroyAllRipples: function () {
             var me = this,
-                ripple;
+                rippleEl, ripple;
 
-            for (ripple in me.$ripples) {
+            for (rippleEl in me.$ripples) {
+                ripple = me.$ripples[rippleEl];
                 Ext.undefer(ripple.timerId);
 
                 if (ripple.destructor) {

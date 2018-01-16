@@ -1,9 +1,16 @@
 /* global jasmine, Ext, expect, spyOn */
 
-topSuite("Ext.panel.Panel",
-    ['Ext.Window', 'Ext.layout.container.*', 'Ext.Button', 'Ext.container.Viewport',
-     'Ext.form.field.Text', 'Ext.data.Session', 'Ext.app.ViewModel', 'Ext.app.ViewController'],
-function() {
+topSuite("Ext.panel.Panel", [
+    'Ext.Window',
+    'Ext.layout.container.*',
+    'Ext.Button',
+    'Ext.container.Viewport',
+    'Ext.form.field.Text',
+    'Ext.form.field.TextArea',
+    'Ext.data.Session',
+    'Ext.app.ViewModel',
+    'Ext.app.ViewController'
+], function() {
     var panel, ct, viewport;
 
     function makePanel(cfg) {
@@ -16,11 +23,6 @@ function() {
     afterEach(function() {
         panel = ct = viewport = Ext.destroy(panel, ct, viewport);
     });
-
-    function keep() {
-        panel.el.dom.setAttribute('data-sticky', 'true');
-        panel = null;
-    }
 
     describe("destroy", function() {
         it("should not cause an exception when collapsed & hidden", function() {
@@ -1111,6 +1113,162 @@ function() {
                     Ext.destroy(ct);
                 });
             });
+
+            function makeCollapseSuite(hasItems) {
+                describe("at the root", function() {
+                    describe("with animation", function() {
+                        it("should update the collapse tool", function() {
+                            var collapseSpy = jasmine.createSpy(),
+                                expandSpy = jasmine.createSpy();
+
+                            makePanel({
+                                title: 'Foo',
+                                collapsible: true,
+                                items: hasItems ? [{ xtype: 'component' }] : [],
+                                listeners: {
+                                    collapse: collapseSpy,
+                                    expand: expandSpy
+                                }
+                            });
+                            panel.collapse();
+                            waitsForSpy(collapseSpy);
+                            runs(function() {
+                                expect(panel.collapsed).toBe('top');
+                                expect(collapseSpy.callCount).toBe(1);
+                                expect(getTool().type).toBe('expand-bottom');
+
+                                panel.expand();
+                            });
+                            waitsForSpy(expandSpy);
+                            runs(function() {
+                                expect(panel.collapsed).toBe(false);
+                                expect(expandSpy.callCount).toBe(1);
+                                expect(getTool().type).toBe('collapse-top');
+                            });
+                        });
+                    });
+
+                    describe("with no animation", function() {
+                        it("should update the collapse tool", function() {
+                            var collapseSpy = jasmine.createSpy(),
+                                expandSpy = jasmine.createSpy();
+
+                            makePanel({
+                                title: 'Foo',
+                                collapsible: true,
+                                items: hasItems ? [{ xtype: 'component' }] : [],
+                                animCollapse: false,
+                                listeners: {
+                                    collapse: collapseSpy,
+                                    expand: expandSpy
+                                }
+                            });
+                            panel.collapse();
+                            expect(panel.collapsed).toBe('top');
+                            expect(collapseSpy.callCount).toBe(1);
+                            expect(getTool().type).toBe('expand-bottom');
+
+                            panel.expand();
+                            expect(panel.collapsed).toBe(false);
+                            expect(expandSpy.callCount).toBe(1);
+                            expect(getTool().type).toBe('collapse-top');
+                        });
+                    });
+                });
+
+                describe("in a container", function() {
+                    var ct;
+
+                    afterEach(function() {
+                        ct = Ext.destroy(ct);
+                    });
+
+                    describe("with animation", function() {
+                        it("should update the collapse tool", function() {
+                            var collapseSpy = jasmine.createSpy(),
+                                expandSpy = jasmine.createSpy();
+
+                            makePanel({
+                                renderTo: null,
+                                title: 'Foo',
+                                collapsible: true,
+                                items: hasItems ? [{ xtype: 'component' }] : [],
+                                listeners: {
+                                    collapse: collapseSpy,
+                                    expand: expandSpy
+                                }
+                            });
+
+                            ct = new Ext.container.Container({
+                                width: 400,
+                                height: 400,
+                                renderTo: Ext.getBody(),
+                                items: [panel]
+                            });
+
+                            panel.collapse();
+                            waitsForSpy(collapseSpy);
+                            runs(function() {
+                                expect(panel.collapsed).toBe('top');
+                                expect(collapseSpy.callCount).toBe(1);
+                                expect(getTool().type).toBe('expand-bottom');
+
+                                panel.expand();
+                            });
+                            waitsForSpy(expandSpy);
+                            runs(function() {
+                                expect(panel.collapsed).toBe(false);
+                                expect(expandSpy.callCount).toBe(1);
+                                expect(getTool().type).toBe('collapse-top');
+                            });
+                        });
+                    });
+
+                    describe("with no animation", function() {
+                        it("should update the collapse tool", function() {
+                            var collapseSpy = jasmine.createSpy(),
+                                expandSpy = jasmine.createSpy();
+
+                            makePanel({
+                                renderTo: null,
+                                title: 'Foo',
+                                collapsible: true,
+                                items: hasItems ? [{ xtype: 'component' }] : [],
+                                animCollapse: false,
+                                listeners: {
+                                    collapse: collapseSpy,
+                                    expand: expandSpy
+                                }
+                            });
+
+                            ct = new Ext.container.Container({
+                                width: 400,
+                                height: 400,
+                                renderTo: Ext.getBody(),
+                                items: [panel]
+                            });
+
+                            panel.collapse();
+                            expect(panel.collapsed).toBe('top');
+                            expect(collapseSpy.callCount).toBe(1);
+                            expect(getTool().type).toBe('expand-bottom');
+
+                            panel.expand();
+                            expect(panel.collapsed).toBe(false);
+                            expect(expandSpy.callCount).toBe(1);
+                            expect(getTool().type).toBe('collapse-top');
+                        });
+                    });
+                });
+            }
+
+            describe("with no items", function() {
+                makeCollapseSuite(false);
+            });
+
+            describe("with items", function() {
+                makeCollapseSuite(true);
+            });
         });
         
         describe("animation", function() {
@@ -1441,6 +1599,50 @@ function() {
                 });
                 expect(panel.header).toBe(false);
             }); 
+        });
+        
+        describe("changing position", function() {
+            var positions = ['top', 'right', 'bottom', 'left'],
+                vertical = { left: true, right: true };
+            
+            function makeSuite(startPosition, frame) {
+                describe("initial: " + startPosition + ", frame: " + frame, function() {
+                    var remaining = Ext.Array.remove(Ext.Array.clone(positions), startPosition),
+                        i, len, pos;
+                    
+                    beforeEach(function() {
+                        makePanel({
+                            x: 10,
+                            y: 10,
+                            width: 300,
+                            height: 200,
+                            title: 'foo',
+                            headerPosition: startPosition,
+                            frame: frame,
+                            html: 'Lorem ipsum'
+                        });
+                    });
+                    
+                    for (i = 0, len = remaining.length; i < len; i++) {
+                        pos = remaining[i];
+                        
+                        (function(from, to) {
+                            it("should switch from " + from + " to " + to, function() {
+                                panel.setHeaderPosition(to);
+                                expect(panel.getHeaderPosition()).toBe(to);
+                                expect(panel.getHeader().vertical).toBe(!!vertical[to]);
+                            });
+                        })(startPosition, pos);
+                    }
+                });
+            }
+            
+            for (var p = 0; p < positions.length; p++) {
+                makeSuite(positions[p], false);
+                
+                // With frame is especially important in IE8/9
+                makeSuite(positions[p], true);
+            }
         });
     });
     

@@ -1210,14 +1210,15 @@ Test.SandBoxImpl.prototype.createIframe = function() {
         cls: "sandboxIframe",
         name: "sandbox",
         frameBorder: 0,
+        //scrolling: 'no', // iOS needs this or else it will auto-size the iframe to its content
         src: src
     });
-    
+
     me.reporter.getIframeContainer().appendChild(iframe);
-    
+
     win = iframe.contentWindow || window.frames[iframe.name];
     doc = iframe.contentDocument || win.document;
-    
+
     this.iframe = iframe;
     this.win = win;
     this.doc = doc;

@@ -433,6 +433,10 @@ Ext.define('Ext.container.Container', {
         'Ext.mixin.FocusableContainer'
     ],
 
+    /**
+     * @cfg renderTpl
+     * @inheritdoc
+     */
     renderTpl:
         '<tpl if="hasTabGuard">{% this.renderTabGuard(out, values, \'before\'); %}</tpl>' +
         '{% this.renderContainer(out,values) %}' +
@@ -485,7 +489,7 @@ Ext.define('Ext.container.Container', {
      */
 
     /**
-     * @cfg {Boolean} [autoDestroy=true]
+     * @cfg {Boolean} autoDestroy
      * If true the container will automatically destroy any contained component that is removed
      * from it, else destruction must be handled manually.
      * @since 2.3.0
@@ -538,7 +542,7 @@ Ext.define('Ext.container.Container', {
      */
     
      /**
-      * @cfg {String} [defaultType="panel"]
+      * @cfg {String} defaultType
       * The default {@link Ext.Component xtype} of child Components to create in this Container when
       * a child item is specified as a raw configuration object, rather than as an instantiated Component.
       * @since 2.3.0
@@ -546,7 +550,7 @@ Ext.define('Ext.container.Container', {
     defaultType: 'panel',
 
     /**
-     * @cfg {Boolean} [detachOnRemove=true]
+     * @cfg {Boolean} detachOnRemove
      * True to move any component to the {@link Ext#getDetachedBody detachedBody} when the component is
      * removed from this container. This option is only applicable when the component is not destroyed while
      * being removed, see {@link #autoDestroy} and {@link #method-remove}. If this option is set to false, the DOM
@@ -773,8 +777,16 @@ Ext.define('Ext.container.Container', {
         strict: false
     },
 
+    /**
+     * @property ariaRole
+     * @inheritdoc
+     */
     ariaRole: 'presentation',
     
+    /**
+     * @cfg baseCls
+     * @inheritdoc
+     */
     baseCls: Ext.baseCSSPrefix + 'container',
 
     /**
@@ -1002,7 +1014,7 @@ Ext.define('Ext.container.Container', {
     },
     
     /**
-     * @method
+     * @method onRemoved
      * @inheritdoc
      */
     onRemoved: function(destroying) {
@@ -1300,6 +1312,9 @@ Ext.define('Ext.container.Container', {
         var delegate = this.getDefaultFocus();
         
         if (delegate) {
+            // DO NOT drill down to delegate's focusEl or return its main el here.
+            // Container's getFocusEl() is supposed to return delegates as components,
+            // otherwise things break elsewhere.
             return delegate;
         }
         else if (this.focusable) {
@@ -1780,9 +1795,8 @@ Ext.define('Ext.container.Container', {
     },
 
     /**
+     * @method onResize
      * @inheritdoc
-     * @protected
-     * @template
      */
     onResize: function() {
         this.callParent(arguments);
@@ -2200,7 +2214,7 @@ Ext.define('Ext.container.Container', {
          * @return {Ext.Component[]} Items to be enabled/disabled
          */
         getChildItemsToDisable: function() {
-            return this.query('[isFormField],[isFocusableContainer],button');
+            return this.query('[isLabelable],[isFocusableContainer],button');
         },
 
         /**

@@ -15,26 +15,26 @@ Ext.define('Ext.tab.Bar', {
 
     config: {
         /**
-         * @cfg {String}
+         * @cfg {String} defaultTabUI
          * A default {@link Ext.Component#ui ui} to use for {@link Ext.tab.Tab Tab} items.
          */
         defaultTabUI: null,
 
         /**
-         * @cfg {Boolean}
+         * @cfg {Boolean} animateIndicator
          * Determines if the active indicator below the tab should animate or snap
          */
         animateIndicator: false
     },
 
     /**
-     * @cfg {String} defaultType
+     * @cfg defaultType
      * @inheritdoc
      */
     defaultType: 'tab',
 
     /**
-     * @cfg {Object} layout
+     * @cfg layout
      * @inheritdoc
      */
     layout: {
@@ -53,6 +53,10 @@ Ext.define('Ext.tab.Bar', {
         activeTab: null
     },
 
+    /**
+     * @property baseCls
+     * @inheritdoc
+     */
     baseCls: Ext.baseCSSPrefix + 'tabbar',
 
     /**

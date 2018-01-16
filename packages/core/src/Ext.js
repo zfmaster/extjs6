@@ -198,6 +198,11 @@ var Ext = Ext || {}; // jshint ignore:line
         idPrefix: 'ext-',
 
         /**
+         * @private
+         */
+        isRobot: false,
+
+        /**
          * @property {Boolean} isSecure
          * True if the page is running over SSL
          * @readonly

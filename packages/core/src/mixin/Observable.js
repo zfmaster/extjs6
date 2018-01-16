@@ -1906,26 +1906,26 @@ Ext.define('Ext.mixin.Observable', function(Observable) {
 
     Observable.createAlias({
         /**
-         * @method
-         * @inheritdoc Ext.util.Observable#addListener
+         * @method on
+         * @inheritdoc Ext.util.Observable#method-addListener
          */
         on: 'addListener',
         /**
-         * @method
+         * @method un
          * Shorthand for {@link #removeListener}.
-         * @inheritdoc Ext.util.Observable#removeListener
+         * @inheritdoc Ext.util.Observable#method-removeListener
          */
         un: 'removeListener',
         /**
-         * @method
+         * @method mon
          * Shorthand for {@link #addManagedListener}.
-         * @inheritdoc Ext.util.Observable#addManagedListener
+         * @inheritdoc Ext.util.Observable#method-addManagedListener
          */
         mon: 'addManagedListener',
         /**
-         * @method
+         * @method mun
          * Shorthand for {@link #removeManagedListener}.
-         * @inheritdoc Ext.util.Observable#removeManagedListener
+         * @inheritdoc Ext.util.Observable#method-removeManagedListener
          */
         mun: 'removeManagedListener',
         /**

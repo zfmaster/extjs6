@@ -1,6 +1,6 @@
 /* global expect, jasmine, Ext, spyOn, xdescribe, describe, it */
 
-topSuite("Ext.menu.Menu", ['Ext.Button', 'Ext.field.Text'], function() {
+topSuite("Ext.menu.Menu", ['Ext.Button', 'Ext.field.Text', 'Ext.scroll.Scroller'], function() {
     var menu;
 
     function makeMenu(cfg) {
@@ -1524,21 +1524,17 @@ topSuite("Ext.menu.Menu", ['Ext.Button', 'Ext.field.Text'], function() {
     });
     
     describe('document scrolling', function() {
-        afterEach(function() {
-            Ext.scroll.Scroller.viewport = Ext.destroy(Ext.scroll.Scroller.viewport);
-        });
-        
-        it('should not hide when the document scrolls', function() {
+        (Ext.isiOS ? xit : it)('should not hide when the document scrolls', function() {
             var stretcher = Ext.getBody().createChild({
                 style: 'position:absolute;height:1px;width:1px;top:10000px'
-            });
+            }), s = Ext.getViewportScroller();
 
             makeMenu();
             menu.show();
-            Ext.scroll.Scroller.viewport.scrollBy(0, 1000);
+            s.scrollBy(0, 1000);
 
             // We must wait for a possibly asynchronous scroll event to happen.
-            waitsForEvent(Ext.scroll.Scroller.viewport, 'scrollend');
+            waitsForEvent(s, 'scrollend');
 
             runs(function() {
                 expect(menu.isVisible()).toBe(true);

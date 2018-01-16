@@ -134,6 +134,7 @@ Ext.define('Ext.draw.engine.Svg', {
     },
 
     /**
+     * @method clearTransform
      * @inheritdoc
      */
     clearTransform: function () {
@@ -142,6 +143,7 @@ Ext.define('Ext.draw.engine.Svg', {
     },
 
     /**
+     * @method clear
      * @inheritdoc
      */
     clear: function () {
@@ -162,6 +164,7 @@ Ext.define('Ext.draw.engine.Svg', {
     },
 
     /**
+     * @method renderSprite
      * @inheritdoc
      */
     renderSprite: function (sprite) {

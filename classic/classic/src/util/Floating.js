@@ -348,7 +348,9 @@ Ext.define('Ext.util.Floating', {
 
             // If focus is already within this floating hierarchy, then do not disturb it on mousedown.
             if (me.owns(Ext.Element.getActiveElement())) {
-                preventFocus = true;
+                // Indicate that we want the component to be
+                // considered as a focus target but no
+                preventFocus = { ownsFocus: true };
             }
 
             target = e.target;
@@ -361,7 +363,7 @@ Ext.define('Ext.util.Floating', {
             // to front anyway
             while (!preventFocus && target && target !== dom) {
                 if (Ext.fly(target).isFocusable()) {
-                    preventFocus = true;
+                    preventFocus = { ownsFocus: true };
                 }
                 target = target.parentNode;
             }

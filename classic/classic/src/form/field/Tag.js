@@ -54,6 +54,10 @@ Ext.define('Ext.form.field.Tag', {
 
     xtype: 'tagfield',
 
+    /**
+     * @property noWrap
+     * @inheritdoc
+     */
     noWrap: false,
 
     /**
@@ -100,7 +104,7 @@ Ext.define('Ext.form.field.Tag', {
     tipTpl: undefined,
 
     /**
-     * @cfg {Boolean} forceSelection
+     * @cfg forceSelection
      * @inheritdoc
      *
      * When {@link #forceSelection} is `false`, new records can be created by the user as they
@@ -175,13 +179,14 @@ Ext.define('Ext.form.field.Tag', {
     filterPickList: false,
     
     /**
-     * @cfg {Boolean} [clearOnBackspace=true] Set to `false` to disable clearing selected
-     * values with Backspace key. This mode is recommended for accessible applications.
+     * @cfg {Boolean} clearOnBackspace
+     * Set to `false` to disable clearing selected values with Backspace key. This mode
+     * is recommended for accessible applications.
      */
     clearOnBackspace: true,
 
     /**
-     * @cfg {Boolean}
+     * @cfg {Boolean} grow
      *
      * `true` if this field should automatically grow and shrink vertically to its content.
      * Note that this overrides the natural trigger grow functionality, which is used to size
@@ -190,7 +195,7 @@ Ext.define('Ext.form.field.Tag', {
     grow: true,
 
     /**
-     * @cfg {Number/Boolean}
+     * @cfg {Number/Boolean} growMin
      * Has no effect if {@link #grow} is `false`
      *
      * The minimum height to allow when {@link #grow} is `true`, or `false` to allow for
@@ -199,7 +204,7 @@ Ext.define('Ext.form.field.Tag', {
     growMin: false,
 
     /**
-     * @cfg {Number/Boolean}
+     * @cfg {Number/Boolean} growMax
      * Has no effect if {@link #grow} is `false`
      *
      * The maximum height to allow when {@link #grow} is `true`, or `false` to allow for
@@ -214,17 +219,10 @@ Ext.define('Ext.form.field.Tag', {
     simulatePlaceholder: true,
 
     /**
-     * @cfg {Boolean} selectOnFocus
+     * @cfg selectOnFocus
      * @inheritdoc
      */
     selectOnFocus: true,
-
-    /**
-     * @cfg growAppend
-     * @hide
-     * Currently unsupported since this is used for horizontal growth and this component
-     * only supports vertical growth.
-     */
 
     /**
      * @cfg growToLongestValue
@@ -359,6 +357,11 @@ Ext.define('Ext.form.field.Tag', {
      */
     clearValueOnEmpty: false,
     ariaSelectable: true,
+    
+    /**
+     * @property ariaEl
+     * @inheritdoc
+     */
     ariaEl: 'listWrapper',
 
     tagItemCls: Ext.baseCSSPrefix + 'tagfield-item',
@@ -1208,6 +1211,7 @@ Ext.define('Ext.form.field.Tag', {
     },
 
     /**
+     * @method getRawValue
      * @inheritdoc
      * Intercept calls to getRawValue to pretend there is no inputEl for rawValue handling,
      * so that we can use inputEl for user input of just the current value.
@@ -1408,6 +1412,7 @@ Ext.define('Ext.form.field.Tag', {
     },
 
     /**
+     * @method getSubmitData
      * @inheritdoc
      * Overridden to optionally allow for submitting the field as a json encoded array.
      */

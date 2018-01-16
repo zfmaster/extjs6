@@ -123,9 +123,25 @@ Ext.define('Ext.field.Input', {
         }
     },
 
+    reset: function() {
+        var me = this, 
+            original = me.originalValue;
+        
+        if (me.isEqual(original, me.getValue())) {
+            me.setInputValue(original);
+            if (!me.isValid()) {
+                me.validate();
+            }
+        } else {
+            me.setValue(original);
+        }
+
+        return me;
+    },
+
     privates: {
         canSetInputValue: function() {
-            return !this.hasFocus;
+            return true;
         },
 
         /**

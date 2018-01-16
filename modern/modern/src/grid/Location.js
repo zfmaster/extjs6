@@ -516,13 +516,16 @@ Ext.define('Ext.grid.Location', {
                 len = actionables && actionables.length,
                 candidate = me.clone(),
                 previousCandidate = me.clone(),
+                testEl,
                 visitOptions = {
                     callback: function(el) {
-                        if (Ext.fly(el).isFocusable()) {
+                        testEl = Ext.fly(el);
+                        if (!testEl.$isFocusTrap && testEl.isFocusable()) {
                             component = Ext.Component.from(el);
 
-                            // If it's the focusEl of a disabled component, skip it
-                            if (!(component && component.getDisabled())) {
+                            // If it's the focusEl of a disabled component, or the
+                            // focusTrap of a PickerField, skip it
+                            if (!component || !component.getDisabled()) {
                                 focusables.push(el);
                             }
                         }

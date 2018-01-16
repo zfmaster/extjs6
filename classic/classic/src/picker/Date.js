@@ -97,9 +97,10 @@ Ext.define('Ext.picker.Date', {
     minText: 'This date is before the minimum date',
 
     /**
-     * @cfg {String} ariaMinText The text that will be announced by Assistive Technologies
-     * such as screen readers when user is navigating to the cell which date is less than
-     * {@link #minDate}.
+     * @cfg {String} ariaMinText
+     * The text that will be announced by Assistive Technologies such as screen readers
+     * when user is navigating to the cell which date is less than
+     * {@link #cfg-minDate minDate}.
      * @locale
      */
     ariaMinText: "This date is before the minimum date",
@@ -112,9 +113,10 @@ Ext.define('Ext.picker.Date', {
     maxText: 'This date is after the maximum date',
 
     /**
-     * @cfg {String} ariaMaxText The text that will be announced by Assistive Technologies
-     * such as screen readers when user is navigating to the cell which date is later than
-     * {@link #maxDate}.
+     * @cfg {String} ariaMaxText
+     * The text that will be announced by Assistive Technologies such as screen readers
+     * when user is navigating to the cell which date is later than
+     * {@link #cfg-maxDate maxDate}.
      * @locale
      */
     ariaMaxText: "This date is after the maximum date",
@@ -133,8 +135,9 @@ Ext.define('Ext.picker.Date', {
     disabledDaysText: 'Disabled',
 
     /**
-     * @cfg {String} ariaDisabledDaysText The text that Assistive Technologies such as screen readers
-     * will announce when the date falls on a disabled day of week.
+     * @cfg {String} ariaDisabledDaysText
+     * The text that Assistive Technologies such as screen readers will announce when the
+     * date falls on a disabled day of week.
      * @locale
      */
     ariaDisabledDaysText: "This day of week is disabled",
@@ -147,8 +150,9 @@ Ext.define('Ext.picker.Date', {
     disabledDatesText: 'Disabled',
 
     /**
-     * @cfg {String} ariaDisabledDatesText The text that Assistive Technologies such as screen readers
-     * will announce when the date falls on a disabled date.
+     * @cfg {String} ariaDisabledDatesText
+     * The text that Assistive Technologies such as screen readers will announce when the
+     * date falls on a disabled date.
      * @locale
      */
     ariaDisabledDatesText: "This date is disabled",
@@ -261,8 +265,8 @@ Ext.define('Ext.picker.Date', {
     disableAnim: false,
 
     /**
-     * @cfg {String} [baseCls='x-datepicker']
-     * The base CSS class to apply to this components element.
+     * @cfg baseCls
+     * @inheritdoc
      */
     baseCls: Ext.baseCSSPrefix + 'datepicker',
 
@@ -297,17 +301,43 @@ Ext.define('Ext.picker.Date', {
     footerButtonUI: 'default',
 
     isDatePicker: true,
+    
+    /**
+     * @cfg alignOnScroll
+     * @inheritdoc
+     */
     alignOnScroll: false,
     
+    /**
+     * @property ariaRole
+     * @inheritdoc
+     */
     ariaRole: 'region',
+    
+    /**
+     * @property focusable
+     * @inheritdoc
+     */
     focusable: true,
 
+    /**
+     * @cfg childEls
+     * @inheritdoc
+     */
     childEls: [
         'innerEl', 'eventEl', 'prevEl', 'nextEl', 'middleBtnEl', 'footerEl'
     ],
     
+    /**
+     * @cfg border
+     * @inheritdoc
+     */
     border: true,
 
+    /**
+     * @cfg renderTpl
+     * @inheritdoc
+     */
     renderTpl: [
         '<div id="{id}-innerEl" data-ref="innerEl" role="presentation">',
             '<div class="{baseCls}-header">',
@@ -512,6 +542,7 @@ Ext.define('Ext.picker.Date', {
     },
 
     /**
+     * @method onRender
      * @inheritdoc
      * @private
      */
@@ -538,6 +569,7 @@ Ext.define('Ext.picker.Date', {
     },
 
     /**
+     * @method initEvents
      * @inheritdoc
      * @private
      */
@@ -771,6 +803,7 @@ Ext.define('Ext.picker.Date', {
     },
 
     /**
+     * @method onEnable
      * @inheritdoc
      * @private
      */
@@ -784,6 +817,7 @@ Ext.define('Ext.picker.Date', {
     },
 
     /**
+     * @method onShow
      * @inheritdoc
      * @private
      */
@@ -798,6 +832,7 @@ Ext.define('Ext.picker.Date', {
     },
     
     /**
+     * @method onHide
      * @inheritdoc
      * @private
      */
@@ -807,6 +842,7 @@ Ext.define('Ext.picker.Date', {
     },
 
     /**
+     * @method onDisable
      * @inheritdoc
      * @private
      */

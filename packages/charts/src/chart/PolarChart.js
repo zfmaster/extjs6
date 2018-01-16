@@ -11,6 +11,9 @@
  *
  * Pie charts and Radar charts are common examples of Polar charts.
  *
+ * Please check out the summary for the {@link Ext.chart.AbstractChart} as well,
+ * for helpful tips and important details.
+ *
  */
 Ext.define('Ext.chart.PolarChart', {
     extend: 'Ext.chart.AbstractChart',

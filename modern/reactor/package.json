@@ -1,6 +1,6 @@
 {
   "name": "@extjs/ext-react-reactor",
-  "version": "6.5.1.345",
+  "version": "6.5.2.463",
   "description": "This package contains all classes related to the Ext.reactor namespace",
   "keywords": [
     "sencha",
@@ -18,7 +18,7 @@
   "main": "index.js",
   "sencha": {
     "name": "reactor",
-    "version": "6.5.1.345",
+    "version": "6.5.2.463",
     "compatVersion": "6.5.0",
     "namespace": "Ext.reactor",
     "type": "code",

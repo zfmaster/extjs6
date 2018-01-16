@@ -18,21 +18,21 @@ Ext.define('Ext.data.validator.Range', {
      */
 
     /**
-     * @cfg {String} minOnlyMessage
+     * @cfg minOnlyMessage
      * @inheritdoc
      * @locale
      */
     minOnlyMessage: 'Must be at least {0}',
 
     /**
-     * @cfg {String} maxOnlyMessage
+     * @cfg maxOnlyMessage
      * @inheritdoc
      * @locale
      */
     maxOnlyMessage: 'Must be no more than than {0}',
 
     /**
-     * @cfg {String} bothMessage
+     * @cfg bothMessage
      * @inheritdoc
      * @locale
      */

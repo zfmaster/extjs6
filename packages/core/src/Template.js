@@ -135,7 +135,7 @@ Ext.define('Ext.Template', {
     disableFormats: false,
 
     /**
-     * @property {RegExp} re
+     * @property {RegExp} tokenRe
      * Regular expression used to extract tokens.
      *
      * Finds the following expressions within a format string
@@ -440,10 +440,10 @@ Ext.define('Ext.Template', {
         formatFns = {};
 
     /**
-     * Alias for {@link Ext.String#format}.
      * @method format
-     * @inheritdoc Ext.String#format
+     * @inheritdoc Ext.String#method-format
      * @member Ext.util.Format
+     * Alias for {@link Ext.String#format}.
      */
 
     /**

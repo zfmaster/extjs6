@@ -86,6 +86,19 @@ topSuite("Ext.field.Display", [
         });
     });
 
+    describe("resetting", function() {
+        it("should reset the value", function() {
+            makeComponent({value: 'foo'});
+            component.setValue('bar');
+
+            expect(component.getValue()).toBe('bar');
+
+            component.reset();
+
+            expect(component.getValue()).toBe('foo');
+        });
+    });
+
     describe("setting value", function() {
         describe("setValue", function() {
             it("should set the inputEl's innerHTML to the specified value", function() {

@@ -13,6 +13,11 @@ Ext.define('Ext.layout.overflow.Scroller', {
         'Ext.mixin.Factoryable'
     ],
 
+    requires: [
+        'Ext.Tool',
+        'Ext.util.ClickRepeater'
+    ],
+
     config: {
 
         /**
@@ -293,20 +298,28 @@ Ext.define('Ext.layout.overflow.Scroller', {
         }
     },
 
-    applyForwardTool: function (config, existing) {
-        var tool = Ext.updateWidget(existing, config, this, 'createForwardTool');
+    applyForwardTool: function (tool, oldTool) {
+        var ct = this.getContainer();
+
+        tool = Ext.updateWidget(oldTool, tool, this, 'createForwardTool');
+        delete tool.$initParent;
+        tool.ownerCmp = ct;
 
         tool.doInheritUi();
-        tool.addUi('boxscroller-' + this.getContainer().xtype);
+        tool.addUi('boxscroller-' + ct.xtype);
 
         return tool;
     },
 
-    applyBackwardTool: function (config, existing) {
-        var tool = Ext.updateWidget(existing, config, this, 'createBackwardTool');
+    applyBackwardTool: function (tool, oldTool) {
+        var ct = this.getContainer();
+
+        tool = Ext.updateWidget(oldTool, tool, this, 'createBackwardTool');
+        delete tool.$initParent;
+        tool.ownerCmp = ct;
 
         tool.doInheritUi();
-        tool.addUi('boxscroller-' + this.getContainer().xtype);
+        tool.addUi('boxscroller-' + ct.xtype);
 
         return tool;
     },
@@ -382,8 +395,12 @@ Ext.define('Ext.layout.overflow.Scroller', {
     },
 
     destroy: function () {
-        Ext.destroy(this.repeaters);
-        this.callParent();
+        var me = this;
+
+        Ext.destroy(me.repeaters);
+        me.getForwardTool().destroy();
+        me.getBackwardTool().destroy();
+        me.callParent();
     },
 
     privates: {

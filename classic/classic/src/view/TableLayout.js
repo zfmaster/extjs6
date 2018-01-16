@@ -310,7 +310,8 @@ Ext.define('Ext.view.TableLayout', {
         var me = this,
             ownerGrid = me.owner.ownerGrid,
             nodeContainer = Ext.fly(me.owner.getNodeContainer()),
-            scroller = this.owner.getScrollable();
+            scroller = this.owner.getScrollable(),
+            buffered;
 
         me.callParent([ ownerContext ]);
 
@@ -319,8 +320,9 @@ Ext.define('Ext.view.TableLayout', {
         }
 
         // Inform any buffered renderer about completion of the layout of its view
-        if (me.owner.bufferedRenderer) {
-            me.owner.bufferedRenderer.afterTableLayout(ownerContext);
+        buffered = me.owner.bufferedRenderer;
+        if (buffered) {
+            buffered.afterTableLayout(ownerContext);
         }
         
         if (ownerGrid) {
@@ -328,6 +330,11 @@ Ext.define('Ext.view.TableLayout', {
         }
 
         if (scroller && !scroller.isScrolling) {
+            // BufferedRenderer only sets nextRefreshStartIndex to zero
+            // when preserveScrollOnReload is false.
+            if (buffered && buffered.nextRefreshStartIndex === 0) {
+                return;
+            }
             scroller.restoreState();
         }
     },

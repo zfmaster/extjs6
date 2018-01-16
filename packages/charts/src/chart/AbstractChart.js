@@ -1,8 +1,9 @@
 /**
  * The Ext.chart package provides the capability to visualize data.
- * Each chart binds directly to a {@link Ext.data.Store store} enabling automatic updates of the chart.
- * A chart configuration object has some overall styling options as well as an array of axes
- * and series. A chart instance example could look like this:
+ * Each chart binds directly to a {@link Ext.data.Store store} enabling automatic
+ * updates of the chart. A chart configuration object has some overall styling
+ * options as well as an array of axes and series. A chart instance example could
+ * look like this:
  *
  *     Ext.create('Ext.chart.CartesianChart', {
  *         width: 800,
@@ -23,12 +24,13 @@
  *         ]
  *     });
  *
- * In this example we set the `width` and `height` of a chart; We decide whether our series are
- * animated or not and we select a store to be bound to the chart; We also set the legend to the right part of the
- * chart.
+ * In this example we set the `width` and `height` of a chart; We decide whether
+ * our series are animated or not and we select a store to be bound to the chart;
+ * We also set the legend to the right part of the chart.
  *
- * You can register certain interactions such as {@link Ext.chart.interactions.PanZoom} on the chart by specify an
- * array of names or more specific config objects. All the events will be wired automatically.
+ * You can register certain interactions such as {@link Ext.chart.interactions.PanZoom}
+ * on the chart by specifying an array of names or more specific config objects.
+ * All the events will be wired automatically.
  *
  * You can also listen to series `itemXXX` events on both chart and series level.
  *
@@ -77,8 +79,24 @@
  *         }
  *     });
  *
- * For more information about the axes and series configurations please check the documentation of
- * each series (Line, Bar, Pie, etc).
+ * Important! It's generally a poor design choice to put interactive charts
+ * inside scrollable views, in such cases it's not possible to tell
+ * which component should respond to the interaction.
+ * Since charts are typically interactive their default touch action config
+ * looks as follows: {@link Ext.draw.Container#touchAction}.
+ * If you do have a chart inside a scrollable view, even if it has no interactions,
+ * you have to set its `touchAction` config to the following:
+ *
+ *     touchAction: {
+ *         panX: true,
+ *         panY: true
+ *     }
+ *
+ * Otherwise, if a touch action started on a chart, a swipe will not scroll
+ * the view.
+ *
+ * For more information about the axes and series configurations please check
+ * the documentation of each series (Line, Bar, Pie, etc).
  *
  */
 Ext.define('Ext.chart.AbstractChart', {
@@ -105,8 +123,8 @@ Ext.define('Ext.chart.AbstractChart', {
 
     /**
      * @event beforerefresh
-     * Fires before a refresh to the chart data is called.  If the `beforerefresh` handler returns
-     * `false` the {@link #refresh} action will be canceled.
+     * Fires before a refresh to the chart data is called.  If the `beforerefresh`
+     * handler returns `false` the {@link #refresh} action will be canceled.
      * @param {Ext.chart.AbstractChart} this
      */
 
@@ -240,7 +258,8 @@ Ext.define('Ext.chart.AbstractChart', {
 
         /**
          * @cfg {Ext.data.Store/String/Object} store
-         * The data source to which the chart is bound. Acceptable values for this property are:
+         * The data source to which the chart is bound.
+         * Acceptable values for this property are:
          *
          *   - **any {@link Ext.data.Store Store} class / subclass**
          *   - **an {@link Ext.data.Store#storeId ID of a store}**
@@ -300,7 +319,9 @@ Ext.define('Ext.chart.AbstractChart', {
          * @cfg {String} [theme="default"]
          * The name of the theme to be used. A theme defines the colors and styles
          * used by the series, axes, markers and other chart components.
-         * Please see the documentation for the {@link Ext.chart.theme.Base} class for more information.
+         * Please see the documentation for the {@link Ext.chart.theme.Base} class
+         * for more information.
+         *
          * Possible theme values are:
          *   - 'green', 'sky', 'red', 'purple', 'blue', 'yellow'
          *   - 'category1' to 'category6'
@@ -376,14 +397,16 @@ Ext.define('Ext.chart.AbstractChart', {
         style: null,
 
         /**
-         * @cfg {Boolean/Object} animation (optional) `true` for the default animation (easing: 'ease' and duration: 500)
-         * or a standard animation config object to be used for default chart animations.
+         * @cfg {Boolean/Object} [animation=true]
+         * Defaults to `easeInOut` easing with a 500ms duration.
+         * See {@link Ext.draw.modifier.Animation} for possible configuration options.
          */
         animation: !Ext.isIE8,
 
         /**
          * @cfg {Ext.chart.series.Series/Array} series
-         * Array of {@link Ext.chart.series.Series Series} instances or config objects. For example:
+         * Array of {@link Ext.chart.series.Series Series} instances or config objects.
+         * For example:
          *
          *     series: [{
          *         type: 'column',
@@ -401,7 +424,8 @@ Ext.define('Ext.chart.AbstractChart', {
 
         /**
          * @cfg {Ext.chart.axis.Axis/Array/Object} axes
-         * Array of {@link Ext.chart.axis.Axis Axis} instances or config objects. For example:
+         * Array of {@link Ext.chart.axis.Axis Axis} instances or config objects.
+         * For example:
          *
          *     axes: [{
          *         type: 'numeric',
@@ -449,13 +473,16 @@ Ext.define('Ext.chart.AbstractChart', {
         legend: null,
 
         /**
-         * @cfg {Array} colors Array of colors/gradients to override the color of items and legends.
+         * @cfg {Array} colors
+         * Array of colors/gradients to override the color of items and legends.
          */
         colors: null,
 
         /**
-         * @cfg {Object|Number|String} insetPadding The amount of inset padding in pixels for the chart.
-         * Inset padding is the padding from the boundary of the chart to any of its contents.
+         * @cfg {Object/Number/String} insetPadding
+         * The amount of inset padding in pixels for the chart.
+         * Inset padding is the padding from the boundary of the chart to any
+         * of its contents.
          */
         insetPadding: {
             top: 10,
@@ -1217,11 +1244,6 @@ Ext.define('Ext.chart.AbstractChart', {
             series = me.getSeries(),
             colors = me.getColors(),
             i;
-            //seriesStyle,
-            //colorIndex = 0,
-            //markerIndex = 0,
-            //markerCount,
-            //colorCount,
 
         if (!series) {
             return;
@@ -1235,31 +1257,6 @@ Ext.define('Ext.chart.AbstractChart', {
 
         for (i = 0; i < series.length; i++) {
             series[i].setTheme(theme);
-
-            // TODO: This may look like it belongs to the theme, but there we don't know what
-            // TODO: series the chart will be using and thus the color count is unknown.
-            // TODO: It could also be moved to the series.updateTheme method, if not for the
-            // TODO: circular copying that starts from the previous index.
-            // TODO: Finally, keeping it here is not really an option either, since theme
-            // TODO: is a singleton, so we shouldn't modify it before passing it
-            // TODO: to the series.updateTheme.
-            // seriesStyle = {};
-            //
-            //if (theme.getSeriesThemes) {
-            //    colorCount = series.themeColorCount();
-            //    seriesStyle.subStyle = me.circularCopyObject(theme.getSeriesThemes(), colorIndex, colorCount);
-            //    colorIndex += colorCount;
-            //} else {
-            //    seriesStyle.subStyle = {};
-            //}
-            //
-            //if (theme.getMarkerThemes) {
-            //    markerCount = series.themeMarkerCount();
-            //    seriesStyle.markerSubStyle = me.circularCopyObject(theme.getMarkerThemes(), markerIndex, markerCount);
-            //    markerIndex += markerCount;
-            //} else {
-            //    seriesStyle.markerSubStyle = {};
-            //}
         }
 
         me.updateSpriteTheme(theme);
@@ -1402,7 +1399,6 @@ Ext.define('Ext.chart.AbstractChart', {
 
     applySeries: function (newSeries, oldSeries) {
         var me = this,
-            theme = me.getTheme(),
             result = [],
             oldMap, oldSeriesItem,
             i, ln, series;
@@ -1450,7 +1446,6 @@ Ext.define('Ext.chart.AbstractChart', {
                         };
                     }
                     series.chart = me;
-                    series.theme = theme;
                     series = Ext.create(series.xclass || ('series.' + series.type), series);
                 }
             }
@@ -1900,12 +1895,10 @@ Ext.define('Ext.chart.AbstractChart', {
 
     /**
      * @private
-     * Converts page coordinates into chart's 'main' surface coordinates.
+     * Converts page coordinates into chart's 'series' surface coordinates.
      */
     getEventXY: function (e) {
-        // TODO: 'main' surface rect happens to match 'series' surface rect,
-        // TODO: but an optional 'surface' (name) param might be useful.
-        return this.getSurface().getEventXY(e);
+        return this.getSurface('series').getEventXY(e);
     },
 
     /**
@@ -1920,23 +1913,37 @@ Ext.define('Ext.chart.AbstractChart', {
             seriesList = me.getSeries(),
             rect = me.getMainRect(),
             ln = seriesList.length,
-            item = null,
-            i;
+            minDistance = Infinity,
+            result = null,
+            i, item;
 
         // The x,y here are already converted to the 'main' surface coordinates.
         // Series surface rect matches the main surface rect.
         if (!(me.hasFirstLayout && rect && x >= 0 && x <= rect[2] && y >= 0 && y <= rect[3])) {
             return null;
         }
-        // Iterate from the end so that the series that are drawn later get hit tested first.
+        // Iterate in reverse order so that the series that render later (on top)
+        // get hit tested first.
         for (i = ln - 1; i >= 0; i--) {
             item = seriesList[i].getItemForPoint(x, y);
             if (item) {
-                break;
+                // Imagine a chart with multiple series, e.g. 'line', 'scatter' and 'bar'.
+                // For 'line' and 'scatter' series, the method will look for the nearest
+                // marker, but for 'bar' series, it will look for the first bar that
+                // contains the given point. For such series, the 'distance' information
+                // is absent and meaningless.
+                if (!item.distance) {
+                    result = item;
+                    break;
+                }
+                if (item.distance < minDistance) {
+                    minDistance = item.distance;
+                    result = item;
+                }
             }
         }
 
-        return item;
+        return result;
     },
 
     /**
@@ -1944,6 +1951,7 @@ Ext.define('Ext.chart.AbstractChart', {
      * @param {Number} x
      * @param {Number} y
      * @return {Array} An array of objects with `series` and `item` properties.
+     * @deprecated 6.5.2 This method is deprecated
      */
     getItemsForPoint: function (x, y) {
         var me = this,
@@ -1958,7 +1966,7 @@ Ext.define('Ext.chart.AbstractChart', {
         for (; i >= 0; i--) {
             series = seriesList[i];
             item = series.getItemForPoint(x, y);
-            if (item) {
+            if (item && item.category === 'items') {
                 items.push(item);
             }
         }

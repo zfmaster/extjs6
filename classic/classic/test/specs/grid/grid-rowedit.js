@@ -369,7 +369,7 @@ function() {
                     // Cannot call getPosition immediately because this kills partner synching.
                     // TOOD: Revisit when https://sencha.jira.com/browse/EXTJS-23182 is closed.
                     waitsFor(function() {
-                        var viewX = view.getScrollable().getScrollElement().dom.scrollLeft
+                        var viewX = view.getScrollable().getScrollElement().dom.scrollLeft;
                         return viewX >= 200 &&
                                view.grid.headerCt.getScrollable().getScrollElement().dom.scrollLeft === viewX;
                     });

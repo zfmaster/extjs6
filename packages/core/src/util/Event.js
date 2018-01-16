@@ -464,10 +464,10 @@ Ext.define('Ext.util.Event', function() {
                     fireFn = null;
                     
                     //<debug>
-                    // DON'T raise errors if the destroyed scope is an Ext.container.Monitor!
+                    // Skip warnings for Ext.container.Monitor
                     // It is to be deprecated and removed shortly.
                     if (fireScope.$className !== 'Ext.container.Monitor') {
-                        Ext.raise({
+                        (Ext.raiseOnDestroyed ? Ext.raise : Ext.log.warn)({
                             msg: 'Attempting to fire "' + me.name + '" event on destroyed ' +
                                   (fireScope.$className || 'object') + ' instance with id: ' +
                                   (fireScope.id || 'unknown'),

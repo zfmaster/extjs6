@@ -3,12 +3,8 @@ Ext.define('Ext.panel.DateView', {
     xtype: 'dateview',
 
     config: {
-        disabledDates: null,
-        disabledDays: null,
         specialDates: null,
         specialDays: null,
-        maxDate: null,
-        minDate: null,
         monthOffset: 0
     },
 
@@ -193,30 +189,6 @@ Ext.define('Ext.panel.DateView', {
         }
     },
 
-    updateDisabledDates: function() {
-        if (!this.isConfiguring) {
-            this.refresh();
-        }
-    },
-
-    updateDisabledDays: function() {
-        if (!this.isConfiguring) {
-            this.refresh();
-        }
-    },
-
-    updateMinDate: function() {
-        if (!this.isConfiguring) {
-            this.refresh();
-        }
-    },
-
-    updateMaxDate: function() {
-        if (!this.isConfiguring) {
-            this.refresh();
-        }
-    },
-
     applyMonthOffset: function(offset) {
         return !isNaN(offset) ? offset : 0;
     },
@@ -271,10 +243,6 @@ Ext.define('Ext.panel.DateView', {
             weekendDays: me.getWeekendDays(),
             specialDates: me.getSpecialDates(),
             specialDays: me.getSpecialDays(),
-            disabledDays: me.getDisabledDays(),
-            disabledDates: me.getDisabledDates(),
-            minDate: me.getMinDate(),
-            maxDate: me.getMaxDate(),
             format: me.getFormat(),
             dateCellFormat: me.getDateCellFormat(),
             hideOutside: me.getHideOutside()
@@ -314,8 +282,6 @@ Ext.define('Ext.panel.DateView', {
             ms = date.getTime(),
             specialDates = params.specialDates,
             specialDays = params.specialDays,
-            disabledDates = params.disabledDates,
-            disabledDays = params.disabledDays,
             cls = [me.cellCls],
             formatted = Ext.Date.format(date, params.format),
             empty = params.outside && params.hideOutside,
@@ -354,18 +320,7 @@ Ext.define('Ext.panel.DateView', {
             cls.push(me.emptyCls);
         }
 
-        disabled = (params.minDate && ms < params.minDate.getTime()) ||
-                   (params.maxDate && ms > params.maxDate.getTime());
-
-        if (!disabled && disabledDays) {
-            disabled = disabledDays[dayOfWeek];
-        }
-
-        if (!disabled && disabledDates) {
-            disabled = disabledDates.dates[ms] ||
-                   (disabledDates.re && disabledDates.re.test(formatted));
-        }
-
+        disabled = me.getParent().isDateDisabled(date);
         if (!empty && disabled) {
             cls.push(me.disabledDayCls);
         }

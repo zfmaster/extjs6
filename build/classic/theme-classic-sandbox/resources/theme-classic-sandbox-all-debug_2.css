@@ -1,3 +1,22 @@
+/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/var/tab/Tab.scss:4065 */
+.x6-tab.x6-tab-disabled .x6-tab-default-left-tl,
+.x6-tab.x6-tab-disabled .x6-tab-default-left-bl,
+.x6-tab.x6-tab-disabled .x6-tab-default-left-tr,
+.x6-tab.x6-tab-disabled .x6-tab-default-left-br,
+.x6-tab.x6-tab-disabled .x6-tab-default-left-tc,
+.x6-tab.x6-tab-disabled .x6-tab-default-left-bc {
+    background-image: url(images/tab/tab-default-left-disabled-corners.gif);
+}
+/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/var/tab/Tab.scss:4074 */
+.x6-tab.x6-tab-disabled .x6-tab-default-left-ml,
+.x6-tab.x6-tab-disabled .x6-tab-default-left-mr {
+    background-image: url(images/tab/tab-default-left-disabled-sides.gif);
+}
+/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/var/tab/Tab.scss:4079 */
+.x6-tab.x6-tab-disabled .x6-tab-default-left-mc {
+    background-repeat: repeat-x;
+    background-image: url(images/tab/tab-default-left-disabled-fbg.gif);
+}
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/var/tab/Tab.scss:4089 */
 .x6-tab-default-tl,
 .x6-tab-default-bl,

@@ -3,7 +3,7 @@
 topSuite("Ext.grid.plugin.BufferedRenderer",
     ['Ext.grid.Panel', 'Ext.tree.Panel', 'Ext.grid.feature.Grouping',
      'Ext.grid.column.Widget', 'Ext.ProgressBarWidget', 'Ext.tab.Panel',
-     'Ext.window.Window'],
+     'Ext.window.Window', 'Ext.data.BufferedStore'],
 function() {
     var itNotIE8 = Ext.isIE8 ? xit : it,
         store, grid, tree, view, scroller, plugin,

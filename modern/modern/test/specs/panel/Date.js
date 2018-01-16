@@ -191,13 +191,9 @@ topSuite("Ext.panel.Date", function() {
         });
 
         describe('cell click', function () {
-            beforeEach(function() {
-                makePanel({
-                    autoConfirm: true
-                });
-            });
-
             it('should handle clicking on inner cell', function () {
+                makePanel();
+
                 var cell = panel.getCellByDate(yesterday),
                     inner = Ext.fly(cell).child('.x-inner');
 
@@ -206,6 +202,24 @@ topSuite("Ext.panel.Date", function() {
                 waitsForEvent(cell, 'focus');
 
                 expect(panel.getValue()).toEqual(yesterday);
+            });
+
+            it('should prevent clicking on disabled day', function () {
+                makePanel({
+                    autoConfirm: true,
+                    disabledDays: [0, 6],
+                    value: new Date(2010, 0, 13)
+                });
+
+                var cell = panel.getCellByDate(new Date(2010, 0, 16)),
+                    inner = Ext.fly(cell).child('.x-inner'),
+                    spy = jasmine.createSpy();
+
+                panel.on('select', spy);
+                clickCell(inner);
+
+                expect(panel.getValue()).toEqual(new Date(2010, 0, 13));
+                expect(spy).not.toHaveBeenCalled();
             });
         });
     });

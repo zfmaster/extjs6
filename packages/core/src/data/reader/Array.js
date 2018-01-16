@@ -32,8 +32,16 @@ Ext.define('Ext.data.reader.Array', {
     // For Array Reader, methods in the base which use these properties must not see the defaults
     config: {
 
+        /**
+         * @cfg totalProperty
+         * @inheritdoc
+         */
         totalProperty: undefined,
 
+        /**
+         * @cfg successProperty
+         * @inheritdoc
+         */
         successProperty: undefined
         
         /**

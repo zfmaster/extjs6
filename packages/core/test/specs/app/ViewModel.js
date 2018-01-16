@@ -126,6 +126,109 @@ topSuite("Ext.app.ViewModel", [
         Ext.data.Model.schema.clear(true);
     });
 
+    describe("escapes", function() {
+        describe("escape", function() {
+            var V = Ext.app.ViewModel;
+
+            it("should leave null/undefined", function() {
+                expect(V.escape(null)).toBe(null);
+                expect(V.escape(undefined)).toBe(undefined);
+            });
+
+            it("should leave a boolean value", function() {
+                expect(V.escape(false)).toBe(false);
+                expect(V.escape(true)).toBe(true);
+            });
+
+            it("should leave a numeric value", function() {
+                expect(V.escape(0)).toBe(0);
+                expect(V.escape(1.23)).toBe(1.23);
+                expect(V.escape(-189)).toBe(-189);
+            });
+
+            it("should leave a date value", function() {
+                var v = new Date();
+                expect(V.escape(v)).toBe(v);
+            });
+
+            it("should escape a string", function() {
+                expect(V.escape('{foo}')).toBe('~~{foo}');
+                expect(V.escape('{{foo}}')).toBe('~~{{foo}}');
+                expect(V.escape('ok')).toBe('~~ok');
+            });
+
+            it("should escape an object and copy where needed", function() {
+                var val = new Date();
+
+                var o = {
+                    a: true,
+                    b: 100,
+                    c: val,
+                    d: '{foo}',
+                    e: null,
+                    f: {
+                        g: '{bar}'
+                    }
+                }, ret;
+
+                ret = V.escape(o);
+                expect(ret).not.toBe(o);
+                expect(ret.f).not.toBe(o.f);
+                expect(ret).toEqual({
+                    a: true,
+                    b: 100,
+                    c: val,
+                    d: '~~{foo}',
+                    e: null,
+                    f: {
+                        g: '~~{bar}'
+                    }
+                });
+            });
+        });
+
+        // This is not intended to be exhaustive, more tests are in Ext.app.bind.Template
+        describe("escaped expressions", function() {
+            var old;
+
+            beforeEach(function() {
+                old = Ext.app.bind.Template.prototype.escapes;
+                Ext.app.bind.Template.prototype.escapes = true;
+                createViewModel();
+            });
+
+            afterEach(function() {
+                Ext.app.bind.Template.prototype.escapes = old;
+            });
+
+            describe("with no tokens", function() {
+                it("should fire when escaped with backslashes", function() {
+                    bindNotify('\\static');
+                    expectArgs('static', undefined);
+                });
+
+                it("should fire when escaped with ~~", function() {
+                    bindNotify('~~static');
+                    expectArgs('static', undefined);
+                });
+            });
+
+            describe("with tokens", function() {
+                it("should fire when escaped with backslashes", function() {
+                    setNotify('foo', 100);
+                    bindNotify('\\{foo} {foo}');
+                    expectArgs('{foo} 100', undefined);
+                });
+
+                it("should fire when escaped with ~~", function() {
+                    setNotify('foo', 100);
+                    bindNotify('{foo} ~~{foo}');
+                    expectArgs('100 {foo}', undefined);
+                });
+            });
+        });
+    });
+
     describe("isReadOnly", function() {
          describe("always readOnly bindings", function() {
              it("should be true for template bindings", function() {
@@ -513,7 +616,7 @@ topSuite("Ext.app.ViewModel", [
                         }
                     });
             
-                    it("should default the scope to the session", function() {
+                    it("should default the scope to the viewmodel", function() {
                         run(function() {
                             bindNotify('{name}', spy);
                         }, function() {
@@ -2256,6 +2359,10 @@ topSuite("Ext.app.ViewModel", [
                         });
 
                         describe("with an autoLoad", function() {
+                            beforeEach(function() {
+                                Ext.data.Store.prototype.config.asynchronousLoad = true;
+                            });
+
                             it("should not publish while the store is pending a load/loading", function() {
                                 makeLoadStore(true);
                                 setup();
@@ -2346,6 +2453,10 @@ topSuite("Ext.app.ViewModel", [
                         });
 
                         describe("with an autoLoad", function() {
+                            beforeEach(function() {
+                                Ext.data.Store.prototype.config.asynchronousLoad = true;
+                            });
+
                             it("should not publish while the store is pending a load/loading", function() {
                                 makeLoadStore(true);
                                 setup();
@@ -2467,6 +2578,10 @@ topSuite("Ext.app.ViewModel", [
                         });
 
                         describe("with an autoLoad", function() {
+                            beforeEach(function() {
+                                Ext.data.Store.prototype.config.asynchronousLoad = true;
+                            });
+
                             it("should not publish while the store is pending a load/loading", function() {
                                 makeLoadStore(true);
                                 setup();
@@ -2594,7 +2709,7 @@ topSuite("Ext.app.ViewModel", [
                             expectArgs(true);
                         });
 
-                        it("should be loading if the store has is loading", function() {
+                        it("should be loading if the store is loading", function() {
                             makeLoadStore(false);
                             setup();
                             spy.reset();
@@ -2943,6 +3058,28 @@ topSuite("Ext.app.ViewModel", [
                             });
                             expectArgs('Org1');
                         });
+
+                        if (withSession) {
+                            it("should be able to update the reference by setting the key", function() {
+                                makeUser(1, {
+                                    name: 'Foo'
+                                });
+                                makePost(101, {
+                                    userId: 1
+                                });
+
+                                new User({ id: 2, name: 'Bar' }, session);
+
+                                setNotify('post', post);
+                                bindNotify('{post.user.name}', spy);
+
+                                spy.reset();
+
+                                post.set('userId', 2);
+                                notify();
+                                expectArgs('Bar', 'Foo');
+                            });
+                        }
                     });
 
                     describe("the many", function() {
@@ -3281,6 +3418,28 @@ topSuite("Ext.app.ViewModel", [
 
                             Ext.undefine('spec.Address');
                         });
+
+                        if (withSession) {
+                            it("should be able to update the reference by setting the key", function() {
+                                makePassport(1, {
+                                    name: 'Foo'
+                                });
+                                makeUser(101, {
+                                    passportId: 1
+                                });
+
+                                new Passport({ id: 2, name: 'Bar' }, session);
+
+                                setNotify('user', user);
+                                bindNotify('{user.passport.name}', spy);
+
+                                spy.reset();
+
+                                user.set('passportId', 2);
+                                notify();
+                                expectArgs('Bar', 'Foo');
+                            });
+                        }
                     });
 
                     describe("the non-key holder", function() {

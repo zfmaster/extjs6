@@ -588,16 +588,16 @@ Ext.define('Ext.panel.Date', {
         return cfg;
     },
 
-    updateDisabledDates: function(cfg) {
-        this.broadcastConfig('disabledDates', cfg);
+    updateDisabledDates: function() {
+        this.refreshPanes();
     },
 
     applyDisabledDays: function(days) {
         return days ? Ext.Array.toMap(days) : days;
     },
 
-    updateDisabledDays: function(daysMap) {
-        this.broadcastConfig('disabledDays', daysMap);
+    updateDisabledDays: function() {
+        this.refreshPanes();
     },
 
     updateFormat: function(format) {
@@ -621,8 +621,8 @@ Ext.define('Ext.panel.Date', {
         return date;
     },
 
-    updateMaxDate: function(date) {
-        this.broadcastConfig('maxDate', date);
+    updateMaxDate: function() {
+        this.refreshPanes();
     },
 
     applyMinDate: function(date) {
@@ -633,8 +633,8 @@ Ext.define('Ext.panel.Date', {
         return date;
     },
 
-    updateMinDate: function(date) {
-        this.broadcastConfig('minDate', date);
+    updateMinDate: function() {
+        this.refreshPanes();
     },
 
     updateNavigationPosition: function(pos) {
@@ -1024,26 +1024,34 @@ Ext.define('Ext.panel.Date', {
     onDateClick: function(e) {
         var me = this,
             cell = e.getTarget(me.cellSelector, me.bodyElement),
-            date = cell && cell.date;
+            date = cell && cell.date,
+            focus = true,
+            disabled = cell && cell.disabled;
 
         // Click could land on element other than date cell
         if (!date || me.getDisabled()) {
             return;
         }
 
-        if (!cell.disabled) {
+        if (!disabled) {
             me.setValue(date);
+
+            if (me.getAutoConfirm()) {
+                // Touch events change focus on tap.
+                // Prevent this as we are just about to hide.
+                // PickerFields revert focus to themselves in a beforehide handler.
+                if (e.pointerType === 'touch') {
+                    e.preventDefault();
+                }
+                focus = false;
+                me.fireEvent('select', me, date);
+            }
         }
 
-        if (me.getAutoConfirm()) {
-            // Touch events change focus on tap.
-            // Prevent this as we are just about to hide.
-            // PickerFields revert focus to themselves in a beforehide handler.
-            if (e.pointerType === 'touch') {
-                e.preventDefault();
-            }
-            me.fireEvent('select', me, date);
-        } else {
+        if (focus) {
+            // Even though setValue might focus the date, we may
+            // either be in a position where the date is disabled
+            // or already set.
             me.focusDate(date);
         }
     },
@@ -1213,7 +1221,11 @@ Ext.define('Ext.panel.Date', {
             date = me.getFocusableDate();
             newDate = unit ? Ext.Date.add(date, unit, increment) : date;
 
-            me.setValue(newDate);
+            if (me.isDateDisabled(newDate)) {
+                me.focusDate(newDate);
+            } else {
+                me.setValue(newDate);
+            }
         }
     },
 
@@ -1434,10 +1446,6 @@ Ext.define('Ext.panel.Date', {
                 weekendDays: me.getWeekendDays(),
                 specialDates: me.getSpecialDates(),
                 specialDays: me.getSpecialDays(),
-                disabledDays: me.getDisabledDays(),
-                disabledDates: me.getDisabledDates(),
-                minDate: me.getMinDate(),
-                maxDate: me.getMaxDate(),
                 format: me.getFormat(),
                 captionFormat: me.getCaptionFormat(),
                 dateCellFormat: me.getDateCellFormat(),
@@ -1448,6 +1456,38 @@ Ext.define('Ext.panel.Date', {
 
         getPositionedItemTarget: function () {
             return this.bodyElement;
+        },
+
+        isDateDisabled: function(date) {
+            var me = this,
+                ms = date.getTime(),
+                minDate = me.getMinDate(),
+                maxDate = me.getMaxDate(),
+                disabled = false,
+                disabledDays, disabledDates, formatted, re;
+
+            disabled = (minDate && ms < minDate.getTime()) || (maxDate && ms > maxDate.getTime());
+
+            if (!disabled) {
+                disabledDays = me.getDisabledDays();
+                if (disabledDays) {
+                    disabled = disabledDays[date.getDay()];
+                }
+            }
+
+            if (!disabled) {
+                disabledDates = me.getDisabledDates();
+                if (disabledDates) {
+                    disabled = disabledDates.dates[ms];
+                    re = disabledDates.re;
+                    if (!disabled && re) {
+                        formatted = Ext.Date.format(date, me.getFormat());
+                        disabled = re.test(formatted);
+                    }
+                }
+            }
+
+            return !!disabled;
         },
 
         measurePaneSize: function() {
@@ -1503,6 +1543,20 @@ Ext.define('Ext.panel.Date', {
 
         onYearTitleTap: function() {
             this.togglePicker(!this.pickerVisible);
+        },
+
+        refreshPanes: function() {
+            if (this.isConfiguring) {
+                return;
+            }
+
+            var panes = this.getPanes(),
+                len = panes.length,
+                i;
+
+            for (i = 0; i < len; ++i) {
+                panes[i].refresh();
+            }
         },
 
         setTitleByDate: function(date) {

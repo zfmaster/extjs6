@@ -622,11 +622,14 @@ topSuite("Ext.direct.Manager", ['Ext.direct.*'], function() {
                         (function(){var a = nonexistent;})();
                     } catch(e) {
                         // Grab first line of stack trace to ascertain displayed message
-                        message = e.stack.split(/\r|\n|\r\n/)[0];
-
-                        // If stack doesn't contain error, the fallback will work.
-                        if (message.indexOf('Error:') === -1) {
-                            message = null;
+                        // IE < 10 do not support stack property
+                        if (e.stack) {
+                            message = e.stack.split(/\r|\n|\r\n/)[0];
+    
+                            // If stack doesn't contain error, the fallback will work.
+                            if (message.indexOf('Error:') === -1) {
+                                message = null;
+                            }
                         }
                     }
 

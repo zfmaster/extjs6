@@ -371,7 +371,7 @@ Ext.define('Ext.tip.ToolTip', {
 
     updateTrackMouse: function(trackMouse) {
         // If tracking mouse, allow mouse to enter the tooltip without triggering dismiss
-        if (!this.getAnchor()) {
+        if (trackMouse) {
             this.setAllowOver(trackMouse);
         }
     },
@@ -610,7 +610,11 @@ Ext.define('Ext.tip.ToolTip', {
         onTargetOut: function(e) {
             // We have exited the current target
             if (this.currentTarget.dom && !this.currentTarget.contains(e.relatedTarget)) {
-                this.handleTargetOut();
+
+                // If we haven't moved into the tip with allowOver set, then kick off ths hide timer
+                if (!this.getAllowOver() && e.within(this.el, true)) {
+                    this.handleTargetOut();
+                }
             }
         },
 
@@ -631,11 +635,11 @@ Ext.define('Ext.tip.ToolTip', {
             this.clearTimer('dismiss');
         },
 
-        onTipOut: function() {
+        onTipOut: function(e) {
             // A mouseout of the tip itself is only a mouseout if the pointer has already moved
             // outside the target and we have no current target, or the mouseout point is outside
             // of the target.
-            if (!this.currentTarget.dom || !this.pointerEvent.getPoint().isContainedBy(this.currentTarget.getRegion())) {
+            if (!this.currentTarget.dom || !e.getPoint().isContainedBy(this.currentTarget.getRegion())) {
                 this.handleTargetOut();
             }
         },

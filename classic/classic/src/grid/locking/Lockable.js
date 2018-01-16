@@ -36,30 +36,32 @@ Ext.define('Ext.grid.locking.Lockable', {
     ],
 
     /**
-     * @cfg {Boolean} syncRowHeight Synchronize rowHeight between the normal and
-     * locked grid view. This is turned on by default. If your grid is guaranteed
-     * to have rows of all the same height, you should set this to false to
-     * optimize performance.
+     * @cfg {Boolean} syncRowHeight
+     * Synchronize rowHeight between the normal and locked grid view. This is turned on
+     * by default. If your grid is guaranteed to have rows of all the same height, you
+     * should set this to false to optimize performance.
      */
     syncRowHeight: true,
 
     /**
-     * @cfg {String} subGridXType The xtype of the subgrid to specify. If this is
-     * not specified lockable will determine the subgrid xtype to create by the
-     * following rule. Use the superclasses xtype if the superclass is NOT
-     * tablepanel, otherwise use the xtype itself.
+     * @cfg {String} subGridXType
+     * The xtype of the subgrid to specify. If this is not specified lockable will 
+     * determine the subgrid xtype to create by the following rule. Use the superclasses
+     * xtype if the superclass is NOT tablepanel, otherwise use the xtype itself.
      */
 
     /**
-     * @cfg {Object} lockedViewConfig A view configuration to be applied to the
-     * locked side of the grid. Any conflicting configurations between lockedViewConfig
-     * and viewConfig will be overwritten by the lockedViewConfig.
+     * @cfg {Object} lockedViewConfig
+     * A view configuration to be applied to the locked side of the grid. Any conflicting
+     * configurations between lockedViewConfig and viewConfig will be overwritten by the
+     * lockedViewConfig.
      */
 
     /**
-     * @cfg {Object} normalViewConfig A view configuration to be applied to the
-     * normal/unlocked side of the grid. Any conflicting configurations between normalViewConfig
-     * and viewConfig will be overwritten by the normalViewConfig.
+     * @cfg {Object} normalViewConfig
+     * A view configuration to be applied to the normal/unlocked side of the grid. Any
+     * conflicting configurations between normalViewConfig and viewConfig will be
+     * overwritten by the normalViewConfig.
      */
 
     headerCounter: 0,
@@ -81,7 +83,7 @@ Ext.define('Ext.grid.locking.Lockable', {
      */
 
     /**
-     * @cfg {Object} [layout]
+     * @cfg {Object} layout
      * By default, a lockable grid uses an {@link Ext.layout.container.HBox HBox} layout to arrange
      * the two grids (possibly separated by a splitter).
      *
@@ -89,7 +91,7 @@ Ext.define('Ext.grid.locking.Lockable', {
      */
 
     /**
-     * @cfg {String[]} stateEvents
+     * @cfg stateEvents
      * @inheritdoc Ext.state.Stateful#cfg-stateEvents
      * @localdoc Adds the following stateEvents:
      * 
@@ -166,31 +168,17 @@ Ext.define('Ext.grid.locking.Lockable', {
      */
 
     determineXTypeToCreate: function(lockedSide) {
-        var me = this,
-            typeToCreate,
-            xtypes, xtypesLn, xtype, superxtype;
+        var me = this;
 
         if (me.subGridXType) {
-            typeToCreate = me.subGridXType;
-        } else {
-            // Treeness only moves down into the locked side.
+            return me.subGridXType;
+        } else if (!lockedSide) {
+            // Tree columns only moves down into the locked side.
             // The normal side is always just a grid
-            if (!lockedSide) {
-                return 'gridpanel';
-            }
-            xtypes     = me.getXTypes().split('/');
-            xtypesLn   = xtypes.length;
-            xtype      = xtypes[xtypesLn - 1];
-            superxtype = xtypes[xtypesLn - 2];
-
-            if (superxtype !== 'tablepanel') {
-                typeToCreate = superxtype;
-            } else {
-                typeToCreate = xtype;
-            }
+            return 'gridpanel'; 
         }
 
-        return typeToCreate;
+        return me.isXType('treepanel') ? 'treepanel' : 'gridpanel';
     },
 
     // injectLockable will be invoked before initComponent's parent class implementation
@@ -634,7 +622,7 @@ Ext.define('Ext.grid.locking.Lockable', {
             normalViewX, hasVerticalScrollbar, hasHorizontalScrollbar,
             scrollContainerHeight, scrollBodyHeight, lockedScrollbar, normalScrollbar,
             scrollbarVisibleCls, scrollHeight, lockedGridVisible, normalGridVisible, scrollBodyDom,
-            viewRegion, scrollerElHeight;
+            viewRegion, scrollerElHeight, scrollable;
 
         me.afterLayoutListener = null;
 
@@ -658,13 +646,14 @@ Ext.define('Ext.grid.locking.Lockable', {
             scrollbarWidth = scrollbarSize.width;
             scrollbarHeight = scrollerElHeight = scrollbarSize.height;
             normalViewWidth = normalGridVisible ? normalViewRegion.width : 0;
-            normalViewX = lockedGridVisible ? normalViewRegion.x - lockedViewRegion.x : 0;
+            normalViewX = lockedGridVisible ? (normalGridVisible ? normalViewRegion.x - lockedViewRegion.x : lockedViewRegion.width) : 0;
             hasHorizontalScrollbar = (normalGrid.headerCt.tooNarrow || lockedGrid.headerCt.tooNarrow) ? scrollbarHeight : 0;
             scrollContainerHeight = normalViewRegion.height || lockedViewRegion.height;
             scrollBodyHeight = scrollContainerHeight;
             lockedScrollbar = me.lockedScrollbar;
             normalScrollbar = me.normalScrollbar;
             scrollbarVisibleCls = me.scrollbarVisibleCls;
+            scrollable = me.getScrollable();
     
             // EXTJS-23301 IE10/11 does not allow an overflowing element to scroll
             // if the element height is the same as the scrollbar height. This
@@ -726,7 +715,10 @@ Ext.define('Ext.grid.locking.Lockable', {
 
             me.onSyncLockableLayout(hasVerticalScrollbar, viewRegion.width);
 
-            me.getScrollable().scrollTo(me.lastScrollPos);
+            // We should only scroll if necessary
+            if (!Ext.Object.equals(scrollable.position, me.lastScrollPos)) {
+                scrollable.scrollTo(me.lastScrollPos);
+            }
         }
     },
 

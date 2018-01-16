@@ -840,8 +840,9 @@ Ext.apply(Ext, {
      * concatenated.
      *
      * @param {Object/Object[]} a
-     * @param {Ojbect/Object[]} b
+     * @param {Object/Object[]} b
      * @return {Object[]}
+     * @member Ext
      * @private
      * @since 6.5.1
      */

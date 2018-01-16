@@ -502,6 +502,7 @@ Ext.define('Ext.drag.Source', {
         },
 
         /**
+         * @method getElListeners
          * @inheritdoc
          */
         getElListeners: function() {

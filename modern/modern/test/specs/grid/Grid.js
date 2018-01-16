@@ -1976,6 +1976,7 @@ function() {
                                     colMap.colf2.setWidth(300);
                                     colMap.colf1.el.dom.getBoundingClientRect();
                                     colMap.colf2.el.dom.getBoundingClientRect();
+                                    refreshColSizes();
 
                                     waitsFor(function() {
                                         return spy.callCount === 2;
@@ -2168,6 +2169,7 @@ function() {
                                     expectSizes();
                                     grid.on('columnresize', spy);
                                     colMap.colf1.setFlex(1);
+                                    refreshColSizes();
 
                                     waitsFor(function() {
                                         return spy.callCount >= 2;
@@ -2225,6 +2227,7 @@ function() {
                                     grid.on('columnresize', spy);
                                     colMap.colf1.setWidth(100);
                                     colMap.colf1.setFlex(null);
+                                    refreshColSizes();
 
                                     waitsFor(function() {
                                         return spy.callCount >= 1;
@@ -3702,6 +3705,41 @@ function() {
 
             });
         });
+
+        describe("events", function() {
+            it("should fire events when sorted", function () {
+                var spy = jasmine.createSpy(),
+                    col, args;
+                makeGrid([{
+                    dataIndex: 'f1',
+                    text: 'F1',
+                    width: 100,
+                    itemId: 'colf1'
+                }, {
+                    dataIndex: 'f2',
+                    text: 'F2',
+                    width: 100,
+                    itemId: 'colf2',
+                    hidden: true
+                }], null, {
+                    listeners: {
+                        columnsort: spy
+                    }
+                });
+                col = colMap.colf1;
+
+                Ext.testHelper.tap(col.el);
+                args = spy.mostRecentCall.args;
+                expect(spy.callCount).toBe(1);
+                expect(args[0]).toEqual(grid);
+                expect(args[1]).toEqual(col);
+                expect(args[2]).toBe('ASC');
+
+                Ext.testHelper.tap(col.el);
+                expect(spy.callCount).toBe(2);
+                expect(spy.mostRecentCall.args[2]).toBe('DESC');
+            });
+        });
     });
 
     describe("cell binding", function() {
@@ -3772,6 +3810,33 @@ function() {
                 expect(cell.getValue()).toBe('new value');
                 expect(cell.bodyElement).hasHTML('f11');
             });
+        });
+    });
+
+    describe('No store', function() {
+        it('should be able to show the header menu', function() {
+            var errorSpy = spyOn(window, 'onerror'),
+                menu;
+
+            makeGrid(null, null, {
+                store: undefined
+            });
+            Ext.testHelper.tap(colMap.colf1.triggerElement);
+
+            menu = colMap.colf1.getMenu();
+
+            expect(menu.isVisible()).toBe(true);
+
+            // Sorters should be disabled
+            expect(menu.child('#sortAsc').getDisabled()).toBe(true);
+            expect(menu.child('#sortDesc').getDisabled()).toBe(true);
+
+            // Grouping things shouldn't even be visible
+            expect(menu.child('#showInGroups').isVisible()).toBe(false);
+            expect(menu.child('#showInGroups').isVisible()).toBe(false);
+
+            // And no error
+            expect(errorSpy).not.toHaveBeenCalled();
         });
     });
 });

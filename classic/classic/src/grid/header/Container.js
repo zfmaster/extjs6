@@ -569,12 +569,7 @@ Ext.define('Ext.grid.header.Container', {
 
     // Find the topmost HeaderContainer
     getRootHeaderCt: function() {
-        var me = this;
-
-        if (!me.rootHeaderCt) {
-            me.rootHeaderCt = me.isRootHeader ? me : me.up('[isRootHeader]');
-        }
-        return me.rootHeaderCt;
+        return this.isRootHeader ? this : this.up('[isRootHeader]');
     },
 
     doDestroy: function() {

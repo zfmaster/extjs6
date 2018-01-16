@@ -192,7 +192,7 @@ Ext.define('Ext.dataview.BoundListNavigationModel', {
 
             // Handle the case where the highlighted item is already selected
             // In this case, the change event won't fire, so just collapse
-            if (!(field.getMultiSelect && field.getMultiSelect()) && selectable.isSelected(this.location.record) && field.collapse) {
+            if (selectable.isSelected(this.location.record) && field.collapse) {
                 field.collapse();
             } else {
                 this.selectHighlighted(e);

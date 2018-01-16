@@ -35,11 +35,24 @@ topSuite("Ext.field.Date", [
             expect(field.getValue()).toEqual(new Date(2010, 0, 1));
         });
 
+        it("should accept an object containing the year, month, and day", function () {
+           makeField();
+           field.setValue({year: 2010, month: 0, day: 1});
+           expect(field.getValue()).toEqual(new Date(2010, 0, 1));
+        });
+
         it("should return null for a string that cannot be parsed", function() {
             makeField({
                 dateFormat: 'Y-m-d'
             });
             field.setValue('01/50/2010');
+            expect(field.getValue()).toBe(null);
+        });
+
+        it("should return null for an object that cannot be parsed", function() {
+            makeField();
+
+            field.setValue({});
             expect(field.getValue()).toBe(null);
         });
 
@@ -322,6 +335,47 @@ topSuite("Ext.field.Date", [
             field.setValue('01/01/2017');
 
             expect(field.validate()).toBe(true);
+        });
+    });
+
+    describe("resetting", function() {
+        it("should reset to the original value", function() {
+            var spy = jasmine.createSpy();
+
+            makeField({
+                value: new Date('01/01/2017 00:00:00')
+            });
+            
+            field.on('change', spy);
+            field.setValue(new Date('02/02/2017 00:00:00'));
+
+            expect(field.getValue()).toEqual(new Date('02/02/2017 00:00:00'));
+
+            field.reset();
+
+            expect(field.getValue()).toEqual(new Date('01/01/2017 00:00:00'));
+            expect(spy.callCount).toBe(2);
+        });
+
+        it("should reset the field when the input is not valid", function() {
+            var spy = jasmine.createSpy();
+
+            makeField({
+                value: new Date('01/01/2017 00:00:00')
+            });
+            field.on('change', spy);
+
+            field.inputElement.dom.value = 'abcdefg';
+            field.onInput({});
+
+            expect(field.isValid()).toBe(false);
+
+            field.reset();
+
+            expect(field.getValue()).toEqual(new Date('01/01/2017 00:00:00'));
+            expect(field.inputElement.dom.value).not.toBe('abcdefg');
+            expect(spy.callCount).toBe(0);
+            expect(field.isValid()).toBe(true);
         });
     });
 

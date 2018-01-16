@@ -568,6 +568,12 @@ Ext.define('Ext.Container', {
                 me.removeAll();
             }
 
+            // Read items from object properties back into the newItems array
+            // unless the item is a Widget or is a config object with an xtype.
+            if (me.weighted && !items.isWidget && !items.xtype) {
+                items = Ext.convertKeyedItems(items);
+            }
+
             me.add(items);
 
             //Don't need to call setActiveItem when Container is first initialized
@@ -760,17 +766,8 @@ Ext.define('Ext.Container', {
             doWeightedInsert, i, ln, item, instanced;
 
         if (!Ext.isArray(newItems)) {
-            // Read items from object properties back into the newItems array
-            // unless the item is a Widget or is a config object with an xtype.
-            if (weighted && !newItems.isWidget && !newItems.xtype) {
-                newItems = Ext.convertKeyedItems(newItems);
-                if (newItems.length === 1) {
-                    addingArray = false;
-                }
-            } else {
-                newItems = [newItems];
-                addingArray = false;
-            }
+            newItems = [newItems];
+            addingArray = false;
         }
 
         // If we are maintaining child items in weight order, then we only
@@ -830,18 +827,17 @@ Ext.define('Ext.Container', {
         return addingArray ? addedItems : addedItems[0];
     },
 
-    onItemWeightChange: function(item, weight, oldWeight) {
-        var itemsCollection = this.getItems(),
-            items = itemsCollection.items,
-            i = itemsCollection.indexOf(item);
+    onItemWeightChange: function(item) {
+        var items = this.getItems(),
+            oldIndex = items.indexOf(item),
+            index;
 
-        if (weight > oldWeight) {
-            for (++i; i < itemsCollection.length && item.weight > items[i].weight; i++);
-        } else {
-            for (--i; i > 0 && item.weight < items[i].weight; i--);
+        items.remove(item);
+        index = items.findInsertionIndex(item, Ext.weightSortFn);
+        items.insert(index, item);
 
-        }
-        this.insert(i, item);
+        this.insertInner(item, index);
+        this.onItemMove(item, index, oldIndex);
     },
 
     /**

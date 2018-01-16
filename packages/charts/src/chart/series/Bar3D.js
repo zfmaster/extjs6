@@ -125,53 +125,6 @@ Ext.define('Ext.chart.series.Bar3D', {
     getDepth: function () {
         var sprite = this.getSprites()[0];
         return sprite ? (sprite.depth || 0) : 0;
-    },
-
-    getItemForPoint: function (x, y) {
-        var sprites = this.getSprites();
-
-        if (!sprites) {
-            return null;
-        }
-
-        var me = this,
-            itemInstancing = me.getItemInstancing(),
-            store = me.getStore(),
-            hidden = me.getHidden(),
-            chart = me.getChart(),
-            padding = chart.getInnerPadding(),
-            isRtl = chart.getInherited().rtl,
-            item = null,
-            index, yField,
-            i, sprite;
-
-        // Convert the coordinates because the "items" sprites that draw the bars ignore
-        // the chart's InnerPadding. See also Ext.chart.series.sprite.Bar.getIndexNearPoint(x,y)
-        // regarding the series's vertical coordinate system.
-        x = x + (isRtl ? padding.right : -padding.left);
-        y = y + padding.bottom;
-
-        for (i = sprites.length - 1; i >= 0; i--) {
-            if (hidden[i]) {
-                continue;
-            }
-            sprite = sprites[i];
-            index = sprite.getIndexNearPoint(x, y);
-            if (index !== -1) {
-                yField = me.getYField();
-                item = {
-                    series: me,
-                    index: index,
-                    category: itemInstancing ? 'items' : 'markers',
-                    record: store.getData().items[index],
-                    // Handle the case where we're stacked but a single segment
-                    field: typeof yField === 'string' ? yField : yField[i],
-                    sprite: sprite
-                };
-                break;
-            }
-        }
-        return item;
     }
 
 });

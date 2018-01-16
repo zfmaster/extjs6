@@ -43,7 +43,9 @@ function() {
             var cell = findCell(row, column),
                 navigateSpy = spyOnEvent(grid, 'navigate'),
                 triggerEvent = plugin.getTriggerEvent(),
-                double = Ext.String.startsWith(triggerEvent, 'dbl') || Ext.String.startsWith(triggerEvent, 'double');
+                double = Ext.String.startsWith(triggerEvent, 'dbl') || Ext.String.startsWith(triggerEvent, 'double'),
+                focusSpy = jasmine.createSpy(),
+                editor;
 
             runs(function() {
                 // Must focus the cell with first. Jasmine does this on mousedown.
@@ -64,6 +66,15 @@ function() {
             waitsForSpy(navigateSpy, 'navigation to occur');
 
             runs(function() {
+                column = navigationModel.location.column;
+
+                if (!skipWait) {
+                    editor = column.getEditor();
+                    if (editor) {
+                        editor.on('focus', focusSpy);
+                    }
+                }
+
                 if (jasmine.supportsTouch) {
                     Ext.testHelper.tap(cell);
                     if (double) {
@@ -77,15 +88,9 @@ function() {
                     }
                 }
             });
-            
-            if (!skipWait) {
-                waitsFor(function() {
-                    return !!plugin.activeEditor;
-                }, 'editing to start', 2000);
 
-                runs(function() {
-                    jasmine.waitForFocus(plugin.getActiveEditor().getField());
-                });
+            if (!skipWait) {
+                waitsForSpy(focusSpy, 'editing to start', 500);
             }
         }
 
@@ -2376,7 +2381,7 @@ function() {
                         activeEditor.getField().getValue() === '2.1' &&
                         activeEditor.containsFocus;
 
-                });
+                }, "next cell's editor to be focused");
 
                 runs(function() {
                     jasmine.fireKeyEvent(field.inputElement, 'keydown', TAB);

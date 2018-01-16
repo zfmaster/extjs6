@@ -121,7 +121,7 @@ Ext.define('Ext.chart.series.Line', {
          * @cfg {Number} selectionTolerance
          * The offset distance from the cursor position to the line series to trigger events (then used for highlighting series, etc).
          */
-        selectionTolerance: 5,
+        selectionTolerance: 20,
 
         /**
          * @cfg {Object} curve

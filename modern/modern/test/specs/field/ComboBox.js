@@ -3,7 +3,13 @@ topSuite("Ext.field.ComboBox",
      'Ext.data.ArrayStore', 'Ext.layout.Fit'],
 function() {
     
-    var component, store, CBTestModel,
+    var component,
+        store,
+        picker,
+        pickerStore,
+        selModel,
+        valueCollection,
+        CBTestModel,
         itNotIE = Ext.isIE ? xit : it,
         itNotIE9m = Ext.isIE9m ? xit : it,
         synchronousLoad = true,
@@ -22,7 +28,10 @@ function() {
     // the infrastructure to get typing simulation is fairly large
     function doTyping(value, isBackspace, keepPickerVisible) {
         // Focus the field so that trigger taps are processed immediately
-        component.inputElement.focus();
+        if (document.activeElement !== component.inputElement.dom) {
+            component.inputElement.focus();
+        }
+
         component.inputElement.dom.value = value;
         component.onInput({
             type: 'input',
@@ -58,7 +67,38 @@ function() {
             store: preventStore ? null : store,
             picker: 'floated'
         }, config);
+
+        // If we are using the test's default, locally loaded store, then
+        // we must be using queryMode: 'local' unless otherwise configured
+        if (!('queryMode' in config) && config.store && config.store.$isDefaultTestStore) {
+            config.queryMode = 'local';
+        }
+
         component = new Ext.form.field.ComboBox(config);
+
+        valueCollection = component.getValueCollection();
+
+        Ext.override(component, {
+            getPicker: function () {
+                picker = this.callParent(arguments);
+
+                // It's a picker which contains a "slot" which is a List.
+                if (picker.isPicker) {
+                    selModel = picker.innerItems[0].getSelectable();
+                }
+                // It's a floated BoundList
+                else {
+                    selModel = picker.getSelectable();
+                }
+
+                return picker;
+            },
+
+            updateStore: function() {
+                this.callParent(arguments);
+                pickerStore = this._pickerStore;
+            }
+        });
     }
 
     function getTextSelectionIndices (field) {
@@ -117,6 +157,7 @@ function() {
             ]
         });
         store = new spec.MyStore();
+        store.$isDefaultTestStore = true;
     });
 
     afterEach(function() {
@@ -237,6 +278,7 @@ function() {
                 forceSelection: false
             });
             doTyping("abc");
+            component.completeEdit();
             expect(component.getValue()).toBe("abc");
         });
 
@@ -249,9 +291,6 @@ function() {
                 forceSelection: false
             });
             doTyping("abc");
-
-            expect(component.getInputValue()).toBe('abc');
-            expect(component.getValue()).toBe('abc');
 
             component.completeEdit();
 
@@ -270,6 +309,9 @@ function() {
                 forceSelection: false
             });
             doTyping("abc");
+
+            component.completeEdit();
+
             expect(component.getValue()).toBe("abc");
 
             var trigger = component.getTriggers().clear;
@@ -315,7 +357,7 @@ function() {
             expect(count).toBe(2);
         });
 
-        it("should not fire select events on typing", function() {
+        it("should fire select events on typing", function() {
             makeComponent({
                 displayField: 'text',
                 valueField: 'value',
@@ -329,8 +371,14 @@ function() {
                 count++;
             });
             doTyping("a");
+
+            // An "isEntered" record has been selected representing "a"
+            expect(count).toBe(1);
+
             doTyping("ab");
-            expect(count).toBe(0);
+
+            // An "isEntered" record has been selected representing "ab"
+            expect(count).toBe(2);
         });
 
         it("should fire action event on ENTER", function() {
@@ -408,7 +456,7 @@ function() {
 
             doTyping('text 3');
 
-            var filters = store.getFilters();
+            var filters = component._pickerStore.getFilters();
 
             expect(filters.getCount()).toBe(1);
 
@@ -618,8 +666,10 @@ function() {
             expect(component.getPicker()).toBeDefined();
             expect(component.getPicker() instanceof Ext.dataview.List).toBe(true);
         });
-        it("should pass the configured store to the BoundList", function() {
-            expect(component.getPicker().getStore()).toBe(component.getStore());
+        it("should pass a ChainedStore to the BoundList when queryMode: 'local'", function() {
+            var pickerStore = component.getPicker().getStore();
+            expect(pickerStore.isChainedStore).toBe(true);
+            expect(pickerStore.getSource()).toBe(component.getStore());
         });
         xit("should pass the configured displayField to the BoundList", function() {
             expect(component.getPicker().displayField).toEqual(component.displayField);
@@ -994,7 +1044,7 @@ function() {
                 displayField: 'text',
                 queryMode: 'local'
             });
-            var filters = store.getFilters();
+            var filters = component._pickerStore.getFilters();
 
             doTyping('text 12');
             jasmine.fireMouseEvent(component.getTriggers().expand.el, 'click');
@@ -1017,7 +1067,7 @@ function() {
                     queryMode: 'local'
                 });
                 doTyping('text 3');
-                var filters = store.getFilters();
+                var filters = component._pickerStore.getFilters();
                 expect(filters.getCount()).toBe(1);
                 var filter = filters.getAt(0);
                 expect(filter.getProperty()).toBe('text');
@@ -1036,7 +1086,7 @@ function() {
                     value: 'text 3'
                 });
                 doTyping('', true);
-                var filters = store.getFilters();
+                var filters = component._pickerStore.getFilters();
                 expect(filters.first().getDisabled()).toBe(true);
                 // Value not set during filtering.
                 // TODO: Should it?
@@ -1056,15 +1106,15 @@ function() {
 
                 it("should filter using the typed value", function() {
                     doTyping('te.*3');
-                    expect(store.getCount()).toBe(5);
+                    expect(component._pickerStore.getCount()).toBe(5);
                 });
 
                 it("should ignore invalid inputs", function() {
                     expect(function() {
                         doTyping('*');
                     }).not.toThrow();
-                    expect(store.getCount()).toBe(9);
-                    expect(store.getFilters().first().getDisabled()).toBe(true);
+                    expect(component._pickerStore.getCount()).toBe(9);
+                    expect(component._pickerStore.getFilters().first().getDisabled()).toBe(true);
                 });
             });
 
@@ -1143,12 +1193,13 @@ function() {
                 expect(component.getValueCollection().contains(foo2Rec)).toBe(true);
             });
 
-            it('should be able to reselect the same dropdown item after typing non-matching text', function() {
+            it('should be able to reselect the same dropdown item after typing non-matching text - forceSelection: true', function() {
                 makeComponent({
                     renderTo: Ext.getBody(),
                     valueField: 'value',
                     displayField: 'text',
-                    queryMode: 'local'
+                    queryMode: 'local',
+                    forceSelection: true
                 });
                 var foo2Rec = findRecord('foo2');
 
@@ -1157,7 +1208,37 @@ function() {
                 expect(component.getValueCollection().contains(foo2Rec)).toBe(true);
 
                 doTyping('flerpetty');
+
+                // Non-matching typing does not update the value:
+                expect(component.getValueCollection().contains(foo2Rec)).toBe(true);
+
+                component.completeEdit();
                 expect(component.getValueCollection().length).toBe(0);
+                expect(component.getSelection()).toBe(null);
+
+                component.onExpandTap();
+                clickListItem('foo2');
+                expect(component.getValueCollection().contains(foo2Rec)).toBe(true);
+            });
+
+            it('should be able to reselect the same dropdown item after typing non-matching text - forceSelection: false', function() {
+                makeComponent({
+                    renderTo: Ext.getBody(),
+                    valueField: 'value',
+                    displayField: 'text',
+                    queryMode: 'local',
+                    forceSelection: false
+                });
+                var foo2Rec = findRecord('foo2');
+
+                component.onExpandTap();
+                clickListItem('foo2');
+                expect(component.getValueCollection().contains(foo2Rec)).toBe(true);
+
+                doTyping('flerpetty');
+
+                // It caused an isEntered record creation
+                expect(component.getValueCollection().length).toBe(1);
 
                 component.onExpandTap();
                 clickListItem('foo2');
@@ -1232,7 +1313,7 @@ function() {
                 doTyping('v');
                 
                 expect(component.expanded).toBe(false);
-                expect(store.getCount()).toBe(0);
+                expect(component._pickerStore.getCount()).toBe(0);
             });
         });
     });
@@ -1522,16 +1603,16 @@ function() {
                 var spy = jasmine.createSpy(),
                     store = component.getStore();
                     
-                store.on('filterchange', spy);
+                component._pickerStore.on('filterchange', spy);
                 component.doFilter({
                     query: 'value 2'
                 });
 
                 expect(spy.callCount).toBe(1);
-                expect(store.getCount()).toBe(1);
-                expect(store.getAt(0).get('value')).toBe('value 2');
+                expect(component._pickerStore.getCount()).toBe(1);
+                expect(component._pickerStore.getAt(0).get('value')).toBe('value 2');
             });
-            
+
             it("should filter the store when minChars not met if force = true", function() {
                 makeComponent({
                     queryMode: 'local',
@@ -1542,9 +1623,24 @@ function() {
                     query: 'foo',
                     force: true
                 });
-                expect(component.getStore().getCount()).toEqual(2);
+                expect(component._pickerStore.getCount()).toEqual(2);
             });
-            
+
+            it("should filter the store when default minChars (1 for local) is met", function() {
+                makeComponent({
+                    queryMode: 'local',
+                    displayField: 'value'
+                });
+
+                var filterSpy = spyOn(component._pickerStore, 'onFilterEndUpdate');
+
+                // minChars is supposed to default to 1
+                doTyping('f');
+
+                // So it should filter
+                expect(filterSpy).toHaveBeenCalled();
+            });
+
             it("should add to existing filters", function(){
                 makeComponent({
                     queryMode: 'local',
@@ -1554,7 +1650,7 @@ function() {
                 component.doFilter({
                     query: 'value 3'
                 });
-                expect(store.getCount()).toBe(5);
+                expect(component._pickerStore.getCount()).toBe(5);
             });
             
             it("should remove only the filters added by the combo", function(){
@@ -1569,23 +1665,9 @@ function() {
                 component.doFilter({
                     force: true
                 });
-                expect(store.getCount()).toBe(7);
+                expect(component._pickerStore.getCount()).toBe(7);
             });
-            
-            it("should clear any active filters on destroy", function(){
-                makeComponent({
-                    queryMode: 'local',
-                    displayField: 'value'
-                });
-                store.filter('value', 'value');
-                component.doFilter({
-                    query: 'value 3'
-                });
-                expect(store.getCount()).toBe(5);
-                component.destroy();
-                expect(store.getCount()).toBe(7);
-            });
-            
+
             it("should return true if the query was not vetoed", function() {
                 makeComponent({
                     queryMode: 'local',
@@ -1624,6 +1706,27 @@ function() {
                 });
                 
                 expect(ret).toBe(true);
+            });
+
+            it("should not filter the store until the default minChars (4 for remote) met", function() {
+                makeComponent({
+                    queryMode: 'remote',
+                    displayField: 'value',
+                    queryDelay: 0
+                });
+                var loadSpy = spyOn(component.getStore(), 'load');
+
+                // minChars is supposed to default to 4, only type 3
+                doTyping('foo');
+
+                // Not yet
+                expect(loadSpy).not.toHaveBeenCalled();
+
+                // Now we typed 4 characters
+                doTyping('foob');
+
+                // It should have queried
+                expect(loadSpy).toHaveBeenCalled();
             });
         });
 
@@ -1729,7 +1832,7 @@ function() {
             makeComponent();
             spyOn(component, 'expand');
             component.doFilter({
-                query: 'foobar'
+                query: 'text'
             });
             expect(component.expand).toHaveBeenCalled();
         });
@@ -2930,14 +3033,14 @@ function() {
             });
             
             // Should filter out all except the 'first-1' value
-            expect(combo.getStore().getCount()).toEqual(1);
+            expect(combo._pickerStore.getCount()).toEqual(1);
 
             combo.doFilter({
                 query: 'first'
             });
             
             // Should show all the values which match 'first' - that is 5 values
-            expect(combo.getStore().getCount()).toEqual(5);
+            expect(combo._pickerStore.getCount()).toEqual(5);
         });
     });
 
@@ -2965,7 +3068,7 @@ function() {
             });
                         
             // Should show all the values which contain "rs" - that is 5 values
-            expect(combo.getStore().getCount()).toEqual(5);
+            expect(combo._pickerStore.getCount()).toEqual(5);
         });
     });
 
@@ -2993,7 +3096,7 @@ function() {
             });
                         
             // Should do case sensitive filtering
-            expect(combo.getStore().getCount()).toEqual(0);
+            expect(combo._pickerStore.getCount()).toEqual(0);
         });
     });
 
@@ -3114,10 +3217,8 @@ function() {
         });
     });
 
-    // Focus issues in the test runner
-    (Ext.isWebkit ? describe : xdescribe)("clearFilterOnBlur", function() {
-        
-        it("should clear a filter applied on blur with clearFilterOnBlur: true", function() {
+    describe("local filtering should not filter the supplied store", function() {
+        it("should only filter the pickerStore, not the supplied store", function() {
             makeComponent({
                 queryMode: 'local',
                 renderTo: Ext.getBody()
@@ -3126,63 +3227,12 @@ function() {
             // Simulate user typing 'text 3'
             setRawValue('text 3');
             component.expand();
-            component.doRawFilter();         
-            expect(store.getCount()).toBe(5);
-            component.blur();
+            component.doRawFilter();
+
+            // PickerStore has fewer in it. Supplied store is unchanged
+            expect(component._pickerStore.getCount()).toBe(5);
             expect(store.getCount()).toBe(count);
         });
-        
-        it("should clear a only the combo filter applied on blur with clearFilterOnBlur: true", function() {
-            makeComponent({
-                queryMode: 'local',
-                renderTo: Ext.getBody()
-            });
-            store.filter({
-                property: 'text',
-                value: 'text'
-            });
-            var count = store.getCount();
-            // Simulate user typing 'text 3'
-            setRawValue('text 3');
-            component.expand();
-            component.doRawFilter();         
-            expect(store.getCount()).toBe(5);
-            component.blur();
-            expect(store.getCount()).toBe(count);
-        });
-        
-        it("should requery the store on focus with clearFilterOnBlur: true", function() {
-            makeComponent({
-                queryMode: 'local',
-                renderTo: Ext.getBody()
-            });
-            var count = store.getCount();
-            // Simulate user typing 'text 3'
-            setRawValue('text 3');
-            component.expand();
-            component.doRawFilter();         
-            expect(store.getCount()).toBe(5);
-            component.blur();
-            expect(store.getCount()).toBe(count);
-            component.focus();
-            expect(store.getCount()).toBe(5);
-        });
-        
-        it("should not modify the filter with clearFilterOnBlur: false", function() {
-            makeComponent({
-                queryMode: 'local',
-                renderTo: Ext.getBody(),
-                clearFilterOnBlur: false
-            });
-            // Simulate user typing 'text 3'
-            setRawValue('text 3');
-            component.expand();
-            component.doRawFilter();         
-            expect(store.getCount()).toBe(5);
-            component.blur();
-            expect(store.getCount()).toBe(5);
-        });
-       
     });
 
     describe('itemTpl', function() {
@@ -3694,7 +3744,7 @@ function() {
             });
             
             component.setStore(newStore);
-            expect(newStore.getCount()).toBe(1);
+            expect(component._pickerStore.getCount()).toBe(1);
         });
         
         it("should be able to filter the store after binding a new one", function() {
@@ -3715,7 +3765,7 @@ function() {
             component.doFilter({
                 query: 'text 2'
             });
-            expect(newStore.getCount()).toBe(1);
+            expect(component._pickerStore.getCount()).toBe(1);
         });
 
         it("should be able to select after binding a new store", function() {
@@ -3765,9 +3815,12 @@ function() {
                     forceSelection: true,
                     valueField: 'value'
                 }, true);
+
                 component.setValue('value 3');
-                expect(component.getValue()).toBe(null);
+
+                expect(component.getValue()).toBe('value 3');
                 expect(getRawValue()).toBe('');
+
                 component.setStore(store);
                 expect(component.getValue()).toBe('value 3');
                 expect(getRawValue()).toBe('text 3');
@@ -3886,16 +3939,100 @@ function() {
                     });
 
                     it("should use the model raw value as the display value while loading if a model is passed", function() {
-                        makeLoadCombo();
-                        remoteStore.load();
-                        component.setValue(new ComboModel({
+                        var valueRecord = new ComboModel({
                             id: 1,
                             name: 'Foo'
-                        }));
+                        });
+
+                        makeLoadCombo();
+                        remoteStore.load();
+                        component.setValue(valueRecord);
                         expect(getRawValue()).toBe('Foo');
                         expect(component.getValue()).toBe(1);
+
+                        // Until the store loads, we have the selection as the record that was passed to setValue.
+                        expect(component.getSelection() === valueRecord).toBe(true);
+
+                        // When the store loads, the cachedValue will be matched up with an incoming record
+                        // and the selection will be updated.
+                        completeWithData(fakeData);
+
+                        // The actual loaded record must have taken over from the placeholder
+                        // which was passed to setvalue.
+                        expect(component.getSelection() === valueRecord).toBe(false);
                     });
-                
+
+                    it("should use the model raw value as the display value before a store arrives from a bind", function() {
+                        var valueRecord = new ComboModel({
+                            id: 1,
+                            name: 'Foo'
+                        });
+
+                        makeLoadCombo(null, {
+                            store: null
+                        });
+
+                        // Starts with no store
+                        expect(component.getStore() == null).toBe(true);
+
+                        remoteStore.load();
+
+                        // Should set the value from the record we set into the selection via setValue
+                        component.setValue(valueRecord);
+                        expect(getRawValue()).toBe('Foo');
+                        expect(component.getValue()).toBe(1);
+
+                        // Until the store loads, we have the selection as the record that was passed to setValue.
+                        expect(component.getSelection() === valueRecord).toBe(true);
+
+                        // Mimic a store arriving from a bind after field config and rebder.
+                        // When the store loads, the cachedValue will be matched up with an incoming record
+                        // and the selection will be updated.
+                        component.setStore(remoteStore);
+
+                        completeWithData(fakeData);
+
+                        // The actual loaded record must have taken over from the placeholder
+                        // which was passed to setValue.
+                        expect(component.getSelection() === valueRecord).toBe(false);
+                    });
+
+
+                    it("should use the store's model raw value as the display value before a store arrives from a bind", function() {
+                        var valueRecord;
+
+                        makeLoadCombo(null, {
+                            store: null
+                        });
+
+                        // Starts with no store
+                        expect(component.getStore() == null).toBe(true);
+
+                        // Store starts loaded this time.
+                        remoteStore.load();
+                        completeWithData(fakeData);
+
+                        // We prime the combobox with the real store record while it does
+                        // not own a store.
+                        valueRecord = remoteStore.first();
+
+                        // Should set the value from the record we set into the selection via setValue
+                        component.setValue(valueRecord);
+                        expect(getRawValue()).toBe('Foo');
+                        expect(component.getValue()).toBe(1);
+
+                        // Until the store arrives, we have the selection as the record that was passed to setValue.
+                        expect(component.getSelection() === valueRecord).toBe(true);
+
+                        // Mimic a store arriving from a bind after field config and rebder.
+                        // When the store loads, the cachedValue will be matched up with an incoming record
+                        // and the selection will be updated.
+                        component.setStore(remoteStore);
+
+                        // The actual loaded record is the same as the selection
+                        expect(component.getSelection() === valueRecord).toBe(true);
+                    });
+
                     it("should update the display value when the store loads", function() {
                         makeLoadCombo();
                         remoteStore.load();
@@ -4497,51 +4634,68 @@ function() {
 
     describe('checkValueOnChange triggered before store is loaded', function() {
         // EXTJS-16468
-        it('should NOT clear the combobox value if value is changed before the store is loaded', function() {
-            var Color = Ext.define(null, {
-                extend: 'Ext.data.Model',
-                fields: ['name']
-            }),
+        var Color = Ext.define(null, {
+            extend: 'Ext.data.Model',
+            fields: ['name']
+        });
+
+        var panel;
+
+        afterEach(function () {
+            panel = Ext.destroy(panel);
+        });
+
+        function create (config) {
+            var combo = Ext.merge({
+                xtype: 'combobox',
+                value: 'Red',
+
+                fieldLabel: 'Chosen color',
+                queryMode: 'local',
+                forceSelection: true,
+                displayField: 'name',
+                valueField: 'name',
+                store: {
+                    autoLoad: false,
+                    model: Color,
+                    proxy: {
+                        type: 'memory',
+                        data: [{
+                            id: '0xff0000',
+                            name: 'Red'
+                        }, {
+                            id: '0x00ff00',
+                            name: 'Green'
+                        }, {
+                            id: '0x0000ff',
+                            name: 'Blue'
+                        }]
+                    }
+                }
+            }, config);
+
             panel = new Ext.panel.Panel({
                 title: 'Combo test',
                 renderTo: document.body,
                 frame: true,
                 height: 400,
                 width: 600,
-                items: [{
-                    xtype: 'combobox',
-                    fieldLabel: 'Chosen color',
-                    queryMode: 'local',
-                    forceSelection: true,
-                    store: {
-                        autoLoad: false,
-                        model: Color,
-                        proxy: {
-                            type: 'memory',
-                            data: [{
-                                id: '0xff0000',
-                                name: 'Red'
-                            }, {
-                                id: '0x00ff00',
-                                name: 'Green'
-                            }, {
-                                id: '0x0000ff',
-                                name: 'Blue'
-                            }]
-                        }
-                    },
-                    displayField: 'name',
-                    valueField: 'name',
-                    value: 'Red'
-                }]
-            }),
-            comboBox = panel.child('combobox'),
-            store = comboBox.getStore();
+                items: [combo]
+            });
+        }
+
+        it('should retain value until store load then clear if not a match', function() {
+            create();
+
+            var comboBox = panel.child('combobox'),
+                store = comboBox.getStore();
 
             // The configured value cannot be propagated into the selection because there's still
             // not a loaded store to match it against
-            expect(comboBox.getValue()).toBe(null);
-            expect(comboBox.cachedValue).toBe('Red');
+            expect(comboBox.getValue()).toBe('Red');
+
+            var rec = comboBox.getSelection();
+            expect(rec).toBe(null);
 
             store.addFilter({
                 property: 'name',
@@ -4549,17 +4703,47 @@ function() {
             });
             // The configured value cannot be propagated into the selection because there's still
             // not a loaded store to match it against
-            expect(comboBox.getValue()).toBe(null);
-            expect(comboBox.cachedValue).toBe('Red');
+            expect(comboBox.getValue()).toBe('Red');
 
             store.load();
 
             // After the load, we are able to ascertain that the configured value is not in the store
             // (It's filtered out), so the value should be null.
-            expect(comboBox.cachedValue).toBe(null);
             expect(comboBox.getValue()).toBe(null);
 
-            panel.destroy();
+            rec = comboBox.getSelection();
+            expect(rec).toBe(null);
+        });
+
+        //TODO reconcile w/local queryMode fixes
+        xit('should retain value until store load then keep if match is locally filtered', function() {
+            create();
+
+            component = panel.child('combobox');
+
+            var store = component.getStore();
+
+            // The configured value cannot be propagated into the selection because there's
+            // still not a loaded store to match it against
+            expect(component.getValue()).toBe('Red');
+
+            var rec = component.getSelection();
+            expect(rec).toBe(null);
+
+            doTyping('Blue');
+
+            // The configured value cannot be propagated into the selection because there's
+            // still not a loaded store to match it against
+            expect(component.getValue()).toBe('Red');
+
+            component.doFilterTask.flush();
+
+            // Now that the filter is applied, we should find the matching record in
+            // the unfiltered source.
+            expect(component.getValue()).toBe('Red');
+
+            rec = component.getSelection();
+            expect(rec.id).toBe('0xff0000');
         });
     });
 
@@ -4749,7 +4933,9 @@ function() {
 
             vm = component.getViewModel();
             component.on('collapse', spy);
+
             doTyping('Foo', false, true);
+
             expect(spy).not.toHaveBeenCalled();
             component.getPicker().refresh();
 
@@ -5001,7 +5187,9 @@ function() {
 
             jasmine.focusAndWait(component);
 
-            doTyping('tex');
+            runs(function() {
+                doTyping('tex');
+            });
 
             // The typeahead setting will extend the raw value with a text selection
             waitsFor(function() {
@@ -5038,7 +5226,9 @@ function() {
 
             jasmine.focusAndWait(component);
 
-            doTyping('tex');
+            runs(function() {
+                doTyping('tex');
+            });
 
             waitsFor(function () {
                 return getRawValue() === 'text 1';
@@ -5080,6 +5270,11 @@ function() {
                 // The typeahead setting will extend the raw value with a text selection
                 waitsFor(function() {
                     return getRawValue() === 'text 1';
+
+                    // An "isEntered" record will be selected
+                    if (!enableForceSelection) {
+                        expect(spy.callCount).toBe(1);
+                    }
                 });
 
                 jasmine.blurAndWait(component);
@@ -5087,7 +5282,11 @@ function() {
                 runs(function() {
                     expect(getRawValue()).toBe('text 1');
                     expect(component.getValue()).toBe('value 1');
-                    expect(spy.callCount).toBe(1);
+
+                    // If forceSelection, the initial typing of "tex" will not have selected
+                    // a temporary, "isEntered" record so selection count should be 1,
+                    // If !forceSelection, there will be two select events.
+                    expect(spy.callCount).toBe(enableForceSelection ? 1 : 2);
                 });
             });
 
@@ -5132,7 +5331,9 @@ function() {
                         expect(component.getValue()).toBe('');
                     }
 
-                    expect(spy.callCount).toBe(0);
+                    // If !enableForceSelection, the typing of "text" will have selected a
+                    // temporary "isEntered" record.
+                    expect(spy.callCount).toBe(enableForceSelection ? 0 : 1);
                 });
             });
 
@@ -5472,4 +5673,186 @@ function() {
             });
         });
     });
+
+    describe('chained select fields', function() {
+        var CountriesStore,
+            StatesStore,
+            panel,
+            vm,
+            countries,
+            states;
+
+        beforeEach(function() {
+            CountriesStore = Ext.define('Ext.test.ChainedSelectTestCountries', {
+                alias: 'store.chainedSelectTestCountries',
+                extend: 'Ext.data.Store',
+                fields: [
+                    'name'
+                ],
+                data: [
+                    { name: 'USA' },
+                    { name: 'Canada' }
+                ]
+            });
+            StatesStore = Ext.define('Ext.test.ChainedSelectTestStates', {
+                alias: 'store.chainedSelectTestStates',
+                extend: 'Ext.data.Store',
+                fields: [
+                    'abbr', 'country', 'state', 'description'
+                ],
+                data: [
+                    { abbr: 'AL', country: 'USA', state: 'Alabama', 		description: 'The Heart of Dixie' },
+                    { abbr: 'AK', country: 'USA', state: 'Alaska', 			description: 'The Land of the Midnight Sun' },
+                    { abbr: 'AZ', country: 'USA', state: 'Arizona', 		description: 'The Grand Canyon State' },
+                    { abbr: 'AR', country: 'USA', state: 'Arkansas', 		description: 'The Natural State' },
+                    { abbr: 'CA', country: 'USA', state: 'California', 		description: 'The Golden State' },
+                    { abbr: 'CO', country: 'USA', state: 'Colorado', 		description: 'The Mountain State' },
+                    { abbr: 'CT', country: 'USA', state: 'Connecticut', 	description: 'The Constitution State' },
+                    { abbr: 'DE', country: 'USA', state: 'Delaware', 		description: 'The First State' },
+                    { abbr: 'DC', country: 'USA', state: 'District of Columbia', description: "The Nation's Capital" },
+                    { abbr: 'FL', country: 'USA', state: 'Florida', 		description: 'The Sunshine State' },
+                    { abbr: 'GA', country: 'USA', state: 'Georgia', 		description: 'The Peach State' },
+                    { abbr: 'HI', country: 'USA', state: 'Hawaii', 			description: 'The Aloha State' },
+                    { abbr: 'ID', country: 'USA', state: 'Idaho', 			description: 'Famous Potatoes' },
+                    { abbr: 'IL', country: 'USA', state: 'Illinois', 		description: 'The Prairie State' },
+                    { abbr: 'IN', country: 'USA', state: 'Indiana', 		description: 'The Hospitality State' },
+                    { abbr: 'IA', country: 'USA', state: 'Iowa', 			description: 'The Corn State' },
+                    { abbr: 'KS', country: 'USA', state: 'Kansas', 			description: 'The Sunflower State' },
+                    { abbr: 'KY', country: 'USA', state: 'Kentucky', 		description: 'The Bluegrass State' },
+                    { abbr: 'LA', country: 'USA', state: 'Louisiana', 		description: 'The Bayou State' },
+                    { abbr: 'ME', country: 'USA', state: 'Maine', 			description: 'The Pine Tree State' },
+                    { abbr: 'MD', country: 'USA', state: 'Maryland', 		description: 'Chesapeake State' },
+                    { abbr: 'MA', country: 'USA', state: 'Massachusetts', 	description: 'The Spirit of America' },
+                    { abbr: 'MI', country: 'USA', state: 'Michigan', 		description: 'Great Lakes State' },
+                    { abbr: 'MN', country: 'USA', state: 'Minnesota', 		description: 'North Star State' },
+                    { abbr: 'MS', country: 'USA', state: 'Mississippi', 	description: 'Magnolia State' },
+                    { abbr: 'MO', country: 'USA', state: 'Missouri', 		description: 'Show Me State' },
+                    { abbr: 'MT', country: 'USA', state: 'Montana', 		description: 'Big Sky Country' },
+                    { abbr: 'NE', country: 'USA', state: 'Nebraska', 		description: 'Beef State' },
+                    { abbr: 'NV', country: 'USA', state: 'Nevada', 			description: 'Silver State' },
+                    { abbr: 'NH', country: 'USA', state: 'New Hampshire', 	description: 'Granite State' },
+                    { abbr: 'NJ', country: 'USA', state: 'New Jersey', 		description: 'Garden State' },
+                    { abbr: 'NM', country: 'USA', state: 'New Mexico', 		description: 'Land of Enchantment' },
+                    { abbr: 'NY', country: 'USA', state: 'New York', 		description: 'Empire State' },
+                    { abbr: 'NC', country: 'USA', state: 'North Carolina', 	description: 'First in Freedom' },
+                    { abbr: 'ND', country: 'USA', state: 'North Dakota', 	description: 'Peace Garden State' },
+                    { abbr: 'OH', country: 'USA', state: 'Ohio', 			description: 'The Heart of it All' },
+                    { abbr: 'OK', country: 'USA', state: 'Oklahoma', 		description: 'Oklahoma is OK' },
+                    { abbr: 'OR', country: 'USA', state: 'Oregon', 			description: 'Pacific Wonderland' },
+                    { abbr: 'PA', country: 'USA', state: 'Pennsylvania', 	description: 'Keystone State' },
+                    { abbr: 'RI', country: 'USA', state: 'Rhode Island', 	description: 'Ocean State' },
+                    { abbr: 'SC', country: 'USA', state: 'South Carolina', 	description: 'Nothing Could be Finer' },
+                    { abbr: 'SD', country: 'USA', state: 'South Dakota', 	description: 'Great Faces, Great Places' },
+                    { abbr: 'TN', country: 'USA', state: 'Tennessee', 		description: 'Volunteer State' },
+                    { abbr: 'TX', country: 'USA', state: 'Texas', 			description: 'Lone Star State' },
+                    { abbr: 'UT', country: 'USA', state: 'Utah', 			description: 'Salt Lake State' },
+                    { abbr: 'VT', country: 'USA', state: 'Vermont', 		description: 'Green Mountain State' },
+                    { abbr: 'VA', country: 'USA', state: 'Virginia', 		description: 'Mother of States' },
+                    { abbr: 'WA', country: 'USA', state: 'Washington', 		description: 'Green Tree State' },
+                    { abbr: 'WV', country: 'USA', state: 'West Virginia', 	description: 'Mountain State' },
+                    { abbr: 'WI', country: 'USA', state: 'Wisconsin', 		description: "America's Dairyland" },
+                    { abbr: 'WY', country: 'USA', state: 'Wyoming', 		description: 'Like No Place on Earth' },
+
+                    { abbr: 'ON', country: 'Canada', state: 'Ontario' },
+                    { abbr: 'QC', country: 'Canada', state: 'Quebec' },
+                    { abbr: 'NS', country: 'Canada', state: 'Nova Scotia' },
+                    { abbr: 'NB', country: 'Canada', state: 'New Brunswick' },
+                    { abbr: 'MB', country: 'Canada', state: 'Manitoba' },
+                    { abbr: 'BC', country: 'Canada', state: 'British Columbia' },
+                    { abbr: 'PE', country: 'Canada', state: 'Prince Edward Island' },
+                    { abbr: 'SK', country: 'Canada', state: 'Saskatchewan' },
+                    { abbr: 'AB', country: 'Canada', state: 'Alberta' },
+                    { abbr: 'NL', country: 'Canada', state: 'Newfoundland and Labrador' }
+                ]
+            });
+            panel = new Ext.Panel({
+                renderTo: document.body,
+                title: 'Country and state',
+                width: 400,
+                height: 200,
+                viewModel: {
+                    stores: {
+                        countries: {
+                            type: 'chainedSelectTestCountries',
+                            autoLoad: true
+                        },
+                        states: {
+                            type: 'chainedSelectTestStates',
+                            autoLoad: true,
+                            filters: [{
+                                property: 'country',
+                                value: '{countryField.selection.name}'
+                            }],
+                            sorters: [{
+                                property: 'state'
+                            }]
+                        }
+                    }
+                },
+                items: [{
+                    xtype: 'selectfield',
+                    label: 'Country',
+                    placeholder: 'Choose a country',
+                    reference: 'countryField',
+                    valueField: 'name',
+                    displayField: 'name',
+                    bind: {
+                        store: '{countries}'
+                    },
+                    value: 'USA'
+                }, {
+                    xtype: 'combobox',
+                    label: 'States',
+                    reference: 'statesField',
+                    valueField: 'abbr',
+                    displayField: 'state',
+                    forceSelection: true,
+                    minChars: 2,
+                    bind: {
+                        store: '{states}',
+                        placeholder: '{countryField.value === "USA" ? "Chose a state" : countryField.value === "Canada" ? "Chose a province" : ""}'
+                    },
+                    value: 'AL'
+                }]
+            });
+            vm = panel.getViewModel();
+            countries = panel.child('[reference=countryField]');
+            component = states = panel.child('[reference=statesField]');
+
+            // Flush ViewModel data
+            vm.getScheduler().onTick();
+
+        });
+        afterEach(function() {
+            Ext.destroy(panel);
+            Ext.undefine('Ext.test.ChainedSelectTestCountries');
+            Ext.undefine('Ext.test.ChainedSelectTestStates');
+        });
+
+        it('should clear the dependent field when its selected record is filtered out', function() {
+            // Filter down to only Delaware. This will work because minChars is 2
+            doTyping('De');
+
+            // Wait for the filtered data to return.
+            waitsFor(function() {
+                return component.getPicker().isVisible() && component._pickerStore.getCount() === 1;
+            });
+
+            // When the picker is visible, pick the first record
+            runs(function() {
+                states.getPicker().getSelectable().select(0);
+                expect(states.getValue()).toBe('DE');
+
+                // This will refresh the picker's selmodel and evict the state.
+                countries.setValue('Canada');
+            });
+
+            // When binding ticks, the states should be cleared because its
+            // selected record is no longer in its store.
+            waitsFor(function() {
+                return states.getValue() == null;
+            });
+        });
+    });
+
 });

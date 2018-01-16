@@ -147,85 +147,85 @@ Ext.define('Ext.form.Panel', {
     
     basicFormConfigs: [
         /**
-         * @cfg {Object} api
+         * @cfg api
          * @inheritdoc Ext.form.Basic#cfg!api
          */
         'api', 
 
         /**
-         * @cfg {Object} baseParams
+         * @cfg baseParams
          * @inheritdoc Ext.form.Basic#cfg!baseParams
          */
         'baseParams', 
 
         /**
-         * @cfg {Object/Ext.data.reader.Reader} errorReader
+         * @cfg errorReader
          * @inheritdoc Ext.form.Basic#cfg!errorReader
          */
         'errorReader', 
 
         /**
-         * @cfg {Boolean} jsonSubmit
+         * @cfg jsonSubmit
          * @inheritdoc Ext.form.Basic#cfg!jsonSubmit
          */
         'jsonSubmit',
 
         /**
-         * @cfg {String} method
+         * @cfg method
          * @inheritdoc Ext.form.Basic#cfg!method
          */
         'method', 
 
         /**
-         * @cfg {String/String[]} paramOrder
+         * @cfg paramOrder
          * @inheritdoc Ext.form.Basic#cfg!paramOrder
          */
         'paramOrder',
 
         /**
-         * @cfg {Boolean} paramsAsHash
+         * @cfg paramsAsHash
          * @inheritdoc Ext.form.Basic#cfg!paramsAsHash
          */
         'paramsAsHash',
 
         /**
-         * @cfg {Object/Ext.data.reader.Reader} reader
+         * @cfg reader
          * @inheritdoc Ext.form.Basic#cfg!reader
          */
         'reader',
 
         /**
-         * @cfg {Boolean} standardSubmit
+         * @cfg standardSubmit
          * @inheritdoc Ext.form.Basic#cfg!standardSubmit
          */
         'standardSubmit',
 
         /**
-         * @cfg {Number} timeout
+         * @cfg timeout
          * @inheritdoc Ext.form.Basic#cfg!timeout
          */
         'timeout',
 
         /**
-         * @cfg {Boolean} trackResetOnLoad
+         * @cfg trackResetOnLoad
          * @inheritdoc Ext.form.Basic#cfg!trackResetOnLoad
          */
         'trackResetOnLoad',
 
         /**
-         * @cfg {String} url
+         * @cfg url
          * @inheritdoc Ext.form.Basic#cfg!url
          */
         'url',
 
         /**
-         * @cfg {String/HTMLElement/Ext.dom.Element} waitMsgTarget
+         * @cfg waitMsgTarget
          * @inheritdoc Ext.form.Basic#cfg!waitMsgTarget
          */
         'waitMsgTarget',
 
         /**
-         * @cfg {String} waitTitle
+         * @cfg waitTitle
          * @inheritdoc Ext.form.Basic#cfg!waitTitle
          */
         'waitTitle'
@@ -347,6 +347,7 @@ Ext.define('Ext.form.Panel', {
     },
 
     /**
+     * @method getValues
      * Convenience function for fetching the current value of each field in the form. This is the same as calling
      * {@link Ext.form.Basic#getValues this.getForm().getValues()}.
      *
@@ -357,6 +358,7 @@ Ext.define('Ext.form.Panel', {
     },
     
     /**
+     * @method isDirty
      * Convenience function to check if the form has any dirty fields. This is the same as calling
      * {@link Ext.form.Basic#isDirty this.getForm().isDirty()}.
      *
@@ -367,6 +369,7 @@ Ext.define('Ext.form.Panel', {
     },
     
     /**
+     * @method isValid
      * Convenience function to check if the form has all valid fields. This is the same as calling
      * {@link Ext.form.Basic#isValid this.getForm().isValid()}.
      *
@@ -377,6 +380,7 @@ Ext.define('Ext.form.Panel', {
     },
 
     /**
+     * @method reset
      * Convenience function reset the form. This is the same as calling
      * {@link Ext.form.Basic#reset this.getForm().reset()}.
      *
@@ -387,6 +391,7 @@ Ext.define('Ext.form.Panel', {
     },
     
     /**
+     * @method hasInvalidField
      * Convenience function to check if the form has any invalid fields. This is the same as calling
      * {@link Ext.form.Basic#hasInvalidField this.getForm().hasInvalidField()}.
      *

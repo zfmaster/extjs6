@@ -788,7 +788,7 @@ Ext.define('Ext.field.Field', {
      *
      * @return {Ext.field.Field} this
      */
-    reset: function () {
+    reset: function() {
         this.setValue(this.originalValue);
 
         return this;

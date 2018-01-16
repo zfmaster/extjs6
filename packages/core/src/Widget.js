@@ -1384,10 +1384,10 @@ Ext.define('Ext.Widget', {
             
             el.destroyAllRipples();
 
-            if (ripple.release !== false) {
-                el.on('touchstart', 'onRippleStart', me);
-            } else {
+            if (ripple.release) {
                 el.on('touchend', 'onRippleStart', me);
+            } else {
+                el.on('touchstart', 'onRippleStart', me);
             }
         }
     },
@@ -1958,7 +1958,7 @@ Ext.define('Ext.Widget', {
 
                 for (i = 0; i < len; i++) {
                     u = ui[i];
-                    if (oldUi.indexOf(u) === -1) {
+                    if (Ext.Array.indexOf(oldUi, u) === -1) {
                         oldUi.push(u);
                     }
                 }
@@ -1987,7 +1987,7 @@ Ext.define('Ext.Widget', {
 
                 for (i = 0; i < len; i++) {
                     u = ui[i];
-                    index = oldUi.indexOf(u);
+                    index = Ext.Array.indexOf(oldUi, u);
                     if (index !== -1) {
                         oldUi.splice(index, 1);
                     }

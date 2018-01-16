@@ -330,6 +330,15 @@ topSuite("Ext.menu.Item", ['Ext.menu.Menu', 'Ext.app.ViewModel', 'Ext.app.ViewCo
                     expect(location.hash).toBe('#ledzep');
                 });
             });
+
+            it("should be able to assign the href target", function() {
+                makeMenu([{
+                    text: 'Foo',
+                    href: '#someAnchor',
+                    target: '_blank'
+                }]);
+                expect(item.bodyElement.dom.target).toBe('_blank');
+            });
             
             // TODO This test does not work properly due to events being translated
             // TODO: Reinstate this for touch platforms when https://sencha.jira.com/browse/EXT-4 is fixed.

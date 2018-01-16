@@ -89,6 +89,19 @@ Ext.define('Ext.scroll.LockingScroller', {
 
         onNormalScroll: function(normalScroller, x, y) {
             this.position.x = x;
+        },
+
+        readPosition: function (position) {
+            var me = this;
+            
+            position = me.callParent([position]);
+            position = position || {};
+
+            // read position should consider the normal view for the x axis
+            position.x = me.getNormalScroller().getPosition().x;
+
+
+            return position;
         }
     }
 });

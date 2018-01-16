@@ -203,6 +203,7 @@ Ext.define('Ext.drag.Target', {
     },
 
     /**
+     * @method disable
      * @inheritdoc
      */
     disable: function() {
@@ -211,6 +212,7 @@ Ext.define('Ext.drag.Target', {
     },
 
     /**
+     * @method enable
      * @inheritdoc
      */
     enable: function() {
@@ -309,7 +311,7 @@ Ext.define('Ext.drag.Target', {
         },
 
         /**
-         * @method
+         * @method getElListeners
          * @inheritdoc
          */
         getElListeners: function() {

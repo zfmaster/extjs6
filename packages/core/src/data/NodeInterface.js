@@ -149,14 +149,14 @@ Ext.define('Ext.data.NodeInterface', {
      */
 
     /**
-     * @cfg {String} iconCls
-     * @inheritdoc Ext.panel.Header#iconCls
+     * @cfg iconCls
+     * @inheritdoc Ext.panel.Header#cfg-iconCls
      * @localdoc Use {@link #icon} to set the icon src path directly.
      */
 
     /**
-     * @cfg {String} icon
-     * @inheritdoc Ext.panel.Header#icon
+     * @cfg icon
+     * @inheritdoc Ext.panel.Header#cfg-icon
      */
 
     /**

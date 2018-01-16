@@ -1819,6 +1819,99 @@ topSuite("Ext.tree.Panel", [
                     expect(store.getNodeById('G').isExpanded()).toBe(true);      
                 });  
             });
+    
+            describe('expanded nodes', function () {
+                var ModelProxy, resp1, resp2, resp3;
+        
+                beforeEach(function () {
+                    var responses = [
+                        {
+                            id: 'root',
+                            text: 'Root',
+                            children: [{
+                                id: 2,
+                                text: 'node1',
+                                expanded: false
+                            }]
+                        },
+                        [{
+                            id: 3,
+                            text: 'child1',
+                            expanded: false
+                        }, {
+                            id: 4,
+                            text: 'child2',
+                            expanded: true
+                        }],
+                        [{
+                            id: 5,
+                            text: 'child2.1',
+                            expanded: false
+                        }, {
+                            id: 6,
+                            text: 'child2.2',
+                            expanded: false
+                        }]
+                    ];
+                    
+                    resp1 = responses[0];
+                    resp2 = responses[1];
+                    resp3 = responses[2];
+                    tree.destroy();
+                    ModelProxy = Ext.define(null, {
+                        extend: 'Ext.data.TreeModel',
+                        fields: ['id', 'text', 'secondaryId'],
+                        proxy: {
+                            type: 'ajax',
+                            url: 'fakeUrl'
+                        }
+                    });
+                });
+                
+                afterEach(function () {
+                    ModelProxy = Ext.destroy(ModelProxy);
+                });
+        
+                it('should expand nodes in the correct order', function () {
+                    var store, root;
+            
+                    makeTree(null, null, {
+                        model: ModelProxy
+                    });
+                    store = tree.getStore();
+                    root = store.getRoot();
+            
+                    // expand root and load response
+                    root.expand();
+                    Ext.Ajax.mockComplete({
+                        status: 200,
+                        responseText: Ext.encode(resp1)
+                    });
+            
+                    // expand node1 and load response
+                    store.getNodeById(2).expand();
+                    Ext.Ajax.mockComplete({
+                        status: 200,
+                        responseText: Ext.encode(resp2)
+                    });
+            
+                    // immediately load response for expanded child2
+                    Ext.Ajax.mockComplete({
+                        status: 200,
+                        responseText: Ext.encode(resp3)
+                    });
+    
+                    Ext.Array.forEach(view.getNodes(), function (node, index) {
+                        var id = view.getRecord(node).getId();
+        
+                        // each node, except for root, should have an ID that increments to
+                        // the index count
+                        if (id !== 'root') {
+                            expect(id).toEqual(++index);
+                        }
+                    });
+                });
+            });
         });
         
         describe("collapse", function() {

@@ -294,14 +294,14 @@
 /* /mnt/web/www/extjs/ext-6.2.0/packages/core/sass/src/dom/Element.scss:36 */
 .x-pressed .x-ripple-transition,
 .x-pressing .x-ripple-transition {
-    transition: background-color 0.15s 0.28s cubic-bezier(0.4, 0, 0.2, 1), color 0.15s 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background-color 0.15s 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.15s 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/packages/core/sass/src/dom/Element.scss:40 */
 .x-pressed .x-ripple-transition .x-icon-el,
 .x-pressed .x-ripple-transition .x-arrow-el,
 .x-pressing .x-ripple-transition .x-icon-el,
 .x-pressing .x-ripple-transition .x-arrow-el {
-    transition: background-color 0.15s 0.28s cubic-bezier(0.4, 0, 0.2, 1), color 0.15s 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background-color 0.15s 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.15s 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/packages/core/sass/src/dom/Element.scss:45 */
 .x-rippling {
@@ -1143,51 +1143,51 @@ html.x-has-viewport,
     height: 100%;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:30 */
-html.x-has-unscalable-viewport,
-.x-has-unscalable-viewport > body {
+html.x-fixed-viewport,
+.x-fixed-viewport > body {
     position: fixed;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:38 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:44 */
 @media print {
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:41 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:47 */
     html.x-has-unscalable-viewport,
     .x-has-unscalable-viewport > body {
         position: static;
     }
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:47 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:53 */
 .x-user-selectable-all {
     -webkit-user-select: all;
     -moz-user-select: all;
     -ms-user-select: all;
     user-select: all;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:54 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:60 */
 .x-user-selectable-auto {
     -webkit-user-select: auto;
     -moz-user-select: auto;
     -ms-user-select: text;
     user-select: auto;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:61 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:67 */
 .x-user-selectable-none {
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:68 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:74 */
 .x-user-selectable-text {
     -webkit-user-select: text;
     -moz-user-select: text;
     -ms-user-select: text;
     user-select: text;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:75 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:81 */
 .x-focused {
     outline: none;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:79 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:85 */
 .x-maximized {
     width: 100% !important;
     height: 100% !important;
@@ -1197,209 +1197,209 @@ html.x-has-unscalable-viewport,
     top: 0 !important;
     transform: translate3d(0, 0, 0) !important;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:93 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:99 */
 @-ms-viewport {
     width: device-width;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:98 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:104 */
 @-webkit-keyframes x-loading-spinner-rotate {
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:99 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:105 */
     0% {
         -webkit-transform: rotate(0deg);
-    }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:100 */
-    8.32% {
-        -webkit-transform: rotate(0deg);
-    }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:102 */
-    8.33% {
-        -webkit-transform: rotate(30deg);
-    }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:103 */
-    16.65% {
-        -webkit-transform: rotate(30deg);
-    }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:105 */
-    16.66% {
-        -webkit-transform: rotate(60deg);
     }
     /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:106 */
+    8.32% {
+        -webkit-transform: rotate(0deg);
+    }
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:108 */
+    8.33% {
+        -webkit-transform: rotate(30deg);
+    }
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:109 */
+    16.65% {
+        -webkit-transform: rotate(30deg);
+    }
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:111 */
+    16.66% {
+        -webkit-transform: rotate(60deg);
+    }
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:112 */
     24.99% {
         -webkit-transform: rotate(60deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:108 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:114 */
     25% {
         -webkit-transform: rotate(90deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:109 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:115 */
     33.32% {
         -webkit-transform: rotate(90deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:111 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:117 */
     33.33% {
         -webkit-transform: rotate(120deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:112 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:118 */
     41.65% {
         -webkit-transform: rotate(120deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:114 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:120 */
     41.66% {
         -webkit-transform: rotate(150deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:115 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:121 */
     49.99% {
         -webkit-transform: rotate(150deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:117 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:123 */
     50% {
         -webkit-transform: rotate(180deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:118 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:124 */
     58.32% {
         -webkit-transform: rotate(180deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:120 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:126 */
     58.33% {
         -webkit-transform: rotate(210deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:121 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:127 */
     66.65% {
         -webkit-transform: rotate(210deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:123 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:129 */
     66.66% {
         -webkit-transform: rotate(240deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:124 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:130 */
     74.99% {
         -webkit-transform: rotate(240deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:126 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:132 */
     75% {
         -webkit-transform: rotate(270deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:127 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:133 */
     83.32% {
         -webkit-transform: rotate(270deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:129 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:135 */
     83.33% {
         -webkit-transform: rotate(300deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:130 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:136 */
     91.65% {
         -webkit-transform: rotate(300deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:132 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:138 */
     91.66% {
         -webkit-transform: rotate(330deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:133 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:139 */
     100% {
         -webkit-transform: rotate(330deg);
     }
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:136 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:142 */
 @keyframes x-loading-spinner-rotate {
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:137 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:143 */
     0% {
         transform: rotate(0deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:138 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:144 */
     8.32% {
         transform: rotate(0deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:140 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:146 */
     8.33% {
         transform: rotate(30deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:141 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:147 */
     16.65% {
         transform: rotate(30deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:143 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:149 */
     16.66% {
         transform: rotate(60deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:144 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:150 */
     24.99% {
         transform: rotate(60deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:146 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:152 */
     25% {
         transform: rotate(90deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:147 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:153 */
     33.32% {
         transform: rotate(90deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:149 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:155 */
     33.33% {
         transform: rotate(120deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:150 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:156 */
     41.65% {
         transform: rotate(120deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:152 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:158 */
     41.66% {
         transform: rotate(150deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:153 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:159 */
     49.99% {
         transform: rotate(150deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:155 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:161 */
     50% {
         transform: rotate(180deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:156 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:162 */
     58.32% {
         transform: rotate(180deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:158 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:164 */
     58.33% {
         transform: rotate(210deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:159 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:165 */
     66.65% {
         transform: rotate(210deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:161 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:167 */
     66.66% {
         transform: rotate(240deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:162 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:168 */
     74.99% {
         transform: rotate(240deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:164 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:170 */
     75% {
         transform: rotate(270deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:165 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:171 */
     83.32% {
         transform: rotate(270deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:167 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:173 */
     83.33% {
         transform: rotate(300deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:168 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:174 */
     91.65% {
         transform: rotate(300deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:170 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:176 */
     91.66% {
         transform: rotate(330deg);
     }
-    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:171 */
+    /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:177 */
     100% {
         transform: rotate(330deg);
     }
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:174 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:180 */
 .x-shim {
     position: absolute;
     left: 0;
@@ -1408,7 +1408,7 @@ html.x-has-unscalable-viewport,
     -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=0)";
     opacity: 0;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:182 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:188 */
 .x-css-shadow {
     position: absolute;
     -webkit-border-radius: 5px;
@@ -1417,22 +1417,22 @@ html.x-has-unscalable-viewport,
     -o-border-radius: 5px;
     border-radius: 5px;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:187 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:193 */
 .x-shadow,
 .x-floated {
     -webkit-box-shadow: 2px 2px 8px 0 rgba(0, 0, 0, 0.4);
     box-shadow: 2px 2px 8px 0 rgba(0, 0, 0, 0.4);
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:198 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:204 */
 .x-no-shadow {
     -webkit-box-shadow: none !important;
     box-shadow: none !important;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:203 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:209 */
 .x-floating {
     position: absolute !important;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:207 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:213 */
 .x-center {
     position: absolute;
     top: 0;
@@ -1443,23 +1443,23 @@ html.x-has-unscalable-viewport,
     align-items: center;
     justify-content: center;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:213 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:219 */
 .x-center > * {
     position: relative;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:217 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:223 */
 .x-center > .x-floating {
     position: relative !important;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:222 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:228 */
 .x-fullscreen {
     position: absolute !important;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:229 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:235 */
 .x-ios-native:not(.x-phone.x-landscape) {
     padding-top: 20px;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:234 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:240 */
 .x-font-icon {
     font-weight: normal;
     display: inline-flex;
@@ -1467,7 +1467,7 @@ html.x-has-unscalable-viewport,
     align-items: center;
     justify-content: center;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:245 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:251 */
 .x-font-icon:before {
     display: flex;
     line-height: 1;
@@ -1486,81 +1486,81 @@ html.x-has-unscalable-viewport,
     /* Support for Safari and Chrome. */
     text-rendering: optimizeLegibility;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:269 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:275 */
 .x-noborder-l {
     border-left-width: 0 !important;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:273 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:279 */
 .x-noborder-b {
     border-bottom-width: 0 !important;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:277 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:283 */
 .x-noborder-bl {
     border-bottom-width: 0 !important;
     border-left-width: 0 !important;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:282 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:288 */
 .x-noborder-r {
     border-right-width: 0 !important;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:286 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:292 */
 .x-noborder-rl {
     border-right-width: 0 !important;
     border-left-width: 0 !important;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:291 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:297 */
 .x-noborder-rb {
     border-right-width: 0 !important;
     border-bottom-width: 0 !important;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:296 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:302 */
 .x-noborder-rbl {
     border-right-width: 0 !important;
     border-bottom-width: 0 !important;
     border-left-width: 0 !important;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:302 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:308 */
 .x-noborder-t {
     border-top-width: 0 !important;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:306 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:312 */
 .x-noborder-tl {
     border-top-width: 0 !important;
     border-left-width: 0 !important;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:311 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:317 */
 .x-noborder-tb {
     border-top-width: 0 !important;
     border-bottom-width: 0 !important;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:316 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:322 */
 .x-noborder-tbl {
     border-top-width: 0 !important;
     border-bottom-width: 0 !important;
     border-left-width: 0 !important;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:322 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:328 */
 .x-noborder-tr {
     border-top-width: 0 !important;
     border-right-width: 0 !important;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:327 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:333 */
 .x-noborder-trl {
     border-top-width: 0 !important;
     border-right-width: 0 !important;
     border-left-width: 0 !important;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:333 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:339 */
 .x-noborder-trb {
     border-top-width: 0 !important;
     border-right-width: 0 !important;
     border-bottom-width: 0 !important;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:339 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:345 */
 .x-noborder-trbl {
     border-width: 0 !important;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:346 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:352 */
 .x-button-reset {
     margin: 0;
     padding: 0;
@@ -1569,16 +1569,16 @@ html.x-has-unscalable-viewport,
     color: inherit;
     background: none;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:354 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:360 */
 .x-button-reset:focus {
     outline: none;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:359 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:365 */
 .x-gecko .x-button-reset::-moz-focus-inner {
     padding: 0;
     border: none;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:365 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/Component.scss:371 */
 .x-component {
     position: relative;
 }
@@ -2741,6 +2741,14 @@ div.x-trigger.x-grouped {
 .x-list.x-nowrap .x-listitem {
     white-space: nowrap;
 }
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/dataview/BoundList.scss:2 */
+.x-boundlistitem .x-selected-icon {
+    visibility: hidden;
+}
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/dataview/BoundList.scss:9 */
+.x-show-selection.x-multi-select .x-boundlistitem.x-selected .x-selected-icon {
+    visibility: visible;
+}
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/dataview/DataView.scss:2 */
 .x-dataview.x-inline .x-dataview-item,
 .x-dataview.x-inline .x-dataitem {
@@ -3291,25 +3299,21 @@ div.x-trigger.x-grouped {
  */
     padding: 0;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/picker/Picker.scss:9 */
-.x-sheet.x-picker .x-sheet-body-el {
-    background-color: #fff;
-}
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/picker/Picker.scss:13 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/picker/Picker.scss:11 */
 .x-sheet.x-picker .x-sheet-body-el .x-picker-slot .x-body-el {
     border-left: 1px solid #999;
     border-right: 1px solid #acacac;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/picker/Picker.scss:19 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/picker/Picker.scss:17 */
 .x-sheet.x-picker .x-sheet-body-el .x-picker-slot.x-first .x-body-el {
     border-left: 0;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/picker/Picker.scss:25 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/picker/Picker.scss:23 */
 .x-sheet.x-picker .x-sheet-body-el .x-picker-slot.x-last .x-body-el {
     border-left: 0;
     border-right: 0;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/picker/Picker.scss:33 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/picker/Picker.scss:31 */
 .x-picker-mask {
     position: absolute;
     top: 0;
@@ -3323,39 +3327,39 @@ div.x-trigger.x-grouped {
     justify-content: center;
     pointer-events: none;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/picker/Picker.scss:47 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/picker/Picker.scss:45 */
 .x-picker-slot-title {
     position: relative;
     z-index: 2;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/picker/Picker.scss:51 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/picker/Picker.scss:49 */
 .x-picker-slot-title > div {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     font-weight: bold;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/picker/Picker.scss:58 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/picker/Picker.scss:56 */
 .x-picker-slot .x-dataview-body-el {
     width: 100% !important;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/picker/Picker.scss:62 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/picker/Picker.scss:60 */
 .x-picker-slot .x-dataview-item {
     vertical-align: middle;
     height: 30px;
     line-height: 30px;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/picker/Picker.scss:68 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/picker/Picker.scss:66 */
 .x-picker-slot .x-picker-item {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/picker/Picker.scss:73 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/picker/Picker.scss:71 */
 .x-ie .x-picker-item {
     cursor: default;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/picker/Picker.scss:77 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/picker/Picker.scss:75 */
 .x-ie .x-picker-item::before {
     content: ". .";
     color: transparent;
@@ -3363,15 +3367,15 @@ div.x-trigger.x-grouped {
     left: 0px;
     word-spacing: 3000px;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/picker/Picker.scss:85 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/picker/Picker.scss:83 */
 .x-picker-right {
     text-align: right;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/picker/Picker.scss:89 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/picker/Picker.scss:87 */
 .x-picker-center {
     text-align: center;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/picker/Picker.scss:93 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/src/picker/Picker.scss:91 */
 .x-picker-left {
     text-align: left;
 }
@@ -8153,8 +8157,8 @@ div.x-trigger.x-grouped {
 .x-tool.x-disabled {
     cursor: default;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/Tool.scss:555 */
-.x-tool.x-disabled .x-icon-el {
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/Tool.scss:560 */
+.x-tool.x-disabled:not(.x-passive) .x-icon-el {
     opacity: 0.3;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/Tool.scss:431 */
@@ -8203,8 +8207,8 @@ div.x-trigger.x-grouped {
 .x-tool-boxscroller-toolbar.x-pressed .x-icon-el {
     opacity: 0.7;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/Tool.scss:555 */
-.x-tool-boxscroller-toolbar.x-disabled .x-icon-el {
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/Tool.scss:560 */
+.x-tool-boxscroller-toolbar.x-disabled:not(.x-passive) .x-icon-el {
     opacity: 0;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/Tool.scss:431 */
@@ -8221,8 +8225,8 @@ div.x-trigger.x-grouped {
 .x-tool-boxscroller-tabbar.x-pressed .x-icon-el {
     opacity: 0.7;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/Tool.scss:555 */
-.x-tool-boxscroller-tabbar.x-disabled .x-icon-el {
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/Tool.scss:560 */
+.x-tool-boxscroller-tabbar.x-disabled:not(.x-passive) .x-icon-el {
     opacity: 0;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/etc/mixins/icon.scss:93 */
@@ -9163,7 +9167,7 @@ div.x-trigger.x-grouped {
     fill: #fafafa;
     fill: var(--background-color);
     stroke-width: 1px;
-    stroke: #c3c3c3;
+    stroke: #e1e1e1;
     stroke: var(--faded-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/Panel.scss:913 */
@@ -9208,7 +9212,7 @@ div.x-trigger.x-grouped {
     background-color: var(--background-color);
     color: #111;
     color: var(--color);
-    border: 1px solid #c3c3c3;
+    border: 1px solid #e1e1e1;
     border: 1px solid var(--faded-color);
     font: 400 12px/18px Roboto, sans-serif;
 }
@@ -9219,7 +9223,7 @@ div.x-trigger.x-grouped {
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/Panel.scss:969 */
 .x-panel-boxscroller {
-    border: 1px solid #c3c3c3;
+    border: 1px solid #e1e1e1;
     border: 1px solid var(--faded-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/Panel.scss:972 */
@@ -9228,133 +9232,133 @@ div.x-trigger.x-grouped {
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:2 */
 .x-panel-outer-border-l {
-    border-left-color: #c3c3c3 !important;
+    border-left-color: #e1e1e1 !important;
     border-left-color: var(--faded-color) !important;
     border-left-width: 1px !important;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:7 */
 .x-panel-outer-border-b {
-    border-bottom-color: #c3c3c3 !important;
+    border-bottom-color: #e1e1e1 !important;
     border-bottom-color: var(--faded-color) !important;
     border-bottom-width: 1px !important;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:12 */
 .x-panel-outer-border-bl {
-    border-bottom-color: #c3c3c3 !important;
+    border-bottom-color: #e1e1e1 !important;
     border-bottom-color: var(--faded-color) !important;
     border-bottom-width: 1px !important;
-    border-left-color: #c3c3c3 !important;
+    border-left-color: #e1e1e1 !important;
     border-left-color: var(--faded-color) !important;
     border-left-width: 1px !important;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:27 */
 .x-panel-outer-border-r {
-    border-right-color: #c3c3c3 !important;
+    border-right-color: #e1e1e1 !important;
     border-right-color: var(--faded-color) !important;
     border-right-width: 1px !important;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:32 */
 .x-panel-outer-border-rl {
-    border-right-color: #c3c3c3 !important;
+    border-right-color: #e1e1e1 !important;
     border-right-color: var(--faded-color) !important;
     border-right-width: 1px !important;
-    border-left-color: #c3c3c3 !important;
+    border-left-color: #e1e1e1 !important;
     border-left-color: var(--faded-color) !important;
     border-left-width: 1px !important;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:39 */
 .x-panel-outer-border-rb {
-    border-right-color: #c3c3c3 !important;
+    border-right-color: #e1e1e1 !important;
     border-right-color: var(--faded-color) !important;
     border-right-width: 1px !important;
-    border-bottom-color: #c3c3c3 !important;
+    border-bottom-color: #e1e1e1 !important;
     border-bottom-color: var(--faded-color) !important;
     border-bottom-width: 1px !important;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:54 */
 .x-panel-outer-border-rbl {
-    border-right-color: #c3c3c3 !important;
+    border-right-color: #e1e1e1 !important;
     border-right-color: var(--faded-color) !important;
     border-right-width: 1px !important;
-    border-bottom-color: #c3c3c3 !important;
+    border-bottom-color: #e1e1e1 !important;
     border-bottom-color: var(--faded-color) !important;
     border-bottom-width: 1px !important;
-    border-left-color: #c3c3c3 !important;
+    border-left-color: #e1e1e1 !important;
     border-left-color: var(--faded-color) !important;
     border-left-width: 1px !important;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:71 */
 .x-panel-outer-border-t {
-    border-top-color: #c3c3c3 !important;
+    border-top-color: #e1e1e1 !important;
     border-top-color: var(--faded-color) !important;
     border-top-width: 1px !important;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:76 */
 .x-panel-outer-border-tl {
-    border-top-color: #c3c3c3 !important;
+    border-top-color: #e1e1e1 !important;
     border-top-color: var(--faded-color) !important;
     border-top-width: 1px !important;
-    border-left-color: #c3c3c3 !important;
+    border-left-color: #e1e1e1 !important;
     border-left-color: var(--faded-color) !important;
     border-left-width: 1px !important;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:91 */
 .x-panel-outer-border-tb {
-    border-top-color: #c3c3c3 !important;
+    border-top-color: #e1e1e1 !important;
     border-top-color: var(--faded-color) !important;
     border-top-width: 1px !important;
-    border-bottom-color: #c3c3c3 !important;
+    border-bottom-color: #e1e1e1 !important;
     border-bottom-color: var(--faded-color) !important;
     border-bottom-width: 1px !important;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:98 */
 .x-panel-outer-border-tbl {
-    border-top-color: #c3c3c3 !important;
+    border-top-color: #e1e1e1 !important;
     border-top-color: var(--faded-color) !important;
     border-top-width: 1px !important;
-    border-bottom-color: #c3c3c3 !important;
+    border-bottom-color: #e1e1e1 !important;
     border-bottom-color: var(--faded-color) !important;
     border-bottom-width: 1px !important;
-    border-left-color: #c3c3c3 !important;
+    border-left-color: #e1e1e1 !important;
     border-left-color: var(--faded-color) !important;
     border-left-width: 1px !important;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:115 */
 .x-panel-outer-border-tr {
-    border-top-color: #c3c3c3 !important;
+    border-top-color: #e1e1e1 !important;
     border-top-color: var(--faded-color) !important;
     border-top-width: 1px !important;
-    border-right-color: #c3c3c3 !important;
+    border-right-color: #e1e1e1 !important;
     border-right-color: var(--faded-color) !important;
     border-right-width: 1px !important;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:130 */
 .x-panel-outer-border-trl {
-    border-top-color: #c3c3c3 !important;
+    border-top-color: #e1e1e1 !important;
     border-top-color: var(--faded-color) !important;
     border-top-width: 1px !important;
-    border-right-color: #c3c3c3 !important;
+    border-right-color: #e1e1e1 !important;
     border-right-color: var(--faded-color) !important;
     border-right-width: 1px !important;
-    border-left-color: #c3c3c3 !important;
+    border-left-color: #e1e1e1 !important;
     border-left-color: var(--faded-color) !important;
     border-left-width: 1px !important;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:147 */
 .x-panel-outer-border-trb {
-    border-top-color: #c3c3c3 !important;
+    border-top-color: #e1e1e1 !important;
     border-top-color: var(--faded-color) !important;
     border-top-width: 1px !important;
-    border-right-color: #c3c3c3 !important;
+    border-right-color: #e1e1e1 !important;
     border-right-color: var(--faded-color) !important;
     border-right-width: 1px !important;
-    border-bottom-color: #c3c3c3 !important;
+    border-bottom-color: #e1e1e1 !important;
     border-bottom-color: var(--faded-color) !important;
     border-bottom-width: 1px !important;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:164 */
 .x-panel-outer-border-trbl {
-    border-color: #c3c3c3 !important;
+    border-color: #e1e1e1 !important;
     border-color: var(--faded-color) !important;
     border-width: 1px !important;
 }
@@ -9363,7 +9367,7 @@ div.x-trigger.x-grouped {
     background-color: #2196f3;
     background-color: var(--base-color);
     background-image: none;
-    border: 1px solid #c3c3c3;
+    border: 1px solid #e1e1e1;
     border: 1px solid var(--faded-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/panel/Header.scss:74 */
@@ -9392,7 +9396,7 @@ div.x-trigger.x-grouped {
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/panel/Header.scss:104 */
 .x-panelheader.x-docked-right {
-    border: 1px solid #c3c3c3;
+    border: 1px solid #e1e1e1;
     border: 1px solid var(--faded-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/panel/Header.scss:105 */
@@ -9407,7 +9411,7 @@ div.x-trigger.x-grouped {
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/panel/Header.scss:118 */
 .x-panelheader.x-docked-left {
-    border: 1px solid #c3c3c3;
+    border: 1px solid #e1e1e1;
     border: 1px solid var(--faded-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/panel/Header.scss:119 */
@@ -9422,7 +9426,7 @@ div.x-trigger.x-grouped {
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/panel/Header.scss:132 */
 .x-panelheader.x-docked-bottom {
-    border: 1px solid #c3c3c3;
+    border: 1px solid #e1e1e1;
     border: 1px solid var(--faded-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/panel/Title.scss:117 */
@@ -10167,7 +10171,7 @@ div.x-trigger.x-grouped {
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/field/Text.scss:567 */
 .x-textfield .x-underline-el {
     height: 1px;
-    background-color: rgba(17, 17, 17, 0.12);
+    background-color: #e2e2e2;
     background-color: var(--divider-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/field/Text.scss:572 */
@@ -10588,8 +10592,8 @@ div.x-trigger.x-grouped {
 .x-toast .x-toast-body-el {
     color: #fff;
     color: var(--reverse-color);
-    background-color: rgba(17, 17, 17, 0.54);
-    background-color: var(--highlight-color);
+    background-color: #303030;
+    background-color: var(--reverse-background-color);
     font: 400 14px/18px Roboto, sans-serif;
     padding: 8px;
 }
@@ -10635,12 +10639,14 @@ div.x-trigger.x-grouped {
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/dataview/Abstract.scss:359 */
 .x-dataview-default-body-el > .x-dataview-item.x-hovered {
     background-color: #eee;
+    background-color: var(--hovered-background-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/dataview/Abstract.scss:365 */
 .x-dataview-default-body-el > .x-dataview-item.x-pressed {
     color: #111;
     color: var(--color);
     background-color: #e0e0e0;
+    background-color: var(--selected-background-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/etc/mixins/outline.scss:62 */
 .x-keyboard-mode .x-dataview-default-body-el > .x-dataview-item.x-focused:after {
@@ -10659,6 +10665,7 @@ div.x-trigger.x-grouped {
     color: #111;
     color: var(--color);
     background-color: #e0e0e0;
+    background-color: var(--selected-background-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/dataview/DataItem.scss:326 */
 .x-dataitem-default {
@@ -10680,18 +10687,21 @@ div.x-trigger.x-grouped {
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/dataview/DataItem.scss:345 */
 .x-dataitem-default.x-hovered {
     background-color: #eee;
+    background-color: var(--hovered-background-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/dataview/DataItem.scss:352 */
 .x-show-selection > .x-dataitem-default.x-selected {
     color: #111;
     color: var(--color);
     background-color: #e0e0e0;
+    background-color: var(--selected-background-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/dataview/DataItem.scss:359 */
 .x-dataitem-default.x-pressed {
     color: #111;
     color: var(--color);
     background-color: #e0e0e0;
+    background-color: var(--selected-background-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/etc/mixins/outline.scss:62 */
 .x-keyboard-mode .x-dataitem-default.x-focused:after {
@@ -10710,6 +10720,7 @@ div.x-trigger.x-grouped {
     color: #111;
     color: var(--color);
     background-color: #f5f5f5;
+    background-color: var(--header-background-color);
     font: 600 13px/16px Roboto, sans-serif;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/dataview/ItemHeader.scss:275 */
@@ -10761,7 +10772,7 @@ div.x-trigger.x-grouped {
     background-color: var(--background-color);
     border-width: 1px 0;
     border-style: solid;
-    border-color: rgba(17, 17, 17, 0.12);
+    border-color: #e2e2e2;
     border-color: var(--divider-color);
     margin-bottom: -1px;
     font: 400 13px/16px Roboto, sans-serif;
@@ -10782,16 +10793,19 @@ div.x-trigger.x-grouped {
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/dataview/SimpleListItem.scss:512 */
 .x-listitem.x-hovered {
     background-color: #eee;
+    background-color: var(--hovered-background-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/dataview/SimpleListItem.scss:519 */
 .x-show-selection > .x-listitem.x-selected {
     background-color: #e0e0e0;
+    background-color: var(--selected-background-color);
     color: #111;
     color: var(--color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/dataview/SimpleListItem.scss:526 */
 .x-listitem.x-pressed {
     background-color: #e0e0e0;
+    background-color: var(--selected-background-color);
     color: #111;
     color: var(--color);
 }
@@ -11127,7 +11141,7 @@ div.x-trigger.x-grouped {
 .x-tooltip > .x-anchor-el .x-pointer-el {
     fill: #fafafa;
     fill: var(--background-color);
-    stroke: #c3c3c3;
+    stroke: #e1e1e1;
     stroke: var(--faded-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/Panel.scss:951 */
@@ -11137,7 +11151,7 @@ div.x-trigger.x-grouped {
     background-color: var(--background-color);
     color: #111;
     color: var(--color);
-    border-color: #c3c3c3;
+    border-color: #e1e1e1;
     border-color: var(--faded-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/Panel.scss:959 */
@@ -11146,7 +11160,7 @@ div.x-trigger.x-grouped {
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/Panel.scss:969 */
 .x-tooltip-boxscroller {
-    border-color: #c3c3c3;
+    border-color: #e1e1e1;
     border-color: var(--faded-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/Panel.scss:972 */
@@ -11155,113 +11169,113 @@ div.x-trigger.x-grouped {
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:2 */
 .x-tooltip-outer-border-l {
-    border-left-color: #c3c3c3 !important;
+    border-left-color: #e1e1e1 !important;
     border-left-color: var(--faded-color) !important;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:7 */
 .x-tooltip-outer-border-b {
-    border-bottom-color: #c3c3c3 !important;
+    border-bottom-color: #e1e1e1 !important;
     border-bottom-color: var(--faded-color) !important;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:12 */
 .x-tooltip-outer-border-bl {
-    border-bottom-color: #c3c3c3 !important;
+    border-bottom-color: #e1e1e1 !important;
     border-bottom-color: var(--faded-color) !important;
-    border-left-color: #c3c3c3 !important;
+    border-left-color: #e1e1e1 !important;
     border-left-color: var(--faded-color) !important;
     border-radius: 0 0 0 3px;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:27 */
 .x-tooltip-outer-border-r {
-    border-right-color: #c3c3c3 !important;
+    border-right-color: #e1e1e1 !important;
     border-right-color: var(--faded-color) !important;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:32 */
 .x-tooltip-outer-border-rl {
-    border-right-color: #c3c3c3 !important;
+    border-right-color: #e1e1e1 !important;
     border-right-color: var(--faded-color) !important;
-    border-left-color: #c3c3c3 !important;
+    border-left-color: #e1e1e1 !important;
     border-left-color: var(--faded-color) !important;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:39 */
 .x-tooltip-outer-border-rb {
-    border-right-color: #c3c3c3 !important;
+    border-right-color: #e1e1e1 !important;
     border-right-color: var(--faded-color) !important;
-    border-bottom-color: #c3c3c3 !important;
+    border-bottom-color: #e1e1e1 !important;
     border-bottom-color: var(--faded-color) !important;
     border-radius: 0 0 3px;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:54 */
 .x-tooltip-outer-border-rbl {
-    border-right-color: #c3c3c3 !important;
+    border-right-color: #e1e1e1 !important;
     border-right-color: var(--faded-color) !important;
-    border-bottom-color: #c3c3c3 !important;
+    border-bottom-color: #e1e1e1 !important;
     border-bottom-color: var(--faded-color) !important;
-    border-left-color: #c3c3c3 !important;
+    border-left-color: #e1e1e1 !important;
     border-left-color: var(--faded-color) !important;
     border-radius: 0 0 3px 3px;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:71 */
 .x-tooltip-outer-border-t {
-    border-top-color: #c3c3c3 !important;
+    border-top-color: #e1e1e1 !important;
     border-top-color: var(--faded-color) !important;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:76 */
 .x-tooltip-outer-border-tl {
-    border-top-color: #c3c3c3 !important;
+    border-top-color: #e1e1e1 !important;
     border-top-color: var(--faded-color) !important;
-    border-left-color: #c3c3c3 !important;
+    border-left-color: #e1e1e1 !important;
     border-left-color: var(--faded-color) !important;
     border-radius: 3px 0 0;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:91 */
 .x-tooltip-outer-border-tb {
-    border-top-color: #c3c3c3 !important;
+    border-top-color: #e1e1e1 !important;
     border-top-color: var(--faded-color) !important;
-    border-bottom-color: #c3c3c3 !important;
+    border-bottom-color: #e1e1e1 !important;
     border-bottom-color: var(--faded-color) !important;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:98 */
 .x-tooltip-outer-border-tbl {
-    border-top-color: #c3c3c3 !important;
+    border-top-color: #e1e1e1 !important;
     border-top-color: var(--faded-color) !important;
-    border-bottom-color: #c3c3c3 !important;
+    border-bottom-color: #e1e1e1 !important;
     border-bottom-color: var(--faded-color) !important;
-    border-left-color: #c3c3c3 !important;
+    border-left-color: #e1e1e1 !important;
     border-left-color: var(--faded-color) !important;
     border-radius: 3px 0 0 3px;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:115 */
 .x-tooltip-outer-border-tr {
-    border-top-color: #c3c3c3 !important;
+    border-top-color: #e1e1e1 !important;
     border-top-color: var(--faded-color) !important;
-    border-right-color: #c3c3c3 !important;
+    border-right-color: #e1e1e1 !important;
     border-right-color: var(--faded-color) !important;
     border-radius: 0 3px 0 0;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:130 */
 .x-tooltip-outer-border-trl {
-    border-top-color: #c3c3c3 !important;
+    border-top-color: #e1e1e1 !important;
     border-top-color: var(--faded-color) !important;
-    border-right-color: #c3c3c3 !important;
+    border-right-color: #e1e1e1 !important;
     border-right-color: var(--faded-color) !important;
-    border-left-color: #c3c3c3 !important;
+    border-left-color: #e1e1e1 !important;
     border-left-color: var(--faded-color) !important;
     border-radius: 3px 3px 0 0;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:147 */
 .x-tooltip-outer-border-trb {
-    border-top-color: #c3c3c3 !important;
+    border-top-color: #e1e1e1 !important;
     border-top-color: var(--faded-color) !important;
-    border-right-color: #c3c3c3 !important;
+    border-right-color: #e1e1e1 !important;
     border-right-color: var(--faded-color) !important;
-    border-bottom-color: #c3c3c3 !important;
+    border-bottom-color: #e1e1e1 !important;
     border-bottom-color: var(--faded-color) !important;
     border-radius: 0 3px 3px 0;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:164 */
 .x-tooltip-outer-border-trbl {
-    border-color: #c3c3c3 !important;
+    border-color: #e1e1e1 !important;
     border-color: var(--faded-color) !important;
     border-radius: 3px;
 }
@@ -11270,7 +11284,7 @@ div.x-trigger.x-grouped {
     background-color: #fafafa;
     background-color: var(--background-color);
     background-image: none;
-    border-color: #c3c3c3;
+    border-color: #e1e1e1;
     border-color: var(--faded-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/panel/Header.scss:74 */
@@ -11299,7 +11313,7 @@ div.x-trigger.x-grouped {
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/panel/Header.scss:104 */
 .x-tooltipheader.x-docked-right {
-    border-color: #c3c3c3;
+    border-color: #e1e1e1;
     border-color: var(--faded-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/panel/Header.scss:105 */
@@ -11312,7 +11326,7 @@ div.x-trigger.x-grouped {
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/panel/Header.scss:118 */
 .x-tooltipheader.x-docked-left {
-    border-color: #c3c3c3;
+    border-color: #e1e1e1;
     border-color: var(--faded-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/panel/Header.scss:119 */
@@ -11325,7 +11339,7 @@ div.x-trigger.x-grouped {
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/panel/Header.scss:132 */
 .x-tooltipheader.x-docked-bottom {
-    border-color: #c3c3c3;
+    border-color: #e1e1e1;
     border-color: var(--faded-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/panel/Title.scss:117 */
@@ -11611,7 +11625,7 @@ div.x-trigger.x-grouped {
     color: var(--color);
     border-bottom-width: 2px;
     border-bottom-style: solid;
-    border-bottom-color: rgba(17, 17, 17, 0.12);
+    border-bottom-color: #e2e2e2;
     border-bottom-color: var(--divider-color);
     padding: 3px 13px;
     font: 400 16px/32px Roboto, sans-serif;
@@ -11937,7 +11951,7 @@ div.x-trigger.x-grouped {
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/slider/Thumb.scss:283 */
 .x-thumb.x-disabled {
-    background-color: #c3c3c3;
+    background-color: #e1e1e1;
     background-color: var(--faded-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/slider/Thumb.scss:289 */
@@ -11959,7 +11973,7 @@ div.x-trigger.x-grouped {
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/slider/Thumb.scss:241 */
 .x-thumb-toggle-off {
-    background-color: #c3c3c3;
+    background-color: #e1e1e1;
     background-color: var(--faded-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/slider/Thumb.scss:255 */
@@ -11969,7 +11983,7 @@ div.x-trigger.x-grouped {
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/slider/Slider.scss:154 */
 .x-slider .x-track-el {
     height: 2px;
-    background-color: rgba(17, 17, 17, 0.12);
+    background-color: #e2e2e2;
     background-color: var(--divider-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/slider/Slider.scss:162 */
@@ -12235,22 +12249,25 @@ div.x-trigger.x-grouped {
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/grid/cell/Base.scss:345 */
 .x-column-lines .x-gridcell {
-    border-right: 1px solid rgba(17, 17, 17, 0.12);
+    border-right: 1px solid #e2e2e2;
     border-right: 1px solid var(--divider-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/grid/cell/Base.scss:349 */
 .x-gridcell.x-hovered {
     background-color: #eee;
+    background-color: var(--hovered-background-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/grid/cell/Base.scss:354 */
 .x-gridcell.x-selected {
     background-color: #e0e0e0;
+    background-color: var(--selected-background-color);
     color: #111;
     color: var(--color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/grid/cell/Base.scss:359 */
 .x-gridcell.x-pressed {
     background-color: #e0e0e0;
+    background-color: var(--selected-background-color);
     color: #111;
     color: var(--color);
 }
@@ -12345,7 +12362,7 @@ div.x-trigger.x-grouped {
 .x-headercontainer {
     border-width: 0 0 1px;
     border-style: solid;
-    border-color: rgba(17, 17, 17, 0.12);
+    border-color: #e2e2e2;
     border-color: var(--divider-color);
     background-color: #fafafa;
     background-color: var(--background-color);
@@ -12411,7 +12428,8 @@ div.x-trigger.x-grouped {
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/menu/Item.scss:429 */
 .x-menuitem.x-active .x-body-el {
-    background-color: #e1e1e1;
+    background-color: #eee;
+    background-color: var(--hovered-background-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/menu/Item.scss:444 */
 .x-menuitem.x-disabled .x-body-el {
@@ -12502,7 +12520,8 @@ div.x-trigger.x-grouped {
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/menu/Item.scss:429 */
 .x-menucheckitem.x-active .x-body-el {
-    background-color: #e1e1e1;
+    background-color: #eee;
+    background-color: var(--hovered-background-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/menu/Item.scss:444 */
 .x-menucheckitem.x-disabled .x-body-el {
@@ -12565,7 +12584,7 @@ div.x-trigger.x-grouped {
     font: 400 13px/16px Roboto, sans-serif;
     border-width: 0 1px 1px 0;
     border-style: solid;
-    border-color: rgba(17, 17, 17, 0.12);
+    border-color: #e2e2e2;
     border-color: var(--divider-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/grid/column/Column.scss:426 */
@@ -12586,7 +12605,7 @@ div.x-trigger.x-grouped {
     background-color: var(--background-color);
     border-width: 0 0 0 1px;
     border-style: solid;
-    border-color: rgba(17, 17, 17, 0.12);
+    border-color: #e2e2e2;
     border-color: var(--divider-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-base/sass/etc/mixins/icon.scss:93 */
@@ -12742,7 +12761,8 @@ div.x-trigger.x-grouped {
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/menu/Item.scss:429 */
 .x-menuradioitem.x-active .x-body-el {
-    background-color: #e1e1e1;
+    background-color: #eee;
+    background-color: var(--hovered-background-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/menu/Item.scss:444 */
 .x-menuradioitem.x-disabled .x-body-el {
@@ -12930,12 +12950,14 @@ div.x-trigger.x-grouped {
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/Panel.scss:907 */
 .x-menu > .x-anchor-el .x-pointer-el {
-    stroke: #e1e1e1;
+    stroke: #e2e2e2;
+    stroke: var(--divider-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/Panel.scss:951 */
 .x-menu-body-el {
     padding: 8px 0;
-    border-color: #e1e1e1;
+    border-color: #e2e2e2;
+    border-color: var(--divider-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/Panel.scss:959 */
 .x-big .x-menu-body-el {
@@ -12943,7 +12965,8 @@ div.x-trigger.x-grouped {
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/Panel.scss:969 */
 .x-menu-boxscroller {
-    border-color: #e1e1e1;
+    border-color: #e2e2e2;
+    border-color: var(--divider-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/Panel.scss:972 */
 .x-menu-boxscroller > .x-boxscroller-body > .x-body-el {
@@ -12951,16 +12974,20 @@ div.x-trigger.x-grouped {
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:2 */
 .x-menu-outer-border-l {
-    border-left-color: #e1e1e1 !important;
+    border-left-color: #e2e2e2 !important;
+    border-left-color: var(--divider-color) !important;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:7 */
 .x-menu-outer-border-b {
-    border-bottom-color: #e1e1e1 !important;
+    border-bottom-color: #e2e2e2 !important;
+    border-bottom-color: var(--divider-color) !important;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:12 */
 .x-menu-outer-border-bl {
-    border-bottom-color: #e1e1e1 !important;
-    border-left-color: #e1e1e1 !important;
+    border-bottom-color: #e2e2e2 !important;
+    border-bottom-color: var(--divider-color) !important;
+    border-left-color: #e2e2e2 !important;
+    border-left-color: var(--divider-color) !important;
     border-radius: 0 0 0 2px;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:21 */
@@ -12969,17 +12996,22 @@ div.x-trigger.x-grouped {
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:27 */
 .x-menu-outer-border-r {
-    border-right-color: #e1e1e1 !important;
+    border-right-color: #e2e2e2 !important;
+    border-right-color: var(--divider-color) !important;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:32 */
 .x-menu-outer-border-rl {
-    border-right-color: #e1e1e1 !important;
-    border-left-color: #e1e1e1 !important;
+    border-right-color: #e2e2e2 !important;
+    border-right-color: var(--divider-color) !important;
+    border-left-color: #e2e2e2 !important;
+    border-left-color: var(--divider-color) !important;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:39 */
 .x-menu-outer-border-rb {
-    border-right-color: #e1e1e1 !important;
-    border-bottom-color: #e1e1e1 !important;
+    border-right-color: #e2e2e2 !important;
+    border-right-color: var(--divider-color) !important;
+    border-bottom-color: #e2e2e2 !important;
+    border-bottom-color: var(--divider-color) !important;
     border-radius: 0 0 2px;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:48 */
@@ -12988,9 +13020,12 @@ div.x-trigger.x-grouped {
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:54 */
 .x-menu-outer-border-rbl {
-    border-right-color: #e1e1e1 !important;
-    border-bottom-color: #e1e1e1 !important;
-    border-left-color: #e1e1e1 !important;
+    border-right-color: #e2e2e2 !important;
+    border-right-color: var(--divider-color) !important;
+    border-bottom-color: #e2e2e2 !important;
+    border-bottom-color: var(--divider-color) !important;
+    border-left-color: #e2e2e2 !important;
+    border-left-color: var(--divider-color) !important;
     border-radius: 0 0 2px 2px;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:65 */
@@ -12999,12 +13034,15 @@ div.x-trigger.x-grouped {
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:71 */
 .x-menu-outer-border-t {
-    border-top-color: #e1e1e1 !important;
+    border-top-color: #e2e2e2 !important;
+    border-top-color: var(--divider-color) !important;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:76 */
 .x-menu-outer-border-tl {
-    border-top-color: #e1e1e1 !important;
-    border-left-color: #e1e1e1 !important;
+    border-top-color: #e2e2e2 !important;
+    border-top-color: var(--divider-color) !important;
+    border-left-color: #e2e2e2 !important;
+    border-left-color: var(--divider-color) !important;
     border-radius: 2px 0 0;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:85 */
@@ -13013,14 +13051,19 @@ div.x-trigger.x-grouped {
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:91 */
 .x-menu-outer-border-tb {
-    border-top-color: #e1e1e1 !important;
-    border-bottom-color: #e1e1e1 !important;
+    border-top-color: #e2e2e2 !important;
+    border-top-color: var(--divider-color) !important;
+    border-bottom-color: #e2e2e2 !important;
+    border-bottom-color: var(--divider-color) !important;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:98 */
 .x-menu-outer-border-tbl {
-    border-top-color: #e1e1e1 !important;
-    border-bottom-color: #e1e1e1 !important;
-    border-left-color: #e1e1e1 !important;
+    border-top-color: #e2e2e2 !important;
+    border-top-color: var(--divider-color) !important;
+    border-bottom-color: #e2e2e2 !important;
+    border-bottom-color: var(--divider-color) !important;
+    border-left-color: #e2e2e2 !important;
+    border-left-color: var(--divider-color) !important;
     border-radius: 2px 0 0 2px;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:109 */
@@ -13029,8 +13072,10 @@ div.x-trigger.x-grouped {
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:115 */
 .x-menu-outer-border-tr {
-    border-top-color: #e1e1e1 !important;
-    border-right-color: #e1e1e1 !important;
+    border-top-color: #e2e2e2 !important;
+    border-top-color: var(--divider-color) !important;
+    border-right-color: #e2e2e2 !important;
+    border-right-color: var(--divider-color) !important;
     border-radius: 0 2px 0 0;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:124 */
@@ -13039,9 +13084,12 @@ div.x-trigger.x-grouped {
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:130 */
 .x-menu-outer-border-trl {
-    border-top-color: #e1e1e1 !important;
-    border-right-color: #e1e1e1 !important;
-    border-left-color: #e1e1e1 !important;
+    border-top-color: #e2e2e2 !important;
+    border-top-color: var(--divider-color) !important;
+    border-right-color: #e2e2e2 !important;
+    border-right-color: var(--divider-color) !important;
+    border-left-color: #e2e2e2 !important;
+    border-left-color: var(--divider-color) !important;
     border-radius: 2px 2px 0 0;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:141 */
@@ -13050,9 +13098,12 @@ div.x-trigger.x-grouped {
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:147 */
 .x-menu-outer-border-trb {
-    border-top-color: #e1e1e1 !important;
-    border-right-color: #e1e1e1 !important;
-    border-bottom-color: #e1e1e1 !important;
+    border-top-color: #e2e2e2 !important;
+    border-top-color: var(--divider-color) !important;
+    border-right-color: #e2e2e2 !important;
+    border-right-color: var(--divider-color) !important;
+    border-bottom-color: #e2e2e2 !important;
+    border-bottom-color: var(--divider-color) !important;
     border-radius: 0 2px 2px 0;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:158 */
@@ -13061,7 +13112,8 @@ div.x-trigger.x-grouped {
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:164 */
 .x-menu-outer-border-trbl {
-    border-color: #e1e1e1 !important;
+    border-color: #e2e2e2 !important;
+    border-color: var(--divider-color) !important;
     border-radius: 2px;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/etc/mixins/border-management.scss:171 */
@@ -13070,19 +13122,23 @@ div.x-trigger.x-grouped {
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/panel/Header.scss:68 */
 .x-menuheader {
-    border-color: #e1e1e1;
+    border-color: #e2e2e2;
+    border-color: var(--divider-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/panel/Header.scss:104 */
 .x-menuheader.x-docked-right {
-    border-color: #e1e1e1;
+    border-color: #e2e2e2;
+    border-color: var(--divider-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/panel/Header.scss:118 */
 .x-menuheader.x-docked-left {
-    border-color: #e1e1e1;
+    border-color: #e2e2e2;
+    border-color: var(--divider-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/panel/Header.scss:132 */
 .x-menuheader.x-docked-bottom {
-    border-color: #e1e1e1;
+    border-color: #e2e2e2;
+    border-color: var(--divider-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/menu/Menu.scss:994 */
 .x-menu-body-el > .x-menuitem .x-icon-wrap-el {
@@ -13112,7 +13168,8 @@ div.x-trigger.x-grouped {
 .x-menu-body-el.x-has-separator:before {
     border-width: 0 0 0 1px;
     border-style: solid;
-    border-color: #e1e1e1;
+    border-color: #e2e2e2;
+    border-color: var(--divider-color);
     width: 1px;
     margin-left: 48px;
 }
@@ -13156,7 +13213,7 @@ div.x-trigger.x-grouped {
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/grid/Grid.scss:37 */
 .x-grid .x-resize-marker-el {
-    background-color: rgba(17, 17, 17, 0.12);
+    background-color: #e2e2e2;
     background-color: var(--divider-color);
     width: 1px;
     z-index: 1;
@@ -13353,7 +13410,8 @@ div.x-trigger.x-grouped {
     height: 1px;
     border-width: 1px 0 0;
     border-style: solid;
-    border-color: #e1e1e1;
+    border-color: #e2e2e2;
+    border-color: var(--divider-color);
     margin: 8px 0;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/panel/Resizer.scss:223 */
@@ -13435,6 +13493,7 @@ div.x-trigger.x-grouped {
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/panel/Resizer.scss:276 */
 .x-panelresizer.x-splitter {
     background-color: #e1e1e1;
+    background-color: var(--faded-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/panel/Resizer.scss:283 */
 .x-panelresizer-proxy.x-handle {
@@ -13776,7 +13835,7 @@ div.x-trigger.x-grouped {
     background-color: #2196f3;
     background-color: var(--base-color);
     background-image: none;
-    border-color: #c3c3c3;
+    border-color: #e1e1e1;
     border-color: var(--faded-color);
 }
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-neptune/sass/var/Toolbar.scss:344 */
@@ -13903,16 +13962,17 @@ div.x-trigger.x-grouped {
     --color: #111;
     --highlight-color: rgba(17, 17, 17, 0.54);
     --disabled-color: rgba(17, 17, 17, 0.38);
-    --divider-color: rgba(17, 17, 17, 0.12);
+    --divider-color: #e2e2e2;
+    --selected-background-color: #e0e0e0;
+    --hovered-background-color: #eee;
+    --header-background-color: #f5f5f5;
     --reverse-color: #fff;
-    --reverse-highlight-color: rgba(255, 255, 255, 0.54);
     --reverse-disabled-color: rgba(255, 255, 255, 0.38);
-    --reverse-divider-color: rgba(255, 255, 255, 0.12);
     --background-color: #fafafa;
     --alt-background-color: #f5f5f5;
     --reverse-background-color: #303030;
     --reverse-alt-background-color: #3a3a3a;
-    --faded-color: #c3c3c3;
+    --faded-color: #e1e1e1;
     --overlay-color: rgba(0, 0, 0, 0.03);
     --content-padding: 16px;
     --listitem-selected-background-color: #e0e0e0;
@@ -15140,36 +15200,4 @@ div.x-trigger.x-grouped {
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-material/sass/etc/mixins/icons.scss:8 */
 .md-icon-call-missed::before {
     content: 'call_missed';
-}
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-material/sass/etc/mixins/icons.scss:8 */
-.md-icon-call-missed-outgoing::before {
-    content: 'call_missed_outgoing';
-}
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-material/sass/etc/mixins/icons.scss:8 */
-.md-icon-call-received::before {
-    content: 'call_received';
-}
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-material/sass/etc/mixins/icons.scss:8 */
-.md-icon-call-split::before {
-    content: 'call_split';
-}
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-material/sass/etc/mixins/icons.scss:8 */
-.md-icon-chat::before {
-    content: 'chat';
-}
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-material/sass/etc/mixins/icons.scss:8 */
-.md-icon-chat-bubble::before {
-    content: 'chat_bubble';
-}
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-material/sass/etc/mixins/icons.scss:8 */
-.md-icon-chat-bubble-outline::before {
-    content: 'chat_bubble_outline';
-}
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-material/sass/etc/mixins/icons.scss:8 */
-.md-icon-clear-all::before {
-    content: 'clear_all';
-}
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-material/sass/etc/mixins/icons.scss:8 */
-.md-icon-comment::before {
-    content: 'comment';
 }

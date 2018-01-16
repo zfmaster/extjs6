@@ -21,6 +21,9 @@
  *                      text  : 'My Button has a QuickTip' // Tip content  
  *                  });
  *
+ *              },
+ *              destroy: function(me) {
+ *                  Ext.tip.QuickTipManager.unregister(me.getId());
  *              }
  *          }
  *      });
@@ -71,6 +74,10 @@ Ext.define('Ext.tip.QuickTip', {
     
     isQuickTip: true,
     
+    /**
+     * @cfg shrinkWrapDock
+     * @inheritdoc
+     */
     shrinkWrapDock: true,
 
     initComponent : function(){
@@ -96,7 +103,7 @@ Ext.define('Ext.tip.QuickTip', {
     },
 
     /**
-     * @cfg {String/Object} text
+     * @cfg text
      * @inheritdoc Ext.tip.ToolTip#cfg-html
      */
     text: null,
@@ -192,8 +199,7 @@ Ext.define('Ext.tip.QuickTip', {
     getTipText: function (target) {
         var titleText = target.title,
             cfg = this.tagConfig,
-            attr = cfg.attr || (cfg.attr = cfg.namespace + cfg.attribute),
-            text;
+            attr = cfg.attr || (cfg.attr = cfg.namespace + cfg.attribute);
 
         if (this.interceptTitles && titleText) {
             target.setAttribute(attr, titleText);
@@ -224,10 +230,9 @@ Ext.define('Ext.tip.QuickTip', {
             if (targets.hasOwnProperty(key)) {
                 registeredTarget = targets[key];
 
+                target = Ext.getDom(registeredTarget.target);
                 // If we moved over a registered target from outside of it, activate it.
-                if (registeredTarget.target && Ext.fly(registeredTarget.target).contains(target) && !Ext.fly(registeredTarget.target).contains(event.relatedTarget)) {
-                    target = Ext.getDom(registeredTarget.target);
-
+                if (target && Ext.fly(target).contains(event.target) && !Ext.fly(target).contains(event.relatedTarget)) {
                     currentTarget.attach(target);
                     me.activeTarget = registeredTarget;
                     registeredTarget.el = currentTarget;
@@ -392,6 +397,7 @@ Ext.define('Ext.tip.QuickTip', {
     },
 
     /**
+     * @method beforeShow
      * @inheritdoc Ext.tip.Tip#method-beforeShow
      */
     beforeShow : function() {

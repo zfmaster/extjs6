@@ -146,7 +146,7 @@ Ext.define('Ext.dataview.NavigationModel', {
         if (me.location) {
             me.previousLocation = me.location;
             targetElement = me.location.getFocusEl();
-            if (targetElement) {
+            if (targetElement && !targetElement.destroyed) {
                 Ext.fly(targetElement).removeCls(me.focusedCls);
             }
             me.location = null;
@@ -322,18 +322,20 @@ Ext.define('Ext.dataview.NavigationModel', {
             target = location && location.getFocusEl('dom');
             if (target) {
                 item = location.get();
-                if (item.isWidget) {
-                    item = item.el;
-                } else {
-                    item = Ext.get(item);
-                }
-                if (item && target === item.dom) {
-                    item.addCls(me.focusedCls);
-                }
-            }
+                if (item) {
+                    if (item.isWidget) {
+                        item = item.el;
+                    } else {
+                        item = Ext.get(item);
+                    }
+                    if (item && target === item.dom) {
+                        item.addCls(me.focusedCls);
+                    }
 
-            if (options && (options.event || options.select) && options.navigate !== false) {
-                me.onNavigate(options.event);
+                    if (options && (options.event || options.select) && options.navigate !== false) {
+                        me.onNavigate(options.event);
+                    }
+                }
             }
 
             // Event handlers may destroy the view
@@ -476,7 +478,16 @@ Ext.define('Ext.dataview.NavigationModel', {
         },
 
         onSelectAllKeyPress: function(e) {
-            this.onNavigate(e);
+            var view = this.getView(),
+                selModel = view.getSelectable();
+
+            // If there are items to select, select them, and do not allow any other
+            // consequences to flow from CTRL/A, it would be confusing to the user.
+            if (selModel && view.getStore().getCount()) {
+                selModel[selModel.allSelected ? 'deselectAll' : 'selectAll']();
+                e.preventDefault();
+                return false;
+            }
         },
 
         // For use with inline DataViews, such as the KS.

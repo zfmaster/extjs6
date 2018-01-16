@@ -188,7 +188,7 @@ Ext.define('Ext.window.Window', {
      */
 
     /**
-    * @cfg {String} [baseCls='x-window']
+    * @cfg {String} baseCls
     * The base CSS class to apply to this panel's element.
     */
     baseCls: Ext.baseCSSPrefix + 'window',
@@ -257,8 +257,16 @@ Ext.define('Ext.window.Window', {
      */
     maximizable: false,
 
+    /**
+     * @cfg minHeight
+     * @inheritdoc
+     */
     minHeight: 50,
 
+    /**
+     * @cfg minWidth
+     * @inheritdoc
+     */
     minWidth: 50,
 
     /**
@@ -268,6 +276,10 @@ Ext.define('Ext.window.Window', {
      */
     expandOnShow: true,
 
+    /**
+     * @cfg collapsible
+     * @inheritdoc
+     */
     collapsible: false,
 
     /**
@@ -296,14 +308,14 @@ Ext.define('Ext.window.Window', {
     hidden: true,
 
     /**
-     * @cfg {Boolean}
+     * @cfg autoRender
      * @inheritdoc
      * Windows render to the body on first show.
      */
     autoRender: true,
 
     /**
-     * @cfg {String}
+     * @cfg hideMode
      * @inheritdoc
      * Windows hide using offsets in order to preserve the scroll positions of their descendants.  You may review
      * other configuration options here: {@link Ext.Component#hideMode}.
@@ -311,15 +323,19 @@ Ext.define('Ext.window.Window', {
     hideMode: 'offsets',
 
     /**
-     * @cfg {Boolean} [floating=true]
+     * @cfg floating
      * @inheritdoc Ext.Component#cfg!floating
      */
     floating: true,
 
+    /**
+     * @cfg alignOnScroll
+     * @inheritdoc
+     */
     alignOnScroll: false,
 
     /**
-     * @cfg {String[]} stateEvents
+     * @cfg stateEvents
      * @inheritdoc Ext.state.Stateful#cfg-stateEvents
      * @localdoc By default the following stateEvents are added:
      *
@@ -334,6 +350,10 @@ Ext.define('Ext.window.Window', {
 
     itemCls: Ext.baseCSSPrefix + 'window-item',
 
+    /**
+     * @cfg overlapHeader
+     * @inheritdoc
+     */
     overlapHeader: true,
 
     ignoreHeaderBorderManagement: true,
@@ -352,23 +372,41 @@ Ext.define('Ext.window.Window', {
      */
     isWindow: true,
 
+    /**
+     * @property ariaRole
+     * @inheritdoc
+     */
     ariaRole: 'dialog',
+    
+    /**
+     * @property focusable
+     * @inheritdoc
+     */
     focusable: true,
+    
+    /**
+     * @cfg tabGuard
+     * @inheritdoc
+     */
     tabGuard: true,
 
     /**
-     * @cfg {String} closeToolText
+     * @cfg closeToolText
      * @inheritdoc
      */
     closeToolText: 'Close dialog',
 
+    /**
+     * @cfg keyMap
+     * @inheritdoc
+     */
     keyMap: {
         scope: 'this',
         ESC: 'onEsc'
     },
     
     /**
-     * @cfg {String} [maskClickAction=focus]
+     * @cfg {String} maskClickAction
      * The method to call when the window's modal mask is clicked or tapped:
      *
      * - **`'{@link #method-focus}'`** :

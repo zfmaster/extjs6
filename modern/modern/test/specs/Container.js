@@ -160,91 +160,242 @@ function() {
 
     describe('configured items', function() {
         describe('weighted items', function() {
-            it('should not respect item weight upon add when container not configured weighted: true', function () {
-                makeContainer({
-                    items: [{
-                        itemId: 'foo',
-                        weight: 3
-                    }, {
-                        itemId: 'bar',
-                        weight: 2
-                    }, {
-                        itemId: 'bletch',
-                        weight: 1
-                    }]
+            function expectOrder(order) {
+                var childNodes = ct.getRenderTarget().dom.childNodes;
+                order.forEach(function(id, idx) {
+                    var item = items[idx];
+                    expect(item.getItemId()).toBe(id);
+                    expect(childNodes[idx]).toBe(item.element.dom);
                 });
-                expect(items[0].getItemId()).toBe('foo');
-                expect(items[1].getItemId()).toBe('bar');
-                expect(items[2].getItemId()).toBe('bletch');
-            });
-            it('should respect item weight upon add when container configured weighted: true', function () {
-                makeContainer({
-                    weighted: true,
-                    items: {
-                        foo: {
+            }
+
+            describe("configuration time", function() {
+                it("should ignore weights if not weighted", function () {
+                    makeContainer({
+                        items: [{
+                            itemId: 'a',
                             weight: 3
-                        },
-                        bar: {
+                        }, {
+                            itemId: 'b',
                             weight: 2
-                        },
-                        bletch: {
+                        }, {
+                            itemId: 'c',
                             weight: 1
-                        }
-                    }
+                        }]
+                    });
+                    expectOrder(['a', 'b', 'c']);
                 });
-                expect(items[0].getItemId()).toBe('bletch');
-                expect(items[1].getItemId()).toBe('bar');
-                expect(items[2].getItemId()).toBe('foo');
+
+                describe("as an object", function() {
+                    it("should create the items with itemId and respect the weight", function () {
+                        makeContainer({
+                            weighted: true,
+                            items: {
+                                a: { weight: 3 },
+                                b: { weight: 2 },
+                                c: { weight: 1 }
+                            }
+                        });
+                        expect(items[0].getItemId()).toBe('c');
+                        expect(items[1].getItemId()).toBe('b');
+                        expect(items[2].getItemId()).toBe('a');
+                        expectOrder(['c', 'b', 'a']);
+                    });
+
+                    it("should treat no weight as 0", function() {
+                        makeContainer({
+                            weighted: true,
+                            items: {
+                                a: { weight: 1 },
+                                b: { weight: -1 },
+                                c: {}
+                            }
+                        });
+                        expectOrder(['b', 'c', 'a']);
+                    });
+
+                    it("should treat equal weights as being in order", function() {
+                        makeContainer({
+                            weighted: true,
+                            items: {
+                                a: { weight: 3 },
+                                b: { weight: 1 },
+                                c: { weight: 1 }
+                            }
+                        });
+                        expectOrder(['b', 'c', 'a']);
+                    });
+
+                    it("should create items in order with no weights", function() {
+                        makeContainer({
+                            weighted: true,
+                            items: {
+                                a: {},
+                                b: {},
+                                c: {}
+                            }
+                        });
+                        expect(items[0].getItemId()).toBe('a');
+                        expect(items[1].getItemId()).toBe('b');
+                        expect(items[2].getItemId()).toBe('c');
+                        expectOrder(['a', 'b', 'c']);
+                    });
+                });
+
+                describe("as an array", function() {
+                    it("should order items by weight", function() {
+                        makeContainer({
+                            weighted: true,
+                            items: [
+                                { itemId: 'a', weight: 3 },
+                                { itemId: 'b', weight: 2 },
+                                { itemId: 'c', weight: 1 },
+                            ]
+                        });
+                        expectOrder(['c', 'b', 'a']);
+                    });
+
+                    it("should treat no weight as 0", function() {
+                        makeContainer({
+                            weighted: true,
+                            items: [
+                                { itemId: 'a', weight: 1 },
+                                { itemId: 'b', weight: -1 },
+                                { itemId: 'c' },
+                            ]
+                        });
+                        expectOrder(['b', 'c', 'a']);
+                    });
+
+                    it("should treat equal weights as being in order", function() {
+                        makeContainer({
+                            weighted: true,
+                            items: [
+                                { itemId: 'a', weight: 3 },
+                                { itemId: 'b', weight: 1 },
+                                { itemId: 'c', weight: 1 },
+                            ]
+                        });
+                        expectOrder(['b', 'c', 'a']);
+                    });
+
+                    it("should create items in order with no weights", function() {
+                        makeContainer({
+                            weighted: true,
+                            items: [
+                                { itemId: 'a' },
+                                { itemId: 'b' },
+                                { itemId: 'c' },
+                            ]
+                        });
+                        expectOrder(['a', 'b', 'c']);
+                    });
+                });
             });
-            it('should correct item position upon weight change', function() {
-                makeContainer({
-                    weighted: true,
-                    items: {
-                        foo: {
-                            weight: 3
-                        },
-                        bar: {
-                            weight: 2
-                        },
-                        bletch: {
-                            weight: 1
+
+            describe("after configuration", function() {
+                beforeEach(function() {
+                    makeContainer({
+                        weighted: true,
+                        items: {
+                            a: { weight: -1 },
+                            b: { weight: 3 },
+                            c: { weight: 5 }
                         }
-                    }
+                    });
                 });
-                var bletch = items[0],
-                    bar = items[1],
-                    foo = items[2],
-                    layoutDom = bletch.el.dom.parentNode;
 
-                // Initial order in items and DOM must be bletch, bar, foo
-                expect(bletch.getItemId()).toBe('bletch');
-                expect(bar.getItemId()).toBe('bar');
-                expect(foo.getItemId()).toBe('foo');
-                expect(layoutDom.childNodes[0]).toBe(bletch.el.dom);
-                expect(layoutDom.childNodes[1]).toBe(bar.el.dom);
-                expect(layoutDom.childNodes[2]).toBe(foo.el.dom);
+                describe("adding a single object", function() {
+                    it("should be able to add at the start", function() {
+                        ct.add({
+                            itemId: 'd',
+                            weight: -3
+                        });
+                        expectOrder(['d', 'a', 'b', 'c']);
+                    });
 
-                // foo must jump to top of items
-                foo.setWeight(0);
-                expect(items[0]).toBe(foo);
-                expect(items[1]).toBe(bletch);
-                expect(items[2]).toBe(bar);
+                    it("should be able to add in the middle", function() {
+                        ct.add({
+                            itemId: 'd',
+                            weight: 1
+                        });
+                        expectOrder(['a', 'd', 'b', 'c']);
+                    });
 
-                // And top of DOM
-                expect(layoutDom.childNodes[0]).toBe(foo.el.dom);
-                expect(layoutDom.childNodes[1]).toBe(bletch.el.dom);
-                expect(layoutDom.childNodes[2]).toBe(bar.el.dom);
+                    it("should be able to add at the end", function() {
+                        ct.add({
+                            itemId: 'd',
+                            weight: 7
+                        });
+                        expectOrder(['a', 'b', 'c', 'd']);
+                    });
 
-                // bletch must jump to end of items
-                bletch.setWeight(3)
-                expect(items[0]).toBe(foo);
-                expect(items[1]).toBe(bar);
-                expect(items[2]).toBe(bletch);
+                    it("should treat no weight as 0", function() {
+                        ct.add({
+                            itemId: 'd'
+                        });
+                        expectOrder(['a', 'd', 'b', 'c']);
+                    });
+                });
 
-                // And end of DOM
-                expect(layoutDom.childNodes[0]).toBe(foo.el.dom);
-                expect(layoutDom.childNodes[1]).toBe(bar.el.dom);
-                expect(layoutDom.childNodes[2]).toBe(bletch.el.dom);
+                describe("adding an array of items", function() {
+                    it("should be able to add at the start", function() {
+                        ct.add([{
+                            itemId: 'd',
+                            weight: -3
+                        }]);
+                        expectOrder(['d', 'a', 'b', 'c']);
+                    });
+
+                    it("should be able to add in the middle", function() {
+                        ct.add([{
+                            itemId: 'd',
+                            weight: 1
+                        }]);
+                        expectOrder(['a', 'd', 'b', 'c']);
+                    });
+
+                    it("should be able to add at the end", function() {
+                        ct.add([{
+                            itemId: 'd',
+                            weight: 7
+                        }]);
+                        expectOrder(['a', 'b', 'c', 'd']);
+                    });
+
+                    it("should treat no weight as 0", function() {
+                        ct.add([{
+                            itemId: 'd'
+                        }]);
+                        expectOrder(['a', 'd', 'b', 'c']);
+                    });
+
+                    it("should be able to add items of different weights", function() {
+                        ct.add([
+                            { itemId: 'd', weight: 7 },
+                            { itemId: 'e', weight: -3 },
+                            { itemId: 'f', weight: 2 },
+                        ]);
+                        expectOrder(['e', 'a', 'f', 'b', 'c', 'd']);
+                    });
+                });
+
+                describe("changing weight", function() {
+                    it("should be able to move to the start", function() {
+                        ct.down('#b').setWeight(-2);
+                        expectOrder(['b', 'a', 'c']);
+                    });
+
+                    it("should be able to move to the middle", function() {
+                        ct.down('#a').setWeight(4);
+                        expectOrder(['b', 'a', 'c']);
+                    });
+
+                    it("should be able to move to the end", function() {
+                        ct.down('#a').setWeight(100);
+                        expectOrder(['b', 'c', 'a']);
+                    });
+                });
             });
         });
     });

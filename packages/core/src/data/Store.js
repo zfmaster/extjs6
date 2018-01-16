@@ -465,6 +465,7 @@ Ext.define('Ext.data.Store', {
      */
     
     onCollectionAdd: function(collection, info) {
+        this.loadCount = this.loadCount || 1;
         this.onCollectionAddItems(collection, info.items, info);
     },
 

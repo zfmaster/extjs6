@@ -17,7 +17,8 @@ Ext.define('Ext.panel.YearPicker', {
     },
 
     itemConfig: {
-        ui: 'yearpicker'
+        ui: 'yearpicker',
+        tools: null
     },
     itemTpl: '{year}',
     pinFooters: false,

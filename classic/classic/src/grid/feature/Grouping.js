@@ -722,7 +722,7 @@ Ext.define('Ext.grid.feature.Grouping', {
         var me = this,
             headerCt = me.view.headerCt;
 
-        headerCt.showMenuBy = me.showMenuBy;
+        headerCt.showMenuBy = Ext.Function.createInterceptor(headerCt.showMenuBy, me.showMenuBy);
         headerCt.getMenuItems = me.getMenuItems();
     },
 
@@ -799,11 +799,11 @@ Ext.define('Ext.grid.feature.Grouping', {
             isGrouped = me.grid.getStore().isGrouped();
 
         groupMenuItem[groupMenuMeth]();
+        
         if (groupToggleMenuItem) {
             groupToggleMenuItem.setChecked(isGrouped, true);
             groupToggleMenuItem[isGrouped ?  'enable' : 'disable']();
         }
-        Ext.grid.header.Container.prototype.showMenuBy.apply(me, arguments);
     },
 
     getMenuItems: function() {
@@ -1347,6 +1347,7 @@ Ext.define('Ext.grid.feature.Grouping', {
             if (record.isCollapsedPlaceholder) {
                 groupName = group.getGroupKey();
                 items = group.items;
+                record = items[0];
 
                 rowValues.isFirstRow = rowValues.isLastRow = true;
                 rowValues.groupHeaderCls = me.hdCollapsedCls;
@@ -1354,8 +1355,8 @@ Ext.define('Ext.grid.feature.Grouping', {
                 rowValues.groupName = groupName;
                 rowValues.groupRenderInfo = groupRenderInfo;
                 groupRenderInfo.groupField = groupField;
-                groupRenderInfo.name = groupRenderInfo.renderedGroupValue = hasRenderer ? column.renderer(group.getAt(0).get(groupField), {}, record) : groupName;
-                groupRenderInfo.groupValue = items[0].get(groupField);
+                groupRenderInfo.groupValue = record.get(groupField);
+                groupRenderInfo.name = groupRenderInfo.renderedGroupValue = hasRenderer ? column.renderer(groupRenderInfo.groupValue, {}, record) : groupName;
                 groupRenderInfo.columnName = header ? header.text : groupField;
                 rowValues.collapsibleCls = me.collapsible ? me.collapsibleCls : me.hdNotCollapsibleCls;
                 groupRenderInfo.rows = groupRenderInfo.children = items;

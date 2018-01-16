@@ -297,6 +297,8 @@ Ext.define('Ext.overrides.Widget', {
      */
     shimCls: Ext.baseCSSPrefix + 'shim',
 
+    rootCls: Ext.baseCSSPrefix + 'root',
+
     /**
      * @event beforetofront
      * Fires before a {@link #cfg-floated} component is brought to the front of the visual stack.
@@ -1672,6 +1674,7 @@ Ext.define('Ext.overrides.Widget', {
     Ext.getFloatRoot = function() {
         var fp = Ext.floatRoot,
             viewport = Ext['Viewport'], // Hide from Cmd dependency checking
+            prototype = Widget.prototype,
             range = Widget.range;
 
         if (fp) {
@@ -1688,20 +1691,12 @@ Ext.define('Ext.overrides.Widget', {
                 }
             }
         } else {
-            if (viewport) {
-                fp = viewport.floatWrap = viewport.element.createChild({
-                    cls: Widget.prototype.floatWrapCls,
-                    id: 'ext-global-floatWrap',
-                    "data-sticky": true
-                });
-            } else {
-                fp = Ext.getBody().createChild({
-                    cls: Widget.prototype.floatWrapCls,
-                    id: 'ext-global-floatWrap',
-                    "data-sticky": true
-                });
-            }
-            
+            fp = Ext.getBody().createChild({
+                cls: prototype.floatWrapCls + ' ' + prototype.rootCls,
+                id: 'ext-global-floatWrap',
+                "data-sticky": true
+            });
+
             //<debug>
             fp.$skipResourceCheck = true;
             //</debug>

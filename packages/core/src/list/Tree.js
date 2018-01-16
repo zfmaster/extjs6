@@ -64,6 +64,10 @@ Ext.define('Ext.list.Tree', {
 
     uiPrefix: Ext.baseCSSPrefix + 'treelist-',
 
+    /**
+     * @property element
+     * @inheritdoc
+     */
     element: {
         reference: 'element',
         cls: Ext.baseCSSPrefix + 'treelist ' + Ext.baseCSSPrefix + 'unselectable',
@@ -176,6 +180,10 @@ Ext.define('Ext.list.Tree', {
          */
         store: null,
 
+        /**
+         * @cfg ui
+         * @inheritdoc
+         */
         ui: null
     },
 
@@ -186,18 +194,26 @@ Ext.define('Ext.list.Tree', {
      * @param {Ext.data.TreeModel} record The currently selected node.
      */
 
+    /**
+     * @cfg twoWayBindable
+     * @inheritdoc
+     */
     twoWayBindable: {
         selection: 1
     },
 
     /**
-     * @cfg
+     * @cfg publishes
      * @inheritdoc
      */
     publishes: {
         selection: 1
     },
 
+    /**
+     * @property defaultBindProperty
+     * @inheritdoc
+     */
     defaultBindProperty: 'store',
 
     constructor: function(config) {

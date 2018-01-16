@@ -1442,7 +1442,7 @@ Ext.define('Ext.grid.selection.SpreadsheetModel', {
                 ctrlKey = keyEvent.ctrlKey,
                 shiftKey = keyEvent.shiftKey,
                 keyCode = keyEvent.getKey(),
-                selectionChanged;
+                selectionChanged, rowRangeStart, lastRecord;
 
             // if there's no position then the user might have clicked outside a cell
             if (!pos) {
@@ -1492,7 +1492,15 @@ Ext.define('Ext.grid.selection.SpreadsheetModel', {
                         }
                         // First shift
                         if (!sel.getRangeSize()) {
-                            sel.setRangeStart(navigateEvent.previousRecordIndex || 0);
+                            rowRangeStart = navigateEvent.previousRecordIndex;
+
+                            if (rowRangeStart == null) {
+                                // previousRecordIndex could be empty due to BufferedRenderer de-rendering the last selected row.
+                                // In that case we need to select the last selected record or start from 0.
+                                lastRecord = me.getLastSelected();
+                                rowRangeStart = lastRecord ? me.store.indexOf(lastRecord) : 0;
+                            }
+                            sel.setRangeStart(rowRangeStart);
                         }
                         sel.setRangeEnd(navigateEvent.recordIndex);
                         sel.addRange();
@@ -1545,6 +1553,7 @@ Ext.define('Ext.grid.selection.SpreadsheetModel', {
                     } else {
                         sel.clear();
                         sel.add(record);
+                        sel.setRangeStart(pos.rowIdx, true);
                     }
                     selectionChanged = true;
                 }
@@ -1588,6 +1597,9 @@ Ext.define('Ext.grid.selection.SpreadsheetModel', {
                 if (sel.isRows) {
                     me.updateHeaderState();
                 }
+                // this will give continuity between keyboard selection and mouse selection
+                me.lastOverRecord = record;
+                me.lastOverColumn = pos.column;
                 me.fireSelectionChange();
             }
         },

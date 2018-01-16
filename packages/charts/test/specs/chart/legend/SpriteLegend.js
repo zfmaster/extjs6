@@ -36,6 +36,67 @@ topSuite("Ext.chart.legend.SpriteLegend", ['Ext.chart.*', 'Ext.data.ArrayStore']
         spyOn(Ext.log, 'warn');
     });
 
+    describe('markers', function () {
+        var chart;
+
+        afterEach(function () {
+            Ext.destroy(chart);
+        });
+
+        it('should be visible even if the series markers are hidden', function () {
+            var layoutDone;
+
+            runs(function () {
+                chart = new Ext.chart.CartesianChart({
+                    renderTo: Ext.getBody(),
+                    width: 300,
+                    height: 300,
+                    store: {
+                        data: [
+                            { x: 1, y: 1 },
+                            { x: 2, y: 3 },
+                            { x: 3, y: 1 }
+                        ]
+                    },
+                    axes: [
+                        {
+                            type: 'numeric',
+                            position: 'left'
+                        },
+                        {
+                            type: 'numeric',
+                            position: 'bottom'
+                        }
+                    ],
+                    series: [{
+                        showMarkers: false,
+                        marker: {
+                            type: 'square'
+                        },
+                        type: 'line',
+                        xField: 'x',
+                        yField: 'y'
+                    }],
+                    legend: true,
+                    listeners: {
+                        layout: function () {
+                            layoutDone = true;
+                        }
+                    }
+                });
+            });
+
+            waitsFor(function () {
+                return layoutDone;
+            });
+
+            runs(function () {
+                var sprite = chart.getLegend().getSprites()[0];
+                expect(sprite.getMarker().attr.hidden).toBe(false);
+            });
+        });
+    });
+
     describe('docked', function () {
         var chart;
 

@@ -65,9 +65,6 @@ Ext.define('Ext.chart.navigator.Container', {
     xtype: 'chartnavigator',
 
     config: {
-
-        layout: 'fit',
-
         /**
          * @cfg {Ext.chart.CartesianChart} chart
          * The chart to make navigable.
@@ -80,6 +77,8 @@ Ext.define('Ext.chart.navigator.Container', {
         navigator: {}
     },
 
+    layout: 'fit',
+
     applyChart: function (chart, oldChart) {
         if (oldChart) {
             oldChart.destroy();
@@ -89,7 +88,9 @@ Ext.define('Ext.chart.navigator.Container', {
                 Ext.raise('Only cartesian charts are supported.');
             }
             if (!chart.isChart) {
+                chart.$initParent = this;
                 chart = new Ext.chart.CartesianChart(chart);
+                delete chart.$initParent;
             }
         }
         return chart;

@@ -50,21 +50,34 @@ Ext.define('Ext.field.TextArea', {
 
     config: {
         /**
-         * @cfg
+         * @cfg autoCapitalize
          * @inheritdoc
          */
         autoCapitalize: false,
 
         /**
-         * @cfg {Number} maxRows The maximum number of lines made visible by the input.
+         * @cfg {Number} maxRows
+         * The maximum number of lines made visible by the input.
          */
         maxRows: null,
 
+        /**
+         * @cfg clearable
+         * @inheritdoc
+         */
         clearable: false
     },
 
+    /**
+     * @property tag
+     * @inheritdoc
+     */
     tag: 'textarea',
 
+    /**
+     * @property classCls
+     * @inheritdoc
+     */
     classCls: Ext.baseCSSPrefix + 'textareafield',
 
     //<debug>

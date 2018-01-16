@@ -186,12 +186,24 @@ Ext.define('Ext.GlobalEvents', {
     },
 
     setPressedComponent: function(component, e) {
-        var pressedComponent = this.pressedComponent;
+        var me = this,
+            pressedComponent = me.pressedComponent;
 
         if (pressedComponent && pressedComponent.onRelease) {
             pressedComponent.onRelease(e);
         }
-        this.pressedComponent = component;
+        me.pressedComponent = component;
+
+        if (component) {
+            me.pressedScrollStart = Ext.on({
+                scrollstart: function () {
+                    me.setPressedComponent(null);
+                },
+                destroyable: true
+            });
+        } else {
+            me.pressedScrollStart = Ext.destroy(me.pressedScrollStart);
+        }
     },
 
     attachListeners: function() {

@@ -6,6 +6,10 @@ Ext.define('Ext.tree.View', {
     alias: 'widget.treeview',
 
     config: {
+        /**
+         * @cfg selectionModel
+         * @inheritdoc
+         */
         selectionModel: {
             type: 'treemodel'
         }
@@ -17,6 +21,10 @@ Ext.define('Ext.tree.View', {
      */
     isTreeView: true,
 
+    /**
+     * @cfg loadingCls
+     * @inheritdoc
+     */
     loadingCls: Ext.baseCSSPrefix + 'grid-tree-loading',
     expandedCls: Ext.baseCSSPrefix + 'grid-tree-node-expanded',
     leafCls: Ext.baseCSSPrefix + 'grid-tree-node-leaf',
@@ -30,10 +38,14 @@ Ext.define('Ext.tree.View', {
     // for an ancestor node with this class.
     nodeAnimWrapCls: Ext.baseCSSPrefix + 'tree-animator-wrap',
 
+    /**
+     * @property ariaRole
+     * @inheritdoc
+     */
     ariaRole: 'treegrid',
 
     /**
-     * @cfg {Boolean}
+     * @cfg loadMask
      * @inheritdoc
      */
     loadMask: false,
@@ -58,6 +70,10 @@ Ext.define('Ext.tree.View', {
      */
     toggleOnDblClick: true,
 
+    /**
+     * @cfg stripeRows
+     * @inheritdoc
+     */
     stripeRows: false,
 
     // treeRowTpl which is inserted into the rowTpl chain before the base rowTpl. Sets tree-specific classes and attributes

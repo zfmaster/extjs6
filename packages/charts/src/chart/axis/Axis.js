@@ -943,6 +943,10 @@ Ext.define('Ext.chart.axis.Axis', {
         return range;
     },
 
+    isSingleDataPoint: function (range) {
+        return (range[0] + this.rangePadding) === 0 && (range[1] - this.rangePadding) === 0;
+    },
+
     calculateRange: function () {
         var me = this,
             boundSeries = me.boundSeries,
@@ -978,7 +982,7 @@ Ext.define('Ext.chart.axis.Axis', {
         // zero, as the first and only data point). Since zero range is invalid, the
         // validateRange function above will expand the range by the value of the rangePadding,
         // which makes further expansion by the value of expandRangeBy unnecessary.
-        if (expandRangeBy && (range[0] + me.rangePadding !== range[1] - me.rangePadding)) {
+        if (expandRangeBy && (!me.isSingleDataPoint(range))) {
             range[0] -= expandRangeBy;
             range[1] += expandRangeBy;
         }

@@ -174,14 +174,8 @@ Ext.define('Ext.form.Panel', {
      * @private
      */
     initialize: function () {
-        var me = this;
-
-        me.callParent();
-
-        me.element.on({
-            submit: 'onSubmit',
-            scope : me
-        });
+        this.callParent();
+        this.element.on('submit', 'onSubmit', this);
     },
 
     applyEnctype: function (newValue) {

@@ -376,16 +376,16 @@ Ext.define('Ext.EventManager', {
         }
 }, function(EventManager) {
     /**
-     * @member Ext.EventManager
      * @method on
-     * @inheritdoc Ext.EventManager#addListener
+     * @member Ext.EventManager
+     * @inheritdoc Ext.EventManager#method-addListener
      */
     EventManager.on = EventManager.addListener;
 
     /**
-     * @member Ext.EventManager
      * @method un
-     * @inheritdoc Ext.EventManager#removeListener
+     * @member Ext.EventManager
+     * @inheritdoc Ext.EventManager#method-removeListener
      */
     EventManager.un = EventManager.removeListener;
 });

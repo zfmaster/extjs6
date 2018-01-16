@@ -179,10 +179,14 @@ Ext.define('Ext.grid.column.Widget', {
         defaultWidgetUI: {}
     },
 
+    /**
+     * @cfg ignoreExport
+     * @inheritdoc
+     */
     ignoreExport: true,
 
     /**
-     * @cfg {Boolean} sortable
+     * @cfg sortable
      * @inheritdoc
      */
     sortable: false,
@@ -367,6 +371,11 @@ Ext.define('Ext.grid.column.Widget', {
     },
 
     // Cell must be left blank
+    /**
+     * @method defaultRenderer
+     * @inheritdoc
+     * @localdoc **Important:** Cell must be left blank
+     */
     defaultRenderer: Ext.emptyFn, 
 
     updater: function(cell, value, record) {

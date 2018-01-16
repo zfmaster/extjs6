@@ -30,12 +30,20 @@ Ext.define('Ext.grid.cell.Widget', {
         widget: null
     },
 
+    /**
+     * @cfg align
+     * @inheritdoc
+     */
     align: 'center',
 
+    /**
+     * @property classCls
+     * @inheritdoc
+     */
     classCls: Ext.baseCSSPrefix + 'widgetcell',
 
     /**
-     * @cfg {Boolean} selectable
+     * @cfg selectable
      * @inheritdoc
      */
     selectable: false,

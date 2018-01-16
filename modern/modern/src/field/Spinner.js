@@ -74,17 +74,22 @@ Ext.define('Ext.field.Spinner', {
 
         /**
          * @cfg {Boolean} cycle
-         * When set to `true`, it will loop the values of a minimum or maximum is reached.
-         * If the maximum value is reached, the value will be set to the minimum.
+         * When set to `true`, it will loop the values of a minimum or maximum is
+         * reached. If the maximum value is reached, the value will be set to the
+         * minimum.
          */
         cycle: false,
 
+        /**
+         * @cfg clearable
+         * @inheritdoc
+         */
         clearable: false,
 
         /**
          * @cfg {Boolean} groupButtons
-         * `true` if you want to group the buttons to the right of the fields. `false` if you want the buttons
-         * to be at either side of the field.
+         * `true` if you want to group the buttons to the right of the fields. `false` if
+         * you want the buttons to be at either side of the field.
          * @deprecated 6.2.0 This concern should be handled by the theme.
          */
         groupButtons: true
@@ -104,21 +109,23 @@ Ext.define('Ext.field.Spinner', {
     },
 
     /**
-     * @cfg {Number} value
+     * @cfg value
      * @inheritdoc
      */
     value: 0,
 
     /**
-     * @cfg {Number} decimals
+     * @cfg decimals
      * @inheritdoc
      */
     decimals: 0,
 
+    /**
+     * @property classCls
+     * @inheritdoc
+     */
     classCls: Ext.baseCSSPrefix + 'spinnerfield',
     groupedButtonsCls: Ext.baseCSSPrefix + 'grouped-buttons',
-    
-    // inputType: 'number',
     
     initElement: function() {
         this.callParent();

@@ -19,8 +19,8 @@ Ext.define('Ext.field.trigger.Trigger', {
         handler: null,
 
         /**
-         * @cfg {String} iconCls
-         * @inheritdoc Ext.Button#iconCls
+         * @cfg iconCls
+         * @inheritdoc Ext.Button#cfg-iconCls
          */
         iconCls: null,
 
@@ -48,6 +48,10 @@ Ext.define('Ext.field.trigger.Trigger', {
 
     interactiveCls: Ext.baseCSSPrefix + 'interactive',
 
+    /**
+     * @property template
+     * @inheritdoc
+     */
     template: [{
         reference: 'iconElement',
         classList: [

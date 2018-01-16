@@ -1,3 +1,38 @@
+/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/tree/View.scss:179 */
+.x-tree-icon,
+.x-tree-elbow-img,
+.x-tree-checkbox {
+    margin-top: -5px;
+    margin-bottom: -4px;
+}
+/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/tree/View.scss:189 */
+.x-tree-icon-leaf {
+    background-image: url(images/tree/leaf.png);
+}
+/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/tree/View.scss:204 */
+.x-tree-icon-parent {
+    background-image: url(images/tree/folder.png);
+}
+/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/tree/View.scss:225 */
+.x-tree-icon-parent-expanded {
+    background-image: url(images/tree/folder-open.png);
+}
+/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/tree/View.scss:236 */
+.x-tree-icon-custom {
+    background-image: none;
+}
+/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/tree/View.scss:252 */
+.x-tree-checkbox {
+    margin-right: 4px;
+    top: 5px;
+    width: 15px;
+    height: 15px;
+    background-image: url(images/form/checkbox.png);
+}
+/* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/tree/View.scss:272 */
+.x-tree-checkbox-checked {
+    background-position: 0 -15px;
+}
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/src/tree/View.scss:280 */
 .x-grid-tree-loading .x-tree-icon {
     background-image: url(images/tree/loading.gif);
@@ -771,7 +806,7 @@
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/var/button/Button.scss:2593 */
 .x-btn-arrow-right > .x-btn-icon.x-btn-no-text.x-btn-button-plain-toolbar-medium {
-    padding-right: 8px;
+    padding-right: 5px;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/var/button/Button.scss:2596 */
 .x-btn-arrow-right > .x-btn-text.x-btn-icon-right > .x-btn-icon-el-plain-toolbar-medium {
@@ -806,7 +841,7 @@
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/var/button/Button.scss:2748 */
 .x-btn-split-right > .x-btn-icon.x-btn-no-text.x-btn-button-plain-toolbar-medium {
-    padding-right: 8px;
+    padding-right: 5px;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/var/button/Button.scss:2751 */
 .x-btn-split-right > .x-btn-text.x-btn-icon-right > .x-btn-icon-el-plain-toolbar-medium {
@@ -1290,7 +1325,7 @@
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/var/button/Button.scss:2593 */
 .x-btn-arrow-right > .x-btn-icon.x-btn-no-text.x-btn-button-plain-toolbar-large {
-    padding-right: 10px;
+    padding-right: 5px;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/var/button/Button.scss:2596 */
 .x-btn-arrow-right > .x-btn-text.x-btn-icon-right > .x-btn-icon-el-plain-toolbar-large {
@@ -1325,7 +1360,7 @@
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/var/button/Button.scss:2748 */
 .x-btn-split-right > .x-btn-icon.x-btn-no-text.x-btn-button-plain-toolbar-large {
-    padding-right: 10px;
+    padding-right: 5px;
 }
 /* /mnt/web/www/extjs/ext-6.2.0/classic/theme-neutral/sass/var/button/Button.scss:2751 */
 .x-btn-split-right > .x-btn-text.x-btn-icon-right > .x-btn-icon-el-plain-toolbar-large {

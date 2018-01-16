@@ -140,7 +140,9 @@ Ext.define('Ext.grid.CellContext', {
             // row is a grid row, or Element wrapping row
             else if (row.tagName || row.isElement) {
                 me.record = me.view.getRecord(row);
-                me.rowIdx = dataSource.indexOf(me.record);
+
+                // If it's a placeholder record for a collapsed group, index it correctly
+                me.rowIdx = me.record ? (me.record.isCollapsedPlaceholder ? dataSource.indexOfPlaceholder(me.record) : dataSource.indexOf(me.record)) : -1;
             }
         }
         if (me.record !== oldRecord) {

@@ -1,6 +1,6 @@
 {
     "name": "@extjs/ext-react-core",
-    "version": "6.5.1.345",
+    "version": "6.5.2.463",
     "sencha": {
         "name": "core",
         "type": "code",
@@ -10,7 +10,7 @@
         "creator": "Sencha",
         "summary": "Sencha Core",
         "detailedDescription": "Sencha Core is the core package used by Sencha frameworks",
-        "version": "6.5.1.345",
+        "version": "6.5.2.463",
         "compatVersion": "6.0.0",
         "format": "1",
         "output": "${package.dir}/build",

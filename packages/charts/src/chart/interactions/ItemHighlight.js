@@ -108,7 +108,7 @@ Ext.define('Ext.chart.interactions.ItemHighlight', {
     showUntracked: function (item) {
         var marker = item.sprite.getMarker(item.category),
             surface, surfaceXY, isInverseY,
-            itemBBox;
+            itemBBox, matrix;
 
         if (marker) {
             surface = marker.getSurface();
@@ -124,7 +124,12 @@ Ext.define('Ext.chart.interactions.ItemHighlight', {
                 // So for 'markers' we already have the bbox in a coordinate system
                 // with the origin at the top-left of the surface, but for 'items'
                 // we need to do a conversion.
-                itemBBox = surface.inverseMatrix.transformBBox(itemBBox);
+                if (surface.getInherited().rtl) {
+                    matrix = surface.inverseMatrix.clone().flipX().translate(item.sprite.attr.innerWidth, 0, true);
+                } else {
+                    matrix = surface.inverseMatrix;
+                }
+                itemBBox = matrix.transformBBox(itemBBox);
             }
             itemBBox.x += surfaceXY[0];
             itemBBox.y += surfaceXY[1];

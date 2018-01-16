@@ -119,6 +119,10 @@ return { // do not indent :)
 
     alternateClassName: 'Ext.panel.Panel',
 
+    /**
+     * @property defaultBindProperty
+     * @inheritdoc
+     */
     defaultBindProperty: 'title',
 
     isPanel: true,
@@ -144,32 +148,32 @@ return { // do not indent :)
         header: null,
 
         /**
-         * @cfg {String} icon
-         * @inheritdoc Ext.panel.Header#icon
+         * @cfg icon
+         * @inheritdoc Ext.panel.Header#cfg-icon
          */
         icon: null,
 
         /**
-         * @cfg {String} iconCls
-         * @inheritdoc Ext.panel.Header#iconCls
+         * @cfg iconCls
+         * @inheritdoc Ext.panel.Header#cfg-iconCls
          */
         iconCls: null,
 
         /**
-         * @cfg {'top'/'right'/'bottom'/'left'} [iconAlign='left']
-         * @inheritdoc Ext.panel.Header#iconAlign
+         * @cfg [iconAlign='left']
+         * @inheritdoc Ext.panel.Header#cfg-iconAlign
          */
         iconAlign: null,
 
         /**
-         * @cfg {String/Object} title
-         * @inheritdoc Ext.panel.Header#title
+         * @cfg title
+         * @inheritdoc Ext.panel.Header#cfg-title
          */
         title: null,
 
         /**
-         * @cfg {'left'/'center'/'right'} [titleAlign='left']
-         * @inheritdoc Ext.panel.Header#titleAlign
+         * @cfg [titleAlign='left']
+         * @inheritdoc Ext.panel.Header#cfg-titleAlign
          */
         titleAlign: null,
 
@@ -181,7 +185,7 @@ return { // do not indent :)
         anchor: null,
 
         /**
-         * @cfg {String} [anchorPosition]
+         * @cfg {String} anchorPosition
          * Set the anchor position.
          *
          * @private
@@ -613,6 +617,10 @@ return { // do not indent :)
         closeToolText: 'Close panel'
     },
 
+    /**
+     * @property classCls
+     * @inheritdoc
+     */
     classCls: Ext.baseCSSPrefix + 'panel',
 
     headerCls: null,
@@ -625,10 +633,18 @@ return { // do not indent :)
         left: Ext.baseCSSPrefix + 'left'
     },
 
+    /**
+     * @cfg manageBorders
+     * @inheritdoc
+     */
     manageBorders: true,
 
     allowHeader: true,
 
+    /**
+     * @property template
+     * @inheritdoc
+     */
     template: [{
         reference: 'bodyWrapElement',
         cls: Ext.baseCSSPrefix + 'body-wrap-el',
@@ -1050,7 +1066,7 @@ return { // do not indent :)
             buttonDefaults = me.getButtonDefaults(),
             standardButtons = me.getStandardButtons(),
             toolbar = me.getButtonToolbar(),
-            n = array.length,
+            n = array ? array.length : 0,
             button, defaults, handler, i;
 
         if (buttons && typeof buttons === 'object') {
@@ -1061,59 +1077,60 @@ return { // do not indent :)
             }
         }
 
-        if (array === buttons) { // if (wasn't an object)
-            array = [];
+        if (buttons) {
+            if (array === buttons) { // if (wasn't an object)
+                array = [];
 
-            for (i = 0; i < n; ++i) {
-                button = buttons[i];
+                for (i = 0; i < n; ++i) {
+                    button = buttons[i];
 
-                if (typeof button === 'string') {
-                    if (!Ext.Toolbar.shortcuts[button]) {
-                        button = Ext.applyIf({
-                            itemId: button,
-                            text: button
-                        }, buttonDefaults);
+                    if (typeof button === 'string') {
+                        if (!Ext.Toolbar.shortcuts[button]) {
+                            button = Ext.applyIf({
+                                itemId: button,
+                                text: button
+                            }, buttonDefaults);
+                        }
+                    }
+                    else if (buttonDefaults) {
+                        button = Ext.apply({}, button, buttonDefaults);
+                    }
+
+                    array[i] = button;
+                }
+            }
+            else {
+                // convertKeyedItems has already shallow copied each item in order
+                // to place in the itemId, so leverage that... It has also promoted
+                // string items like 'foo' in to objects like { xxx: 'foo' } so we
+                // can make sure they have buttonDefaults
+                for (i = 0; i < n; ++i) {
+                    button = array[i];
+                    handler = button.xxx;
+                    defaults = standardButtons[button.itemId];
+
+                    if (defaults) {
+                        Ext.applyIf(button, defaults);
+                        // ok: 'onOK'  ==> { handler: 'onOK', text: 'OK', weight: 10 }
+                    }
+                    //<debug>
+                    else if (handler) {
+                        Ext.raise('Button handler short-hand is only valid for standardButtons');
+                    }
+                    //</debug>
+
+                    if (handler) {
+                        delete button.xxx;
+                        button.handler = handler;
+                        // ok: 'onOK'  ==> { handler: 'onOK' }
+                    }
+
+                    if (buttonDefaults) {
+                        Ext.applyIf(button, buttonDefaults);
                     }
                 }
-                else if (buttonDefaults) {
-                    button = Ext.apply({}, button, buttonDefaults);
-                }
-
-                array[i] = button;
             }
         }
-        else {
-            // convertKeyedItems has already shallow copied each item in order
-            // to place in the itemId, so leverage that... It has also promoted
-            // string items like 'foo' in to objects like { xxx: 'foo' } so we
-            // can make sure they have buttonDefaults
-            for (i = 0; i < n; ++i) {
-                button = array[i];
-                handler = button.xxx;
-                defaults = standardButtons[button.itemId];
-
-                if (defaults) {
-                    Ext.applyIf(button, defaults);
-                    // ok: 'onOK'  ==> { handler: 'onOK', text: 'OK', weight: 10 }
-                }
-                //<debug>
-                else if (handler) {
-                    Ext.raise('Button handler short-hand is only valid for standardButtons');
-                }
-                //</debug>
-
-                if (handler) {
-                    delete button.xxx;
-                    button.handler = handler;
-                    // ok: 'onOK'  ==> { handler: 'onOK' }
-                }
-
-                if (buttonDefaults) {
-                    Ext.applyIf(button, buttonDefaults);
-                }
-            }
-        }
-
         return me.normalizeDockedBars(array, oldButtons, 'bottom', toolbar);
     },
 

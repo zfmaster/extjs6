@@ -52,6 +52,10 @@ Ext.define('Ext.app.ViewController', {
     
     isViewController: true,
 
+    /**
+     * @property factoryConfig
+     * @inheritdoc
+     */
     factoryConfig: { // configure Factoryable
         type: 'controller'
     },
@@ -105,7 +109,7 @@ Ext.define('Ext.app.ViewController', {
     },
 
     /**
-     * @method
+     * @method beforeInit
      *
      * Called before the view initializes. This is called before the view's
      * initComponent method has been called.
@@ -115,7 +119,7 @@ Ext.define('Ext.app.ViewController', {
     beforeInit: Ext.emptyFn,
 
     /**
-     * @method
+     * @method init
      *
      * Called when the view initializes. This is called after the view's initComponent
      * method has been called.
@@ -125,7 +129,7 @@ Ext.define('Ext.app.ViewController', {
     init: Ext.emptyFn,
 
     /**
-     * @method
+     * @method initViewModel
      *
      * Called when the view model instance for an attached view is first created.
      * @param {Ext.app.ViewModel} viewModel The ViewModel
@@ -204,6 +208,7 @@ Ext.define('Ext.app.ViewController', {
     },
 
     /**
+     * @method getReferences
      * @inheritdoc Ext.mixin.Container#method!getReferences
      * @since 5.0.0
      */

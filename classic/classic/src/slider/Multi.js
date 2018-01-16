@@ -63,7 +63,8 @@ Ext.define('Ext.slider.Multi', {
     maxValue: 100,
 
     /**
-     * @cfg {Number/Boolean} decimalPrecision The number of decimal places to which to round the Slider's value.
+     * @cfg {Number/Boolean} decimalPrecision
+     * The number of decimal places to which to round the Slider's value.
      *
      * To disable rounding, configure as **false**.
      */
@@ -77,7 +78,7 @@ Ext.define('Ext.slider.Multi', {
     keyIncrement: 1,
     
     /**
-     * @cfg {Number} [pageSize=10]
+     * @cfg {Number} pageSize
      * How many units to change the Slider when using PageUp and PageDown keys.
      */
     pageSize: 10,
@@ -142,7 +143,7 @@ Ext.define('Ext.slider.Multi', {
     useTips : true,
 
     /**
-     * @cfg {Function/String} [tipText]
+     * @cfg {Function/String} tipText
      * A function used to display custom text for the slider tip or the name of the
      * method on the corresponding `{@link Ext.app.ViewController controller}`.
      *
@@ -156,18 +157,19 @@ Ext.define('Ext.slider.Multi', {
     tipText: null,
     
     /**
+     * @property defaultBindProperty
      * @inheritdoc
      */
     defaultBindProperty: 'value',
 
     /**
-     * @cfg
+     * @cfg publishes
      * @inheritdoc
      */
      publishes: ['value'],
 
     /**
-     * @cfg {Boolean} [thumbPerValue=false]
+     * @cfg {Boolean} thumbPerValue
      * Configure as true to allow thumbs to be added and removed dynamically from the slider 
      * when calling {@link #method-setValue} with an an array of values differing from the 
      * current number of thumbs.  
@@ -227,20 +229,45 @@ Ext.define('Ext.slider.Multi', {
      * @param {Ext.event.Event} e The event fired from Ext.dd.DragTracker
      */
 
+    /**
+     * @property ariaRole
+     * @inheritdoc
+     */
     ariaRole: 'slider',
 
+    /**
+     * @property focusable
+     * @inheritdoc
+     */
     focusable: true,
     needArrowKeys: true,
+    
+    /**
+     * @cfg tabIndex
+     * @inheritdoc
+     */
     tabIndex: 0,
     skipLabelForAttribute: true,
     
+    /**
+     * @cfg focusCls
+     * @inheritdoc
+     */
     focusCls: 'slider-focus',
 
+    /**
+     * @cfg childEls
+     * @inheritdoc
+     */
     childEls: [
         'endEl', 'innerEl'
     ],
 
     // note: {id} here is really {inputId}, but {cmpId} is available
+    /**
+     * @cfg fieldSubTpl
+     * @inheritdoc
+     */
     fieldSubTpl: [
         '<div id="{id}" data-ref="inputEl" {inputAttrTpl}',
             ' class="', Ext.baseCSSPrefix, 'slider {fieldCls} {vertical}',

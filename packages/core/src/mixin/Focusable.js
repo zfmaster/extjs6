@@ -615,8 +615,14 @@ Ext.define('Ext.mixin.Focusable', {
                     }
                 }
 
+                if (focusTarget && focusTarget.$isFocusableEntity) {
+                    if (!focusTarget.destroyed && focusTarget.isFocusable()) {
+                        focusTarget.focus();
+                    }
+                }
+                
                 // If the element is in the document and focusable, then we're good. The owning component will handle it.
-                if (Ext.getDoc().contains(focusTarget) && Ext.fly(focusTarget).isFocusable()) {
+                else if (Ext.getDoc().contains(focusTarget) && Ext.fly(focusTarget).isFocusable()) {
                     fromComponent = Ext.Component.from(focusTarget);
 
                     // Allow the focus recieving component to modify the focus sequence.

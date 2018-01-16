@@ -166,14 +166,14 @@ Ext.define('Ext.field.Panel', {
     scrollable: true,
 
     /**
-     * @cfg {Boolean} nameable
+     * @cfg nameable
      * @inheritdoc
      * Forms can be assigned names to be used in parent forms.
      */
     nameable: true,
 
     /**
-     * @cfg {Boolean} shareableName
+     * @cfg shareableName
      * @inheritdoc
      * Forms can be assigned the same name as other forms in their parent form. This
      * means that if a form is assigned a `name` it will be returned as an array from
@@ -182,7 +182,7 @@ Ext.define('Ext.field.Panel', {
     shareableName: true,
 
     /**
-     * @cfg {Boolean} nameHolder
+     * @cfg nameHolder
      * @inheritdoc
      */
     nameHolder: true,

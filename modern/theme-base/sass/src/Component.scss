@@ -27,11 +27,17 @@ html.#{$prefix}has-viewport,
     height: 100%;
 }
 
-html.#{$prefix}has-unscalable-viewport,
-.#{$prefix}has-unscalable-viewport > body {
-    // "position: fixed" prevents elastic overscroll of the viewport on iOS but it can only
-    // be used when the viewport is not scalable, i.e. user-scalable=no, because the viewport
-    // will not size correctly if the body is "position: fixed" and zoom level != 1
+html.#{$prefix}fixed-viewport,
+.#{$prefix}fixed-viewport > body {
+    // position: fixed serves a couple of purposes:
+    //
+    // 1. on iOS it prevents elastic overscroll of the viewport but it can only be used
+    // when the viewport is not scalable, i.e. user-scalable=no, because the viewport will
+    // not size correctly if the body is "position: fixed" and zoom level != 1
+    //
+    // 2. On android it prevents the url bar from scrolling out of view.  This is necessary
+    // to ensure the viewport sizes correctly when zoomed in.
+    // https://sencha.jira.com/browse/EXTJS-26132
     position: fixed;
 }
 

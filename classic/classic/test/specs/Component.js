@@ -7199,8 +7199,8 @@ function() {
             c.scrollTo(10, 20);
 
             waitsFor(function() {
-                return moveSpy.callCount === 1;
-            }, 'moveSpy to fire', 1000);
+                return endSpy.callCount === 1;
+            }, 'endSpy to fire the first time', 1000);
 
             runs(function() {
                 c.scrollTo(20, 30);
@@ -7208,7 +7208,7 @@ function() {
 
             waitsFor(function() {
                 return endSpy.callCount === 2;
-            }, 'endSpy to fire', 1000);
+            }, 'endSpy to fire the second time', 1000);
 
             runs(function() {
                 expect(endSpy.mostRecentCall.args).toEqual([20, 30]);

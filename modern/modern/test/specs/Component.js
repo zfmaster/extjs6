@@ -1818,17 +1818,239 @@ function() {
         });
     });
 
-    describe('setData call', function() {
-        it("should convert a string into an array", function () {
-            makeComponent({
-                tpl : 'first name is {fname}'
+    describe('tpl/data call', function() {
+        function makeTplComponent(cfg) {
+            makeComponent(Ext.apply({
+                renderTo: Ext.getBody()
+            }, cfg));
+        }
+
+        describe("at construction", function() {
+            it("should be able to configure just a tpl", function() {
+                makeTplComponent({
+                    tpl: '{foo}'
+                });
+                expect(component.getInnerHtmlElement()).toHaveHtml('');
             });
 
-            component.setData({
-                fname : null
+            it("should be able to configure just data", function() {
+                makeTplComponent({
+                    data: {
+                        foo: 1
+                    }
+                });
+                expect(component.getInnerHtmlElement()).toHaveHtml('');
             });
 
-            expect(component.innerHtmlElement.dom.innerHTML).toEqual('first name is ');
+            it("should be able to configure tpl and data", function() {
+                makeTplComponent({
+                    tpl: '{foo}',
+                    data: {
+                        foo: 1
+                    }
+                });
+                expect(component.getInnerHtmlElement()).toHaveHtml('1');
+            });
+
+            it("should accept an array tpl", function() {
+                makeTplComponent({
+                    tpl: ['{foo}', '{bar}'],
+                    data: {
+                        foo: 1,
+                        bar: 2
+                    }
+                });
+                expect(component.getInnerHtmlElement()).toHaveHtml('12');
+            });
+        });
+
+        describe("dynamic", function() {
+            describe("tpl", function() {
+                describe("setting a tpl", function() {
+                    describe("with no data", function() {
+                        it("should be empty", function() {
+                            makeTplComponent();
+                            component.setTpl('{foo}');
+                            expect(component.getInnerHtmlElement()).toHaveHtml('');
+                        });
+                    });
+
+                    describe("with data", function() {
+                        it("should render the data with the new tpl", function() {
+                            makeTplComponent({
+                                data: {
+                                    foo: 1
+                                }
+                            });
+                            component.setTpl('{foo}');
+                            expect(component.getInnerHtmlElement()).toHaveHtml('1');
+                        });
+                    });
+                });
+
+                describe("clearing a tpl", function() {
+                    describe("with no data", function() {
+                        it("should be empty", function() {
+                            makeTplComponent({
+                                tpl: '{foo}'
+                            });
+                            component.setTpl(null);
+                            expect(component.getInnerHtmlElement()).toHaveHtml('');
+                        });
+                    });
+
+                    describe("with data", function() {
+                        it("should be empty", function() {
+                            makeTplComponent({
+                                tpl: '{foo}',
+                                data: {
+                                    foo: 1
+                                }
+                            });
+                            component.setTpl(null);
+                            expect(component.getInnerHtmlElement()).toHaveHtml('');
+                        });
+                    });
+                });
+
+                describe("changing a tpl", function() {
+                    describe("with no data", function() {
+                        it("should be empty", function() {
+                            makeTplComponent({
+                                tpl: '{foo}'
+                            });
+                            component.setTpl('{bar}');
+                            expect(component.getInnerHtmlElement()).toHaveHtml('');
+                        });
+                    });
+
+                    describe("with data", function() {
+                        it("should render the data with the new tpl", function() {
+                            makeTplComponent({
+                                tpl: '{foo}',
+                                data: {
+                                    foo: 1,
+                                    bar: 2
+                                }
+                            });
+                            component.setTpl('{bar}');
+                            expect(component.getInnerHtmlElement()).toHaveHtml('2');
+                        });
+                    });
+                });
+            });
+
+            describe("data", function() {
+                describe("setting data", function() {
+                    describe("with no tpl", function() {
+                        it("should be empty", function() {
+                            makeTplComponent();
+                            component.setData({
+                                foo: 1
+                            });
+                            expect(component.getInnerHtmlElement()).toHaveHtml('');
+                        });
+                    });
+
+                    describe("with a tpl", function() {
+                        it("should render the data", function() {
+                            makeTplComponent({
+                                tpl: '{foo}'
+                            });
+                            component.setData({
+                                foo: 1
+                            });
+                            expect(component.getInnerHtmlElement()).toHaveHtml('1');
+                        });
+                    });
+                });
+
+                describe("clearing data", function() {
+                    describe("with no tpl", function() {
+                        it("should be empty", function() {
+                            makeTplComponent({
+                                data: {
+                                    foo: 1
+                                }
+                            });
+                            component.setData(null);
+                            expect(component.getInnerHtmlElement()).toHaveHtml('');
+                        });
+                    });
+
+                    describe("with a tpl", function() {
+                        it("should be empty", function() {
+                            makeTplComponent({
+                                tpl: '{foo}',
+                                data: {
+                                    foo: 1
+                                }
+                            });
+                            component.setData(null);
+                            expect(component.getInnerHtmlElement()).toHaveHtml('');
+                        });
+                    });
+                });
+
+                describe("changing data", function() {
+                    describe("with no tpl", function() {
+                        it("should be empty", function() {
+                            makeTplComponent({
+                                data: {
+                                    foo: 1
+                                }
+                            });
+                            component.setData({
+                                foo: 2
+                            });
+                            expect(component.getInnerHtmlElement()).toHaveHtml('');
+                        });
+                    });
+
+                    describe("with a tpl", function() {
+                        it("should be empty", function() {
+                            makeTplComponent({
+                                tpl: '{foo}',
+                                data: {
+                                    foo: 1
+                                }
+                            });
+                            component.setData({
+                                foo: 2
+                            });
+                            expect(component.getInnerHtmlElement()).toHaveHtml('2');
+                        });
+                    });
+                });
+            });
+
+            describe("tplWriteMode", function() {
+                it("should respect the tplWriteMode", function() {
+                    makeComponent({
+                        tpl: '{foo}',
+                        data: {
+                            foo: 1
+                        }
+                    });
+                    expect(component.getInnerHtmlElement()).toHaveHtml('1');
+                    component.setData({
+                        foo: 2
+                    });
+                    expect(component.getInnerHtmlElement()).toHaveHtml('2');
+                    component.setTplWriteMode('append');
+                    component.setData({
+                        foo: 3
+                    });
+                    expect(component.getInnerHtmlElement()).toHaveHtml('23');
+                    component.setTpl('a{foo}');
+                    expect(component.getInnerHtmlElement()).toHaveHtml('23a3');
+                    component.setTplWriteMode('insertFirst');
+                    component.setData({
+                        foo: 4
+                    });
+                    expect(component.getInnerHtmlElement()).toHaveHtml('a423a3');
+                });
+            });
         });
     });
 

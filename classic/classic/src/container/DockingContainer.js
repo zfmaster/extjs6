@@ -370,6 +370,10 @@ Ext.define('Ext.container.DockingContainer', {
         me.addDocked(item);
 
         if (me.rendered) {
+            if (item.frame) {
+                item.updateFrame();
+            }
+            
             Ext.resumeLayouts(true);
         }
     },

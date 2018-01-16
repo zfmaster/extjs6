@@ -241,6 +241,10 @@ Ext.define('Ext.draw.engine.Canvas', {
      */
     toSave: ['fillGradient', 'strokeGradient'],
 
+    /**
+     * @property element
+     * @inheritdoc
+     */
     element: {
         reference: 'element',
         children: [{
@@ -783,6 +787,7 @@ Ext.define('Ext.draw.engine.Canvas', {
     },
 
     /**
+     * @method clearTransform
      * @inheritdoc
      */
     clearTransform: function () {
@@ -818,7 +823,7 @@ Ext.define('Ext.draw.engine.Canvas', {
     },
 
     /**
-     * @private
+     * @method renderSprite
      * @inheritdoc
      */
     renderSprite: function (sprite) {
@@ -934,6 +939,7 @@ Ext.define('Ext.draw.engine.Canvas', {
     },
 
     /**
+     * @method clear
      * @inheritdoc
      */
     clear: function () {

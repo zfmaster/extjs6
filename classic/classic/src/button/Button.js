@@ -160,27 +160,27 @@ Ext.define('Ext.button.Button', {
         iconAlign: 'left',
 
         /**
-         * @cfg {String}
+         * @cfg {String} text
          * The button text to be used as innerHTML (html tags are accepted).
          */
         text: null,
 
         /**
-         * @cfg {String}
+         * @cfg {String} textAlign
          * The text alignment for this button (center, left, right).
          */
         textAlign: 'center',
 
         /**
-         * @cfg {Boolean}
+         * @cfg {Boolean} arrowVisible
          * `false` to hide the button arrow.  Only applicable for {@link Ext.button.Split
          * Split Buttons} and buttons configured with a {@link #cfg-menu}.
          */
         arrowVisible: true,
 
         /**
-         * @cfg {Number/String} glyph
-         * @inheritdoc Ext.panel.Header#glyph
+         * @cfg glyph
+         * @inheritdoc Ext.panel.Header#cfg-glyph
          */
         glyph: null
 
@@ -189,14 +189,14 @@ Ext.define('Ext.button.Button', {
     /* End Definitions */
 
     /**
-     * @property {Boolean}
+     * @property {Boolean} isButton
      * `true` in this class to identify an object as an instantiated Button, or subclass thereof.
      */
     isButton: true,
 
     //<feature legacyBrowser>
     /**
-     * @property {Boolean}
+     * @property {Boolean} _syncFrameHeight
      * @private
      * `true` to keep height of the frame's "MC" element in sync.  This is needed in IE8
      * so that the button's inner element(s) can use height:100% to fill the button when
@@ -233,8 +233,8 @@ Ext.define('Ext.button.Button', {
     pressed: false,
 
     /**
-     * @cfg {String} icon
-     * @inheritdoc Ext.panel.Header#icon
+     * @cfg icon
+     * @inheritdoc Ext.panel.Header#cfg-icon
      */
 
     /**
@@ -305,7 +305,7 @@ Ext.define('Ext.button.Button', {
      */
 
     /**
-     * @cfg {Boolean} [enableToggle=false]
+     * @cfg {Boolean} enableToggle
      * True to enable pressed/not pressed toggling. If a {@link #toggleGroup} is specified, this
      * option will be set to true.
      */
@@ -347,7 +347,7 @@ Ext.define('Ext.button.Button', {
      */
 
     /**
-     * @cfg {String} iconCls
+     * @cfg iconCls
      * @inheritdoc Ext.panel.Header#cfg-iconCls
      */
 
@@ -379,7 +379,7 @@ Ext.define('Ext.button.Button', {
     tooltipType: 'qtip',
 
     /**
-     * @cfg {String} [baseCls='x-btn']
+     * @cfg {String} baseCls
      * The base CSS class to add to all buttons.
      */
     baseCls: Ext.baseCSSPrefix + 'btn',
@@ -401,14 +401,14 @@ Ext.define('Ext.button.Button', {
      */
 
     /**
-      * @cfg {String} [hrefTarget="_blank"]
+      * @cfg {String} hrefTarget
       * The target attribute to use for the underlying anchor. Only used if the {@link #href}
       * property is specified.
       */
      hrefTarget: '_blank',
 
      /**
-     * @cfg {Boolean} [destroyMenu=true]
+     * @cfg {Boolean} destroyMenu
      * Whether or not to destroy any associated menu when this button is destroyed.
      * In addition, a value of `true` for this config will destroy the currently bound menu when a new
      * menu is set in {@link #setMenu} unless overridden by that method's destroyMenu function argument.
@@ -431,9 +431,22 @@ Ext.define('Ext.button.Button', {
      * The value of this button.  Only applicable when used as an item of a {@link Ext.button.Segmented Segmented Button}.
      */
 
+    /**
+     * @property focusable
+     * @inheritdoc
+     */
     focusable: true,
+    
+    /**
+     * @property ariaRole
+     * @inheritdoc
+     */
     ariaRole: 'button',
 
+    /**
+     * @cfg keyMap
+     * @inheritdoc
+     */
     keyMap: {
         scope: 'this',
         SPACE: 'onEnterKey',
@@ -441,14 +454,22 @@ Ext.define('Ext.button.Button', {
         DOWN: 'onDownKey'
     },
 
+    /**
+     * @property defaultBindProperty
+     * @inheritdoc
+     */
     defaultBindProperty: 'text',
 
+    /**
+     * @cfg childEls
+     * @inheritdoc
+     */
     childEls: [
         'btnEl', 'btnWrap', 'btnInnerEl', 'btnIconEl', 'arrowEl'
     ],
 
     /**
-     * @cfg
+     * @cfg publishes
      * @inheritdoc
      */
     publishes: {
@@ -467,6 +488,10 @@ Ext.define('Ext.button.Button', {
     _noTextCls: Ext.baseCSSPrefix + 'btn-no-text',
     _hasIconCls: Ext.baseCSSPrefix + 'btn-icon',
     _pressedCls: Ext.baseCSSPrefix + 'btn-pressed',
+    /**
+     * @cfg overCls
+     * @inheritdoc
+     */
     overCls: Ext.baseCSSPrefix + 'btn-over',
     _disabledCls: Ext.baseCSSPrefix + 'btn-disabled',
     _menuActiveCls: Ext.baseCSSPrefix + 'btn-menu-active',
@@ -477,6 +502,10 @@ Ext.define('Ext.button.Button', {
     // We have to keep "unselectable" attribute on all elements because it's not inheritable.
     // Without it, clicking anywhere on a button disrupts current selection and cursor position
     // in HtmlEditor.
+    /**
+     * @cfg renderTpl
+     * @inheritdoc
+     */
     renderTpl:
         '<span id="{id}-btnWrap" data-ref="btnWrap" role="presentation" unselectable="on" style="{btnWrapStyle}" ' +
                 'class="{btnWrapCls} {btnWrapCls}-{ui} {splitCls}{childElCls}">' +
@@ -580,12 +609,28 @@ Ext.define('Ext.button.Button', {
      * option.
      */
 
+    /**
+     * @property maskOnDisable
+     * @inheritdoc
+     */
     maskOnDisable: false,
 
+    /**
+     * @cfg shrinkWrap
+     * @inheritdoc
+     */
     shrinkWrap: 3,
 
+    /**
+     * @cfg frame
+     * @inheritdoc
+     */
     frame: true,
 
+    /**
+     * @cfg autoEl
+     * @inheritdoc
+     */
     autoEl: {
         tag: 'a',
         hidefocus: 'on',

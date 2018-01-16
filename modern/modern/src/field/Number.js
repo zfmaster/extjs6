@@ -143,14 +143,13 @@ Ext.define('Ext.field.Number', {
     parseValidator: 'number',
 
     initialize: function() {
-        var inputElement = this.inputElement.dom;
         // Force numberFormat creation
         this.getDecimals();
 
         this.callParent();
 
         // This isn't supported in browsers yet, but is part of the spec.
-        inputElement.setAttribute('inputmode', 'numeric');
+        this.inputElement.dom.setAttribute('inputmode', 'numeric');
 
         //<debug>
         // Check after configuration to catch subclasses with config in prototype
@@ -192,20 +191,17 @@ Ext.define('Ext.field.Number', {
 
     doValidate: function (value, errors, skipLazy) {
         var me = this,
+            String = Ext.String,
             minValue = me.getMinValue(),
             maxValue = me.getMaxValue();
 
         me.callParent([ value, errors, skipLazy ]);
 
         if (minValue != null && value < minValue) {
-            errors.push(Ext.String.format(me.minValueText, minValue));
+            errors.push(String.format(me.minValueText, minValue));
         }
         else if (maxValue != null && value > maxValue) {
-            errors.push(Ext.String.format(me.maxValueText, maxValue));
-        }
-
-        if (me.inputElement.dom.validity.badInput) {
-            errors.push(me.badInputText);
+            errors.push(String.format(me.maxValueText, maxValue));
         }
     },
 

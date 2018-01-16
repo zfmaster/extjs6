@@ -2422,15 +2422,16 @@ function() {
 
         function getExpectedWidth() {
             var inputEl = component.inputEl,
-                textMeasure = inputEl.getTextWidth(inputEl.dom.value + component.growAppend),
+                textMeasure = inputEl.getTextWidth(inputEl.dom.value),
                 borders = component.inputWrap.getBorderWidth('lr') + component.triggerWrap.getBorderWidth('lr'),
+                inputElPadding = inputEl.getPadding('lr'),
                 triggerWidth = 0;
 
             Ext.Object.each(component.getTriggers(), function(key, trigger) {
                 triggerWidth += trigger.el.getWidth();
             });
 
-            return textMeasure + borders + triggerWidth;
+            return textMeasure + borders + triggerWidth + inputElPadding;
         }
 
         it("should start out at growMin", function() {
@@ -2450,6 +2451,7 @@ function() {
                 grow: true,
                 growMin: 50
             });
+
             expect(component.getWidth()).toBe(getExpectedWidth());
         });
 
@@ -3404,13 +3406,14 @@ function() {
 
                 create(true);
 
-                jasmine.fireMouseEvent(component.inputEl, 'mousedown');
-                jasmine.fireMouseEvent(component.inputEl, 'mouseup');
+                jasmine.focusAndWait(component);
 
-                indices = getTextSelectionIndices(component.inputEl.dom);
-                // end of selection should be 3 since selectOnFocus: true
-                expect(indices[0]).toBe(0);
-                expect(indices[1]).toBe(3);              
+                runs(function() {
+                    indices = getTextSelectionIndices(component.inputEl.dom);
+                    // end of selection should be 3 since selectOnFocus: true
+                    expect(indices[0]).toBe(0);
+                    expect(indices[1]).toBe(3);
+                });
             });
         });
     });

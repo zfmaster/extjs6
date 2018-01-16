@@ -518,11 +518,13 @@ Ext.define('Ext.grid.NavigationModel', {
         },
 
         onSelectAllKeyPress: function(e) {
-            this.onNavigate(e);
-
             // Return true to not stop the event if it's in an input field
             if (Ext.fly(e.target).isInputField()) {
                 return true;
+            }
+            // Superclass selects all
+            else {
+                return this.callParent([e]);
             }
         },
 

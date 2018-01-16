@@ -1069,8 +1069,8 @@ Ext.define('Ext.util.Collection', {
 
     /**
      * Returns true if the collection contains the passed Object as an item.
-     * @param {Object} item The Object to look for in the collection.
-     * @return {Boolean} `true` if the collection contains the Object as an item.
+     * @param {Object} item The item to look for in the collection.
+     * @return {Boolean} `true` if the collection contains the item.
      * @since 5.0.0
      */
     contains: function (item) {
@@ -1083,6 +1083,28 @@ Ext.define('Ext.util.Collection', {
         }
 
         return ret;
+    },
+
+    /**
+     * Returns true if the collection contains all the passed items. If the first argument
+     * is an array, then the items in that array are checked. Otherwise, all arguments
+     * passed to this method are checked.
+     *
+     * @param {Object.../Object[]} items The item(s) that must be in the collection.
+     * @return {Boolean} `true` if the collection contains all the items.
+     * @since 6.5.2
+     */
+    containsAll: function (items) {
+        var all = Ext.isArray(items) ? items : arguments,
+            i;
+
+        for (i = all.length; i-- > 0; ) {
+            if (!this.contains(all[i])) {
+                return false;
+            }
+        }
+
+        return true;
     },
 
     /**
@@ -3204,9 +3226,14 @@ Ext.define('Ext.util.Collection', {
 
             me.setSource(source);
             me.autoSource = source;
-        } else if (source.length || me.length) {
-            // if both us and the source are empty then we can skip this
-            me.onCollectionRefresh(source);
+        } else {
+            if (source.destroyed) {
+                return;
+            }
+            if (source.length || me.length) {
+                // if both us and the source are empty then we can skip this
+                me.onCollectionRefresh(source);
+            }
         }
         me.notify('filter');
     },

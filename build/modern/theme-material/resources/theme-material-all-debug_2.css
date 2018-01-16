@@ -1,4 +1,36 @@
 /* /mnt/web/www/extjs/ext-6.2.0/modern/theme-material/sass/etc/mixins/icons.scss:8 */
+.md-icon-call-missed-outgoing::before {
+    content: 'call_missed_outgoing';
+}
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-material/sass/etc/mixins/icons.scss:8 */
+.md-icon-call-received::before {
+    content: 'call_received';
+}
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-material/sass/etc/mixins/icons.scss:8 */
+.md-icon-call-split::before {
+    content: 'call_split';
+}
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-material/sass/etc/mixins/icons.scss:8 */
+.md-icon-chat::before {
+    content: 'chat';
+}
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-material/sass/etc/mixins/icons.scss:8 */
+.md-icon-chat-bubble::before {
+    content: 'chat_bubble';
+}
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-material/sass/etc/mixins/icons.scss:8 */
+.md-icon-chat-bubble-outline::before {
+    content: 'chat_bubble_outline';
+}
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-material/sass/etc/mixins/icons.scss:8 */
+.md-icon-clear-all::before {
+    content: 'clear_all';
+}
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-material/sass/etc/mixins/icons.scss:8 */
+.md-icon-comment::before {
+    content: 'comment';
+}
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-material/sass/etc/mixins/icons.scss:8 */
 .md-icon-contact-mail::before {
     content: 'contact_mail';
 }
@@ -2466,49 +2498,49 @@
 .md-icon-star-half::before {
     content: 'star_half';
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-material/sass/src/Component.scss:66 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-material/sass/src/Component.scss:67 */
 @font-face {
     font-family: 'Roboto';
     font-weight: 400;
     font-style: normal;
     src: local('Roboto Regular'), local('Roboto-Regular'), url("fonts/roboto/Roboto-Regular.ttf") format('truetype');
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-material/sass/src/Component.scss:74 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-material/sass/src/Component.scss:75 */
 @font-face {
     font-family: 'Roboto';
     font-weight: 100;
     font-style: normal;
     src: local('Roboto Light'), local('Roboto-Light'), url("fonts/roboto/Roboto-Light.ttf") format('truetype');
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-material/sass/src/Component.scss:83 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-material/sass/src/Component.scss:84 */
 @font-face {
     font-family: 'Roboto';
     font-weight: 600;
     font-style: normal;
     src: local('Roboto Medium'), local('Roboto-Medium'), url("fonts/roboto/Roboto-Medium.ttf") format('truetype');
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-material/sass/src/Component.scss:92 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-material/sass/src/Component.scss:93 */
 @font-face {
     font-family: 'Roboto';
     font-weight: 900;
     font-style: normal;
     src: local('Roboto Bold'), local('Roboto-Bold'), url("fonts/roboto/Roboto-Bold.ttf") format('truetype');
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-material/sass/src/Component.scss:101 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-material/sass/src/Component.scss:102 */
 @font-face {
     font-family: 'Roboto';
     font-weight: normal;
     font-style: italic;
     src: local('Roboto Italic'), local('Roboto-Italic'), url("fonts/roboto/Roboto-Italic.ttf") format('truetype');
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-material/sass/src/Component.scss:112 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-material/sass/src/Component.scss:113 */
 @font-face {
     font-family: 'Material Icons';
     font-style: normal;
     font-weight: 400;
     src: local('Material Icons'), local('MaterialIcons-Regular'), url("fonts/MaterialIcons-Regular.ttf") format('truetype');
 }
-/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-material/sass/src/Component.scss:121 */
+/* /mnt/web/www/extjs/ext-6.2.0/modern/theme-material/sass/src/Component.scss:122 */
 html,
 body {
     font-family: 'Roboto', sans-serif;

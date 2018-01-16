@@ -1033,11 +1033,21 @@ Ext.define('Ext.grid.column.Column', {
     beforeShowMenu: function (menu) {
         var me = this,
             store = me.getGrid().getStore(),
-            isGrouped = !!store.getGrouper(),
+            isGrouped = store && !!store.getGrouper(),
             groupByThis = menu.getComponent('groupByThis'),
             showInGroups = menu.getComponent('showInGroups'),
             sortAsc = menu.getComponent('sortAsc'),
             sortDesc = menu.getComponent('sortDesc');
+
+        sortAsc.setDisabled(!store);
+        sortDesc.setDisabled(!store);
+
+        // We have no store yet, we can't group or ungroup
+        if (!store) {
+            groupByThis.setHidden(true);
+            showInGroups.setHidden(true);
+            return;
+        }
 
         // Ensure the checked state of the ascending and descending menu items
         // matches the reality of the Store's sorters.
@@ -1050,7 +1060,7 @@ Ext.define('Ext.grid.column.Column', {
             me.syncMenuItemState(sortAsc);
         }
         if (sortDesc) {
-             me.syncMenuItemState(sortDesc);
+            me.syncMenuItemState(sortDesc);
         }
 
         if (groupByThis) {
@@ -1188,8 +1198,8 @@ Ext.define('Ext.grid.column.Column', {
             grid = me.getGrid(),
             selModel = grid.getSelectable(),
             store = grid.getStore(),
-            sorters = store.getSorters(true),
-            sorter = me.pickSorter(),
+            sorters = store && store.getSorters(true),
+            sorter = store && me.pickSorter(),
             sorterIndex = sorter ? sorters.indexOf(sorter) : -1,
             isSorted = sorter && (sorterIndex !== -1 || sorter === store.getGrouper());
 
@@ -1197,13 +1207,13 @@ Ext.define('Ext.grid.column.Column', {
         // neither should tapping on any components (e.g. tools) contained
         // in the column.
         if (Ext.Component.from(e) !== me ||
-                e.getTarget('.' + Ext.baseCSSPrefix + 'item-no-tap', me)) {
+            e.getTarget('.' + Ext.baseCSSPrefix + 'item-no-tap', me)) {
             return;
         }
 
         // Column tap sorts if we are sortable, and the selection model
         // is not selecting columns
-        if (me.isSortable() && (!selModel || !selModel.getColumns())) {
+        if (store && me.isSortable() && (!selModel || !selModel.getColumns())) {
             // Special case that our sorter is the grouper
             if (sorter.isGrouper) {
                 sorter.toggle();

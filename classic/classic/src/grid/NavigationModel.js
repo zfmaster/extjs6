@@ -918,7 +918,7 @@ Ext.define('Ext.grid.NavigationModel', {
                 result = result.view.walkCells(result, dir, rowVeto ? me.vetoRowChange : null, me);
 
                 // If the new position is fousable, we're done.
-                if (result && result.column.cellFocusable !== false) {
+                if (result && result.getCell(true) && result.column.cellFocusable !== false) {
                     return result;
                 }
             }

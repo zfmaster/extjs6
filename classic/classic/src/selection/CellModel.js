@@ -45,6 +45,7 @@ Ext.define('Ext.selection.CellModel', {
     isCellModel: true,
 
     /**
+     * @cfg deselectOnContainerClick
      * @inheritdoc Ext.mixin.Selectable#cfg!deselectOnContainerClick
      */
     deselectOnContainerClick: false,

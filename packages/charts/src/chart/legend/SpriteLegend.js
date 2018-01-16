@@ -42,6 +42,7 @@ Ext.define('Ext.chart.legend.SpriteLegend', {
         /**
          * @cfg {Ext.chart.legend.store.Store} store
          * The {@link Ext.chart.legend.store.Store} to bind this legend to.
+         * @private
          */
         store: null,
 
@@ -604,6 +605,7 @@ Ext.define('Ext.chart.legend.SpriteLegend', {
         if (surface) {
             markerConfig = series.getMarkerStyleByIndex(data.index);
             markerConfig.fillStyle = data.mark;
+            markerConfig.hidden = false;
             if (seriesMarker && seriesMarker.type) {
                 markerConfig.type = seriesMarker.type;
             }
@@ -704,6 +706,7 @@ Ext.define('Ext.chart.legend.SpriteLegend', {
 
             markerConfig = series.getMarkerStyleByIndex(data.index);
             markerConfig.fillStyle = data.mark;
+            markerConfig.hidden = false;
             Ext.apply(markerConfig, this.getMarker());
             marker = sprite.getMarker();
             marker.setAttributes({

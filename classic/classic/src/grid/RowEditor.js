@@ -95,6 +95,7 @@ Ext.define('Ext.grid.RowEditor', {
             me.items = [
                 // Locked columns container shrinkwraps the fields
                 lockedCt = me.lockedColumnContainer = new Container({
+                    $initParent: me,
                     id: grid.id + '-locked-editor-cells',
                     scrollable: {
                         x: false,
@@ -110,19 +111,23 @@ Ext.define('Ext.grid.RowEditor', {
 
                 // Normal columns container flexes the remaining RowEditor width
                 normalCt = me.normalColumnContainer = new Container({
+                    $initParent: me,
+                    id: grid.id + '-normal-editor-cells',
                     // not user scrollable, but needs a Scroller instance for syncing with view
                     scrollable: {
                         x: false,
                         y: false
                     },
-                    flex: 1,
-                    id: grid.id + '-normal-editor-cells',
                     layout: {
                         type: 'hbox',
                         align: 'middle'
-                    }
+                    },
+                    flex: 1
                 })
             ];
+
+            delete lockedCt.$initParent;
+            delete normalCt.$initParent;
 
             // keep horizontal position of fields in sync with view's horizontal scroll position
             lockedCt.getScrollable().addPartner(grid.lockedGrid.view.getScrollable(), 'x');

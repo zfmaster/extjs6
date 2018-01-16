@@ -201,6 +201,7 @@ Ext.define('Ext.layout.Box', {
     },
 
     destroy: function() {
+        Ext.destroy(this.getOverflow());
         this.positionSortFn = null;
         this.callParent();
     },

@@ -279,21 +279,24 @@ Ext.define('Ext.Component', {
 
     cachedConfig: {
         /**
-         * @cfg {Number/String} margin The margin to use on this Component. Can be specified as a number (in which case
-         * all edges get the same margin) or a CSS string like '5 10 10 10'
+         * @cfg {Number/String} margin
+         * The margin to use on this Component. Can be specified as a number (in which
+         * case all edges get the same margin) or a CSS string like '5 10 10 10'
          * @accessor
          */
         margin: null,
 
         /**
-         * @cfg {Number/String} padding The padding to use on this Component. Can be specified as a number (in which
+         * @cfg {Number/String} padding
+         * The padding to use on this Component. Can be specified as a number (in which
          * case all edges get the same padding) or a CSS string like '5 10 10 10'
          * @accessor
          */
         padding: null,
 
         /**
-         * @cfg {Number} [tabIndex] DOM tabIndex attribute for this component's
+         * @cfg {Number} tabIndex
+         * DOM tabIndex attribute for this component's
          * {@link #focusEl}.
          */
         tabIndex: null
@@ -449,8 +452,9 @@ Ext.define('Ext.Component', {
         displayed: null,
 
         /**
-         * @cfg {String/Ext.Element/HTMLElement} html Optional HTML content to render inside this Component, or a reference
-         * to an existing element on the page.
+         * @cfg {String/Ext.Element/HTMLElement} html
+         * Optional HTML content to render inside this Component, or a reference to an
+         * existing element on the page.
          * @accessor
          */
         html: null,
@@ -464,7 +468,8 @@ Ext.define('Ext.Component', {
         draggable: null,
 
         /**
-         * @cfg {Number} [zIndex] The z-index to give this Component when it is rendered.
+         * @cfg {Number} zIndex
+         * The z-index to give this Component when it is rendered.
          *
          * Not valid for {@link #cfg-floated} Components. The Z ordering of {@link #cfg-floated}
          * Components is managed by ordering of the DOM elements.
@@ -518,8 +523,10 @@ Ext.define('Ext.Component', {
         hideAnimation: null,
 
         /**
-         * @cfg {String} tplWriteMode The Ext.(X)Template method to use when
-         * updating the content area of the Component.
+         * @cfg {String} tplWriteMode
+         * The Ext.(X)Template method to use when updating the content area of the
+         * Component.
+         * 
          * Valid modes are:
          *
          * - append
@@ -543,17 +550,19 @@ Ext.define('Ext.Component', {
         data: null,
 
         /**
-         * @cfg {Ext.Element/HTMLElement/String} contentEl The configured element will automatically be
-         * added as the content of this component. When you pass a string, we expect it to be an element id.
-         * If the content element is hidden, we will automatically show it.
+         * @cfg {Ext.Element/HTMLElement/String} contentEl
+         * The configured element will automatically be added as the content of this
+         * component. When you pass a string, we expect it to be an element id. If the
+         * content element is hidden, we will automatically show it.
          * @accessor
          */
         contentEl: null,
 
         /**
-         * @cfg {Ext.data.Model} record A model instance which updates the Component's html based on it's tpl. Similar to the data
-         * configuration, but tied to to a record to make allow dynamic updates.  This must be a model
-         * instance and not a configuration of one.
+         * @cfg {Ext.data.Model} record
+         * A model instance which updates the Component's html based on it's tpl. Similar
+         * to the data configuration, but tied to to a record to make allow dynamic
+         * updates.  This must be a model instance and not a configuration of one.
          * @accessor
          */
         record: null,
@@ -576,19 +585,21 @@ Ext.define('Ext.Component', {
         tooltip: null,
 
         /**
-         * @cfg {Boolean} [axisLock] If `true`, then, when {@link #showBy} or {@link #alignTo} fallback on
+         * @cfg {Boolean} axisLock
+         * If `true`, then, when {@link #showBy} or {@link #alignTo} fallback on 
          * constraint violation only takes place along the major align axis.
          *
-         * That is, if alignment `"l-r"` is being used, and `axisLock: true` is used, then if constraints
-         * fail, only fallback to `"r-l"` is considered.
+         * That is, if alignment `"l-r"` is being used, and `axisLock: true` is used,
+         * then if constraints fail, only fallback to `"r-l"` is considered.
          */
         axisLock: null,
 
         // @cmd-auto-dependency {defaultType: "Ext.Mask"}
         /**
-         * @cfg {Boolean} modal `true` to make this Component modal. This will create a mask underneath the Component
-         * that covers its parent and does not allow the user to interact with any other Components until this
-         * Component is dismissed.
+         * @cfg {Boolean} modal
+         * `true` to make this Component modal. This will create a mask underneath the
+         * Component that covers its parent and does not allow the user to interact with
+         * any other Components until this Component is dismissed.
          * @accessor
          */
         modal: {
@@ -597,8 +608,9 @@ Ext.define('Ext.Component', {
         },
 
         /**
-         * @cfg {Boolean} hideOnMaskTap When using a {@link #cfg!modal} Component, setting this to `true`
-         * will hide the modal mask and the Container when the mask is tapped on.
+         * @cfg {Boolean} hideOnMaskTap
+         * When using a {@link #cfg!modal} Component, setting this to `true` will hide
+         * the modal mask and the Container when the mask is tapped on.
          * @accessor
          */
         hideOnMaskTap: null,
@@ -805,6 +817,7 @@ Ext.define('Ext.Component', {
      */
 
     /**
+     * @property defaultBindProperty
      * @inheritdoc
      */
     defaultBindProperty: 'html',
@@ -842,8 +855,16 @@ Ext.define('Ext.Component', {
 
     bodyElement: null,
 
+    /**
+     * @property classCls
+     * @inheritdoc
+     */
     classCls: Ext.baseCSSPrefix + 'component',
-    rootCls: Ext.baseCSSPrefix + 'root',
+
+    /**
+     * @property floatingCls
+     * @inheritdoc
+     */
     floatingCls: Ext.baseCSSPrefix + 'floating',
     hiddenCls: Ext.baseCSSPrefix + 'hidden',
 
@@ -1830,6 +1851,7 @@ Ext.define('Ext.Component', {
                 if (animation === undefined || (animation && !Ext.isObject(animation))) {
                     animation = me.getHideAnimation();
                 }
+
                 if (animation) {
                     me.on({
                         beforehiddenchange: 'onBeforeHiddenChange',
@@ -2106,8 +2128,7 @@ Ext.define('Ext.Component', {
             if (animation === undefined || (animation && !Ext.isObject(animation))) {
                 animation = me.getShowAnimation();
             }
-
-            if (animation) {
+            if (animation && !me.isConfiguring) {
                 me.on({
                     beforehiddenchange: 'onBeforeHiddenChange',
                     scope: me,
@@ -2203,7 +2224,6 @@ Ext.define('Ext.Component', {
                 }
                 controller.pause();
             }
-
             Ext.Animator.run(animation);
         }
     },
@@ -2236,6 +2256,16 @@ Ext.define('Ext.Component', {
         return Ext.XTemplate.get(tpl);
     },
 
+    updateTpl: function(tpl) {
+        if (!this.isConfiguring) {
+            if (tpl) {
+                this.doUpdateTpl();
+            } else {
+                this.getInnerHtmlElement().setHtml('');
+            }
+        }
+    },
+
     applyData: function(data) {
         if (Ext.isObject(data)) {
             return Ext.apply({}, data);
@@ -2253,12 +2283,7 @@ Ext.define('Ext.Component', {
         var me = this;
 
         if (newData) {
-            var tpl = me.getTpl(),
-                tplWriteMode = me.getTplWriteMode();
-
-            if (tpl) {
-                tpl[tplWriteMode](me.getInnerHtmlElement(), newData);
-            }
+            me.doUpdateTpl(newData);
 
             /**
              * @event updatedata
@@ -2266,7 +2291,9 @@ Ext.define('Ext.Component', {
              * @param {Ext.Component} sender The component firing this event.
              * @param {Object} newData The new data
              */
-            this.fireEvent('updatedata', me, newData);
+            if (!me.isConfiguring) {
+                me.fireEvent('updatedata', me, newData);
+            }
         }
     },
 
@@ -2286,10 +2313,9 @@ Ext.define('Ext.Component', {
 
         if (!newRecord) {
             me.updateData('');
-        }
-        else {
+        } else {
             newRecord.join(me);
-            me.updateData(newRecord.getData(true));
+            me.doUpdateTpl(newRecord.getData(true));
         }
     },
 
@@ -2796,6 +2822,18 @@ Ext.define('Ext.Component', {
                 }
             }
             return ret;
+        },
+
+        doUpdateTpl: function(data) {
+            var me = this,
+                tpl = me.getTpl(),
+                writeMode;
+
+            if (tpl) {
+                writeMode = me.getTplWriteMode();
+                data = data || me.getData() || {};
+                tpl[writeMode](me.getInnerHtmlElement(), data);
+            }
         },
 
         /**

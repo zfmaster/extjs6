@@ -249,7 +249,7 @@ Ext.define('Ext.ComponentManager', {
      * @param {Object} scope The scope to execute in. Defaults to `this`.
      */
     each: function(fn, scope){
-        return Ext.Object.each(this.all, fn, scope);
+        Ext.Object.each(this.all, fn, scope);
     },
 
     /**

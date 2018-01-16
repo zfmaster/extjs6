@@ -210,7 +210,7 @@ Ext.define('Ext.viewport.Default', function() {
         },
 
         hasViewportCls: Ext.baseCSSPrefix + 'has-viewport',
-        hasUnscalableViewportCls: Ext.baseCSSPrefix + 'has-unscalable-viewport',
+        fixedCls: Ext.baseCSSPrefix + 'fixed-viewport',
 
         /**
          * @private
@@ -240,12 +240,11 @@ Ext.define('Ext.viewport.Default', function() {
             // We must provide a non-scrolling one if we are not configured to scroll,
             // otherwise the deferred ready listener in Scroller will create
             // one with scroll: true
-            Ext.setViewportScroller(me.getScrollable() || {
+            Ext.setViewportScroller(me.getScrollable() || Ext.getViewportScroller().setConfig({
                 x: false,
                 y: false,
-                element: Ext.getBody(),
                 component: me
-            });
+            }));
 
             // The body has to be overflow:hidden
             Ext.getBody().setStyle('overflow', 'hidden');
@@ -258,7 +257,9 @@ Ext.define('Ext.viewport.Default', function() {
                 me.addWindowListener('orientationchange', me.onOrientationChange.bind(me));
             }
 
-            me.preventOverscroll();
+            if (!Ext.os.is.iOS || !me.isScalable()) {
+                Ext.get(document.documentElement).addCls(me.fixedCls);
+            }
 
             // Tale over firing the resize event to sync the Viewport first, then fire the event.
             Ext.GlobalEvents.on('resize', 'onWindowResize', me, {priority: 1000});
@@ -332,9 +333,6 @@ Ext.define('Ext.viewport.Default', function() {
             if (this.getAutoRender()) {
                 this.render();
             }
-            if (Ext.browser.name === 'ChromeiOS') {
-                this.setHeight('-webkit-calc(100% - ' + ((window.outerHeight - window.innerHeight) / 2) + 'px)');
-            }
         },
 
         render: function() {
@@ -342,7 +340,9 @@ Ext.define('Ext.viewport.Default', function() {
                 body = Ext.getBody();
 
             if (!me.rendered) {
-                me.callParent([body]);
+                // Render ourself *before* any existing floatRoot so that floateds
+                // are always on top.
+                me.callParent([body, Ext.floatRoot]);
 
                 me.setOrientation(me.determineOrientation());
                 Ext.getBody().addCls(Ext.baseCSSPrefix + me.getOrientation());
@@ -982,20 +982,32 @@ Ext.define('Ext.viewport.Default', function() {
             }
         },
 
+        applyScrollable: function (scrollable) {
+            return this.callParent([ scrollable, Ext.getViewportScroller() ]);
+        },
+
         doDestroy: function() {
-            // If there are floated components, they might not be be being destroyed.
-            // Move the floatRoot back into the document. It is "sticky".
-            if (Ext.floatRoot) {
-                document.body.appendChild(Ext.floatRoot.dom);
-                delete this.floatWrap;
-                Ext.floatRoot.getData().component = null;
+            var me = this,
+                docEl = Ext.get(document.documentElement),
+                scroller = me._scrollable;
+
+            docEl.removeCls(me.hasViewportCls);
+            docEl.removeCls(me.fixedCls);
+
+            // We acquired usage of the global body scroller through our applyScrollable.
+            // Just relinquish it here and allow it to live on.
+            if (scroller) {
+                // Return the body scroller to default; X and Y scrolling
+                scroller.setConfig({
+                    x: true,
+                    y: true
+                });
+                me._scrollable = null;
             }
 
-            Ext.getBody().setStyle('overflow', '');
+            Ext.un('resize', 'onWindowResize', me);
 
-            Ext.GlobalEvents.un('resize', 'onWindowResize', this);
-
-            this.callParent();
+            me.callParent();
 
             Ext.Viewport = null;
         },
@@ -1077,6 +1089,27 @@ Ext.define('Ext.viewport.Default', function() {
                 }
 
                 me.callParent([eventName, fn, scope, options, order, caller, manager]);
+            },
+
+            /**
+             * Returns true if the user can zoom the viewport
+             * @private
+             */
+            isScalable: function () {
+                var me = this,
+                    metas = document.querySelectorAll('meta[name="viewport"]'),
+                    // if there are multiple viewport tags the last one wins.
+                    meta = metas.length && metas[metas.length - 1],
+                    scalable = true,
+                    content;
+
+                if (meta) {
+                    content = meta.getAttribute('content');
+
+                    scalable = !(content && me.notScalableRe.test(content));
+                }
+
+                return scalable;
             },
 
             /**
@@ -1265,29 +1298,6 @@ Ext.define('Ext.viewport.Default', function() {
                 }
 
                 me.$swiping = false;
-            },
-
-            /**
-             * Reads the viewport meta tag and adds a 'x-has-unscalable-viewport' cls to
-             * the documentElement if the viewport meta tag has "user-scalable=no" in its
-             * content.  This allows the documentElement and body to be set to "position:fixed"
-             * To prevent overscrolling on iOS when the viewport is not scalable.
-             * @private
-             */
-            preventOverscroll: function () {
-                var me = this,
-                    metas = document.querySelectorAll('meta[name="viewport"]'),
-                    // if there are multiple viewport tags the last one wins.
-                    meta = metas.length && metas[metas.length - 1],
-                    content;
-
-                if (meta) {
-                    content = meta.getAttribute('content');
-
-                    if (content && me.notScalableRe.test(content)) {
-                        Ext.get(document.documentElement).addCls(me.hasUnscalableViewportCls);
-                    }
-                }
             },
 
             /**

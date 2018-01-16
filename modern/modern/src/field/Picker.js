@@ -338,7 +338,13 @@ Ext.define('Ext.field.Picker', {
     },
 
     applyFocusTrap: function (focusTrap) {
-        return this.el.appendChild(Ext.dom.Element.create(focusTrap));
+        var result = this.el.appendChild(Ext.dom.Element.create(focusTrap));
+
+        // Flag to indicate that it should not be considered for programmatic focus.
+        // For example Grid Location actionable navigation ignores elements
+        // with this property set when searching for actionable elements.
+        result.$isFocusTrap = true;
+        return result;
     },
 
     onResize: function () {
@@ -481,6 +487,11 @@ Ext.define('Ext.field.Picker', {
         var me = this;
 
         me.expanded = true;
+
+        // If there's an edge picker encroaching, then ensure this field is still visible.
+        if (me.pickerType === 'edge') {
+            me.el.dom.scrollIntoView();
+        }
 
         // We have to explicitly hide on any pointer event outside the field's component tree
         // relying on focus is not enough because you can mousedown on a window header and

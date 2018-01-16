@@ -168,6 +168,10 @@ Ext.define('Ext.grid.locking.View', {
         me.rendered = true;
         me.fireEvent('render', me);
 
+        // Here we should set the maskElement to scrollBody so the loadMask cover both views
+        // but not the headers and grid title bar.
+        me.ownerGrid.maskElement = 'scrollBody';
+
         if (mask) {
             // either a config object 
             if (Ext.isObject(mask)) {

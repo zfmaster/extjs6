@@ -19,7 +19,8 @@ Ext.Function = (function() {
         slice = Array.prototype.slice,
         win = window,
         global = Ext.global,
-        hasImmediate = !!(global.setImmediate && global.clearImmediate),
+        // We disable setImmediate in unit tests because it derails internal Jasmine queue
+        hasImmediate = !Ext.disableImmediate && !!(global.setImmediate && global.clearImmediate),
         requestAnimFrame = win.requestAnimationFrame || win.webkitRequestAnimationFrame ||
             win.mozRequestAnimationFrame || win.oRequestAnimationFrame ||
             function(callback) {
@@ -987,6 +988,14 @@ Ext.Function = (function() {
 
             return s;
         }
+
+        //<debug>
+        // This is useful for unit testing so we can force handlers which have been deferred
+        // to the next animation frame to run immediately
+        ,fireElevatedHandlers: function() {
+            fireElevatedHandlers();
+        }
+        //</debug>
     }; // ExtFunction
 
     /**

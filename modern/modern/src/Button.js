@@ -285,7 +285,7 @@ Ext.define('Ext.Button', {
         menuAlign: 'tl-bl?',
 
         /**
-         * @cfg {Boolean} [destroyMenu=true]
+         * @cfg {Boolean} destroyMenu
          * Whether or not to destroy any associated menu when this button is destroyed.
          * In addition, a value of `true` for this config will destroy the currently bound menu
          * when a new menu is set in {@link #setMenu} unless overridden by that method's destroyMenu
@@ -302,6 +302,10 @@ Ext.define('Ext.Button', {
          */
         stretchMenu: false,
 
+        /**
+         * @cfg eventHandlers
+         * @inheritdoc
+         */
         eventHandlers: {
             click: 'onClick'
         }
@@ -340,7 +344,7 @@ Ext.define('Ext.Button', {
         icon: false,
 
         /**
-         * @cfg {'top'/'right'/'bottom'/'left'}
+         * @cfg {'top'/'right'/'bottom'/'left'} iconAlign
          * The position of the icon relative to the button text
          */
         iconAlign: 'left',
@@ -373,7 +377,7 @@ Ext.define('Ext.Button', {
         arrow: null,
 
         /**
-         * @cfg {"right"/"bottom"} [arrowAlign='right']
+         * @cfg {"right"/"bottom"} arrowAlign
          * The side of the Button box to render the arrow if the button has an associated
          * {@link #cfg!menu}.
          */
@@ -475,6 +479,10 @@ Ext.define('Ext.Button', {
 
     isMenuOwner: true,
 
+    /**
+     * @property baseCls
+     * @inheritdoc
+     */
     baseCls: Ext.baseCSSPrefix + 'button',
     hasMenuCls: Ext.baseCSSPrefix + 'has-menu',
     hoveredCls: Ext.baseCSSPrefix + 'hovered',
@@ -486,28 +494,57 @@ Ext.define('Ext.Button', {
     hasArrowCls: Ext.baseCSSPrefix + 'has-arrow',
     noArrowCls: Ext.baseCSSPrefix + 'no-arrow',
 
+    /**
+     * @property defaultBindProperty
+     * @inheritdoc
+     */
     defaultBindProperty: 'text',
     
     /**
-     * @cfg
+     * @cfg publishes
      * @inheritdoc
      */
     publishes: ['pressed'],
 
+    /**
+     * @property element
+     * @inheritdoc
+     */
     element: {
         reference: 'element',
         onclick: 'return Ext.doEv(this, event);'
     },
 
+    /**
+     * @property focusable
+     * @inheritdoc
+     */
     focusable: true,
+    
+    /**
+     * @property focusEl
+     * @inheritdoc
+     */
     focusEl: 'buttonElement',
+    
+    /**
+     * @property ariaEl
+     * @inheritdoc
+     */
     ariaEl: 'buttonElement',
     backgroundColorEl: 'innerElement',
+    
+    /**
+     * @property focusClsEl
+     * @inheritdoc
+     */
     focusClsEl: 'el',
 
     initialize: function() {
         var me = this,
             el = me.el;
+
+        me.callParent();
 
         // The menu config is lazy
         if (me.getConfig('menu', true)) {
@@ -630,7 +667,7 @@ Ext.define('Ext.Button', {
 
     updateText: function(text) {
         this.textElement.setHtml(text);
-        this.toggleCls(this.hasTextCls, !!text)
+        this.toggleCls(this.hasTextCls, !!text);
     },
 
     updateHtml: function(html) {
@@ -921,13 +958,13 @@ Ext.define('Ext.Button', {
     onEscKey: function(e) {
         var menu = this.getMenu();
 
-        if (!this.getDisabled() && menu && menu.isVisible()) {
+        if (menu && !this.getDisabled() && menu.isVisible()) {
             menu.hide();
+
+            e.stopEvent();
+
+            return false;
         }
-
-        e.stopEvent();
-
-        return false;
     },
 
     onFocus: function(e) {

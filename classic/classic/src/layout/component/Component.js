@@ -31,11 +31,16 @@ Ext.define('Ext.layout.component.Component', {
             lastSize = owner.el.lastBox || me.nullBox,
             dirty = !body,
             isTopLevel = ownerContext.isTopLevel,
-            ownerLayout, v, width, height;
+            ownerLayout, v, width, height, scroller;
 
         me.callParent([ownerContext, firstCycle]);
 
         if (firstCycle) {
+            scroller = owner.getScrollable && owner.getScrollable();
+            if (scroller) {
+                scroller.flushOnDomScrollEnd();
+            }
+
             if (me.usesContentWidth) {
                 ++ownerContext.consumersContentWidth;
             }
@@ -81,7 +86,6 @@ Ext.define('Ext.layout.component.Component', {
                         (firstCycle ? width !== lastSize.width : widthModel.constrained);
             }
 
-            
             ownerContext.setWidth(width, dirty);
         } else if (isTopLevel) {
             if (widthModel.calculated) {
@@ -95,6 +99,7 @@ Ext.define('Ext.layout.component.Component', {
 
         if (heightModel.configured) {
             height = owner[heightModel.names.height];
+
             if (isTopLevel && heightModel.calculatedFrom) {
                 height = lastBox.height;
             }

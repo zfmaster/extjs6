@@ -260,6 +260,7 @@ Ext.define('Ext.grid.HeaderContainer', {
             
             length = columns && columns.length;
             if (length) {
+                me.visibleColumns = null;
                 me.columns = me.query('[isLeafHeader]');
 
                 for (i = 0; i < length; i++) {

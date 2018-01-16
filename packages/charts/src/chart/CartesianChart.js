@@ -10,6 +10,9 @@
  * Based on this property, cartesian series can be trimmed and summarized properly
  * to gain a better performance.
  *
+ * Please check out the summary for the {@link Ext.chart.AbstractChart} as well,
+ * for helpful tips and important details.
+ *
  */
 Ext.define('Ext.chart.CartesianChart', {
     extend: 'Ext.chart.AbstractChart',

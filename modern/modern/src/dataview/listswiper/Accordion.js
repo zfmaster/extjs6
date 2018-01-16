@@ -78,7 +78,7 @@ Ext.define('Ext.dataview.listswiper.Accordion', {
 
     scrollDock: null,
 
-    constructor: function () {
+    constructor: function (config) {
         var me = this;
 
         me.left = {
@@ -93,7 +93,7 @@ Ext.define('Ext.dataview.listswiper.Accordion', {
             items: []
         };
 
-        me.callParent(arguments);
+        me.callParent([config]);
     },
 
     initialize: function () {
@@ -307,12 +307,14 @@ Ext.define('Ext.dataview.listswiper.Accordion', {
 
         commit: function (e, action, button) {
             var me = this,
-                action = action || me.getDefaultAction(),
-                button = button || me.getDefaultButton(),
-                undoable = action.undoable,
                 plugin = me.owner,
-                handler = button.$originalHandler,
+                undoable, handler,
                 delay, precommitResult, undo, backgroundColor;
+
+            action = action || me.getDefaultAction();
+            button = button || me.getDefaultButton();
+            undoable = action.undoable;
+            handler = button.$originalHandler;
 
             me.setAction(action);
             me.$precommitResult = precommitResult = me.invokeAction(action, 'precommit');
@@ -503,10 +505,10 @@ Ext.define('Ext.dataview.listswiper.Accordion', {
         },
 
         getDefaultButton: function(side) {
-            var side = side || this.side,
-                items = side.items,
-                button = items[side.isLeft ? 0 : items.length - 1];
-            return button;
+            side = side || this.side;
+
+            var items = side.items;
+            return items[side.isLeft ? 0 : items.length - 1];
         },
 
         getDefaultAction: function (side) {
@@ -531,7 +533,7 @@ Ext.define('Ext.dataview.listswiper.Accordion', {
             var me = this,
                 anim = me.animateItem(0);
 
-            return destroy ? anim.then(function() { me.destroyItem() }) : anim;
+            return destroy ? anim.then(function() { me.destroyItem(); }) : anim;
         },
 
         syncSides: function () {

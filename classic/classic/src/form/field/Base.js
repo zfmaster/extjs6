@@ -42,7 +42,16 @@ Ext.define('Ext.form.field.Base', {
         'Ext.XTemplate'
     ],
     
+    /**
+     * @property focusable
+     * @inheritdoc
+     */
     focusable: true,
+    
+    /**
+     * @cfg shrinkWrap
+     * @inheritdoc
+     */
     shrinkWrap: true,
 
     /**
@@ -71,8 +80,16 @@ Ext.define('Ext.form.field.Base', {
         }
     ],
 
+    /**
+     * @property defaultBindProperty
+     * @inheritdoc
+     */
     defaultBindProperty: 'value',
     
+    /**
+     * @cfg autoEl
+     * @inheritdoc
+     */
     autoEl: {
         role: 'presentation'
     },
@@ -87,6 +104,10 @@ Ext.define('Ext.form.field.Base', {
         'inputAttrTpl'
     ],
 
+    /**
+     * @cfg childEls
+     * @inheritdoc
+     */
     childEls: [
         /**
          * @property {Ext.dom.Element} inputEl
@@ -141,7 +162,7 @@ Ext.define('Ext.form.field.Base', {
     invalidText : 'The value in this field is invalid',
 
     /**
-     * @cfg {String} [fieldCls='x-form-field']
+     * @cfg {String} fieldCls
      * The default CSS class for the field input
      */
     fieldCls : Ext.baseCSSPrefix + 'form-field',
@@ -159,7 +180,7 @@ Ext.define('Ext.form.field.Base', {
      */
 
     /**
-     * @cfg {String} [focusCls='x-form-focus']
+     * @cfg {String} focusCls
      * The CSS class to use when the field receives focus
      */
     focusCls: 'form-focus',
@@ -204,6 +225,10 @@ Ext.define('Ext.form.field.Base', {
      */
     checkChangeBuffer: 50,
 
+    /**
+     * @cfg liquidLayout
+     * @inheritdoc
+     */
     liquidLayout: true,
 
     /**
@@ -233,9 +258,10 @@ Ext.define('Ext.form.field.Base', {
     validateOnBlur: true,
     
     /**
-     * @cfg {String} formatText Helpful text describing acceptable format for field values.
-     * This text will be announced by Assistive Technologies such as screen readers when
-     * the field is focused.
+     * @cfg {String} formatText
+     * Helpful text describing acceptable format for field values. This text will be
+     * announced by Assistive Technologies such as screen readers when the field is
+     * focused.
      *
      * This option is superseded by {@link #ariaHelp}.
      *
@@ -248,12 +274,24 @@ Ext.define('Ext.form.field.Base', {
      */
     hasFocus : false,
 
+    /**
+     * @cfg baseCls
+     * @inheritdoc
+     */
     baseCls: Ext.baseCSSPrefix + 'field',
 
+    /**
+     * @cfg fieldBodyCls
+     * @inheritdoc
+     */
     fieldBodyCls: Ext.baseCSSPrefix + 'field-body',
 
     webkitBorderBoxBugCls: Ext.baseCSSPrefix + 'webkit-border-box-bug',
 
+    /**
+     * @property maskOnDisable
+     * @inheritdoc
+     */
     maskOnDisable: false,
     
     // Instructs the layout to stretch the inputEl to 100% width when laying
@@ -262,7 +300,15 @@ Ext.define('Ext.form.field.Base', {
     stretchInputElFixed: true,
     
     // Form fields render their ARIA attributes to the inputEl
+    /**
+     * @property ariaEl
+     * @inheritdoc
+     */
     ariaEl: 'inputEl',
+    /**
+     * @property focusEl
+     * @inheritdoc
+     */
     focusEl: 'inputEl',
     renderAriaElements: true,
     
@@ -916,7 +962,8 @@ Ext.define('Ext.form.field.Base', {
     },
 
     /**
-     * @inheritdoc Ext.form.field.Field#markInvalid
+     * @method markInvalid
+     * @inheritdoc Ext.form.field.Field#method-markInvalid
      */
     markInvalid: function(errors) {
         // Save the message and fire the 'invalid' event

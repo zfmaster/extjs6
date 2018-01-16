@@ -342,7 +342,9 @@ Ext.Array = (function() {
          * @param {Boolean} fn.return Return `false` to stop iteration.
          * @param {Object} [scope] The scope (`this` reference) in which the specified function is executed.
          * @param {Boolean} [reverse=false] Reverse the iteration order (loop from the end to the beginning).
-         * @return {Boolean} See description for the `fn` parameter.
+         * @return {Boolean/Number} If all array entries were iterated, this will be `true. If
+         * iteration was halted early because the passed fuction returned `false`, this will
+         * be the index at which iteration was halted.
          */
         each: function(array, fn, scope, reverse) {
             array = ExtArray.from(array);
@@ -396,7 +398,6 @@ Ext.Array = (function() {
             return ExtArray.binarySearch(items, item, comparatorFn);
         },
 
-
         /**
          * @method
          * Iterates an array and invoke the given callback function for each item. Note that this will simply
@@ -413,7 +414,7 @@ Ext.Array = (function() {
          * specified function is executed.
          */
         forEach: ('forEach' in arrayPrototype) ? function(array, fn, scope) {
-            return array.forEach(fn, scope);
+            array.forEach(fn, scope);
         } : function(array, fn, scope) {
             for (var i = 0, ln = array.length; i < ln; i++) {
                 fn.call(scope, array[i], i, array);

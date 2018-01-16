@@ -54,6 +54,22 @@ function() {
             expect(dialog.isHidden()).toBe(false);
         });
 
+        it("should not fire hiddenchange if displayed: true", function() {
+            var flag = false;
+
+            createDialog({
+                displayed: true,
+                listeners: {
+                    hiddenchange: function() {
+                        flag = true;
+                    }
+                }
+            });
+
+            expect(dialog.isHidden()).toBe(false);
+            expect(flag).toBe(false);
+        });
+
         it("should be present in the DOM and positioned correctly", function() {
             var xy, size, x, y;
 

@@ -25,28 +25,28 @@ Ext.define('Ext.panel.Title', {
 
     beforeRenderConfig: {
         /**
-         * @cfg {'left'/'center'/'right'} [textAlign='left']
+         * @cfg [textAlign='left']
          * @inheritdoc Ext.panel.Header#cfg-titleAlign
          * @accessor
          */
         textAlign: null,
 
         /**
-         * @cfg {String}
+         * @cfg {String} [text='&#160;']
          * The title's text (can contain html tags/entities)
          * @accessor
          */
         text: null,
 
         /**
-         * @cfg {Number/String} glyph
+         * @cfg glyph
          * @inheritdoc Ext.panel.Header#cfg-glyph
          * @accessor
          */
         glyph: null,
 
         /**
-         * @cfg {String} icon
+         * @cfg icon
          * @inheritdoc Ext.panel.Header#cfg-icon
          * @accessor
          */
@@ -60,20 +60,24 @@ Ext.define('Ext.panel.Title', {
         iconAlign: null,
 
         /**
-         * @cfg {String} iconCls
+         * @cfg iconCls
          * @inheritdoc Ext.panel.Header#cfg-iconCls
          * @accessor
          */
         iconCls: null,
         
         /**
-         * @cfg {'default'/0/1/2} [rotation='default']
+         * @cfg [rotation=0]
          * @inheritdoc Ext.panel.Header#cfg-titleRotation
          * @accessor
          */
         rotation: null
     },
 
+    /**
+     * @cfg autoEl
+     * @inheritdoc
+     */
     autoEl: {
         role: 'presentation',
         // Required for Opera
@@ -91,14 +95,26 @@ Ext.define('Ext.panel.Title', {
     // By default, panel title is not focusable; this only happens in Accordion layout.
     // This config option is overridable, and it will prime tabIndex to be used
     // without hardcoding it.
+    /**
+     * @cfg tabIndex
+     * @inheritdoc
+     */
     tabIndex: 0,
 
+    /**
+     * @cfg childEls
+     * @inheritdoc
+     */
     childEls: [
         'textEl',
         'iconEl',
         'iconWrapEl'
     ],
 
+    /**
+     * @cfg renderTpl
+     * @inheritdoc
+     */
     renderTpl:
         '<tpl if="iconMarkup && iconBeforeTitle">{iconMarkup}</tpl>' +
         // unselectable="on" is required for Opera, other browsers
@@ -147,6 +163,10 @@ Ext.define('Ext.panel.Title', {
         2: 270
     },
 
+    /**
+     * @cfg baseCls
+     * @inheritdoc
+     */
     baseCls: Ext.baseCSSPrefix + 'title',
     _titleSuffix: '-title',
     _glyphCls: Ext.baseCSSPrefix + 'title-glyph',

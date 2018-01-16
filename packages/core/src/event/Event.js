@@ -1186,7 +1186,7 @@ Ext.define('Ext.event.Event', {
             /** Key constant @type Number */
             Z: 90,
             /** Key constant @type Number */
-            META: 91,
+            META: 91,       // Command key on mac, left window key on Windows
             /** Key constant @type Number */
             CONTEXT_MENU: 93,
             /** Key constant @type Number */

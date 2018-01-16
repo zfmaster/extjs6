@@ -758,7 +758,7 @@ Ext.define('Ext.grid.plugin.BufferedRenderer', {
 
         // Only need to change display if the view is currently empty, or
         // change intersects the rendered view.
-        me.refreshView();
+        me.refreshView(rows.startIndex);
     },
 
     /**
@@ -1077,6 +1077,7 @@ Ext.define('Ext.grid.plugin.BufferedRenderer', {
         else if (storeCount < viewSize) {
             startIndex = 0;
             endIndex = maxIndex;
+            me.nextRefreshStartIndex = 0;
         }
         // We're starting from nothing, but there's a locking partner with the range info, so match that
         else if (startIndex == null && !rows.getCount() && lockingPartnerRows && lockingPartnerRows.getCount()) {

@@ -124,10 +124,18 @@ Ext.define('Ext.panel.Panel', {
         docking: 'Ext.container.DockingContainer'
     },
 
+    /**
+     * @cfg childEls
+     * @inheritdoc
+     */
     childEls: [
         'bodyWrap', 'body'
     ],
 
+    /**
+     * @cfg renderTpl
+     * @inheritdoc
+     */
     renderTpl: [
         // headingEl can also be inserted in updateHeader
         '<tpl if="headingText">',
@@ -190,7 +198,7 @@ Ext.define('Ext.panel.Panel', {
 
     beforeRenderConfig: {
         /**
-         * @cfg {Number/String} glyph
+         * @cfg glyph
          * @inheritdoc Ext.panel.Header#cfg-glyph
          * @accessor
          */
@@ -204,29 +212,29 @@ Ext.define('Ext.panel.Panel', {
         headerPosition: null,
 
         /**
-         * @cfg {String} icon
+         * @cfg icon
          * @inheritdoc Ext.panel.Header#cfg-icon
          * @accessor
          */
         icon: null,
 
         /**
-         * @cfg {'top'/'right'/'bottom'/'left'} [iconAlign='left']
+         * @cfg [iconAlign='left']
          * @inheritdoc Ext.panel.Header#cfg-iconAlign
          * @accessor
          */
         iconAlign: null,
 
         /**
-         * @cfg {String} iconCls
+         * @cfg iconCls
          * @inheritdoc Ext.panel.Header#cfg-iconCls
          * @accessor
          */
         iconCls: null,
 
         /**
-         * @cfg {String/Object}
-         * @inheritdoc Ext.panel.Header#title
+         * @cfg title
+         * @inheritdoc Ext.panel.Header#cfg-title
          * @localdoc When a `title` is specified, the {@link Ext.panel.Header} will 
          * automatically be created and displayed unless {@link #header} is set to `false`.
          * @accessor
@@ -234,14 +242,14 @@ Ext.define('Ext.panel.Panel', {
         title: null,
 
         /**
-         * @cfg {'left'/'center'/'right'} [titleAlign='left']
+         * @cfg [titleAlign='left']
          * @inheritdoc Ext.panel.Header#cfg-titleAlign
          * @accessor
          */
         titleAlign: null,
 
         /**
-         * @cfg titlePosition
+         * @cfg [titlePosition=0]
          * @inheritdoc Ext.panel.Header#cfg-titlePosition
          * @accessor
          * @since 6.5.1
@@ -249,7 +257,7 @@ Ext.define('Ext.panel.Panel', {
         titlePosition: null,
 
         /**
-         * @cfg {'default'/0/1/2} [titleRotation='default']
+         * @cfg [titleRotation='default']
          * @inheritdoc Ext.panel.Header#cfg-titleRotation
          * @accessor
          */
@@ -304,7 +312,7 @@ Ext.define('Ext.panel.Panel', {
      */
 
     /**
-     * @cfg {Boolean} [border=true]
+     * @cfg {Boolean} border
      * Specify as `false` to render the Panel with zero width borders.
      *
      * Leaving the value as `true` uses the selected theme's {@link Ext.panel.Panel#$panel-border-width}
@@ -349,9 +357,10 @@ Ext.define('Ext.panel.Panel', {
     closeAction: 'destroy',
     
     /**
-     * @cfg {String} closeToolText Text to be announced by screen readers when the 
-     * **close** {@link Ext.panel.Tool tool} is focused.  Will also be set as the close 
-     * tool's {@link Ext.panel.Tool#cfg-tooltip tooltip} text.
+     * @cfg {String} closeToolText
+     * Text to be announced by screen readers when the **close**
+     * {@link Ext.panel.Tool tool} is focused.  Will also be set as the close tool's 
+     * {@link Ext.panel.Tool#cfg-tooltip tooltip} text.
      * 
      * **Note:** Applicable when the panel is {@link #closable}: true
      * @locale
@@ -421,9 +430,10 @@ Ext.define('Ext.panel.Panel', {
      */
     
     /**
-     * @cfg {String} collapseToolText Text to be announced by screen readers when 
-     * **collapse** {@link Ext.panel.Tool tool} is focused.  Will also be set as the 
-     * collapse tool's {@link Ext.panel.Tool#cfg-tooltip tooltip} text.
+     * @cfg {String} collapseToolText
+     * Text to be announced by screen readers when  **collapse**
+     * {@link Ext.panel.Tool tool} is focused.  Will also be set as the  collapse tool's
+     * {@link Ext.panel.Tool#cfg-tooltip tooltip} text.
      * 
      * **Note:** Applicable when the panel is {@link #collapsible}: true
      * @locale
@@ -431,9 +441,10 @@ Ext.define('Ext.panel.Panel', {
     collapseToolText: 'Collapse panel',
     
     /**
-     * @cfg {String} expandToolText Text to be announced by screen readers when 
-     * **expand** {@link Ext.panel.Tool tool} is focused.  Will also be set as the 
-     * expand tool's {@link Ext.panel.Tool#cfg-tooltip tooltip} text.
+     * @cfg {String} expandToolText
+     * Text to be announced by screen readers when **expand** {@link Ext.panel.Tool tool}
+     * is focused.  Will also be set as the  expand tool's
+     * {@link Ext.panel.Tool#cfg-tooltip tooltip} text.
      * 
      * **Note:** Applicable when the panel is {@link #collapsible}: true
      * @locale
@@ -627,7 +638,7 @@ Ext.define('Ext.panel.Panel', {
     buttons: null,
     
     /**
-     * @cfg {Boolean/Object} draggable
+     * @cfg draggable
      * @inheritdoc
      * @localdoc **NOTE:** The private {@link Ext.panel.DD} class is used instead of 
      * ComponentDragger when {@link #simpleDrag} is false (_default_).  In this case you 
@@ -662,7 +673,7 @@ Ext.define('Ext.panel.Panel', {
 
 
     /**
-     * @cfg {Boolean/Object} [header]
+     * @cfg {Boolean/Object} header
      * Pass as `false` to prevent a Header from being created and shown.
      *
      * Pass as a config object (optionally containing an `xtype`) to custom-configure this Panel's header.
@@ -712,7 +723,7 @@ Ext.define('Ext.panel.Panel', {
     manageHeight: true,
 
     /**
-     * @cfg {String} [maskElement="el"]
+     * @cfg {String} maskElement
      *
      * The name of the element property in this Panel to mask when masked by a LoadMask.
      *
@@ -773,7 +784,7 @@ Ext.define('Ext.panel.Panel', {
     maintainTitlePosition: false,
 
     /**
-     * @cfg {Number} [shrinkWrap=2]
+     * @cfg [shrinkWrap=2]
      * @inheritdoc
      * @localdoc ##Panels (subclasses and instances)
      * 
@@ -825,7 +836,7 @@ Ext.define('Ext.panel.Panel', {
      */
 
     /**
-     * @cfg {String[]} stateEvents
+     * @cfg stateEvents
      * @inheritdoc Ext.state.Stateful#cfg-stateEvents
      * @localdoc By default the following stateEvents are added:
      * 
@@ -875,9 +886,10 @@ Ext.define('Ext.panel.Panel', {
      */
     
     /**
-     * @cfg {String} [defaultButton] Reference name of the component to act as the default
-     * button for this Panel. Default button is activated by pressing Enter key while focus
-     * is contained within the Panel's {@link #defaultButtonTarget}.
+     * @cfg {String} defaultButton
+     * Reference name of the component to act as the default button for this Panel.
+     * Default button is activated by pressing Enter key while focus is contained within
+     * the Panel's {@link #defaultButtonTarget}.
      *
      * The most obvious use for `defaultButton` is submitting a form:
      *
@@ -927,6 +939,10 @@ Ext.define('Ext.panel.Panel', {
     // Begin Properties
     // ***********************************************************************************
 
+    /**
+     * @cfg baseCls
+     * @inheritdoc
+     */
     baseCls: Ext.baseCSSPrefix + 'panel',
 
     /**
@@ -950,10 +966,14 @@ Ext.define('Ext.panel.Panel', {
         y: 'y'
     },
 
+    /**
+     * @cfg componentLayout
+     * @inheritdoc
+     */
     componentLayout: 'dock',
 
     /**
-     * @property {String} [contentPaddingProperty='bodyPadding']
+     * @property contentPaddingProperty
      * @inheritdoc
      */
     contentPaddingProperty: 'bodyPadding',
@@ -966,6 +986,10 @@ Ext.define('Ext.panel.Panel', {
      */
     isPanel: true,
 
+    /**
+     * @property defaultBindProperty
+     * @inheritdoc
+     */
     defaultBindProperty: 'title',
 
     // ***********************************************************************************
@@ -1252,6 +1276,7 @@ Ext.define('Ext.panel.Panel', {
     },
 
     /**
+     * @method addUIClsToElement
      * @inheritdoc
      */
     addUIClsToElement: function(cls) {
@@ -2937,7 +2962,7 @@ Ext.define('Ext.panel.Panel', {
     },
 
     /**
-     * @method
+     * @method onRemoved
      * @inheritdoc
      */
     onRemoved: function(destroying) {
@@ -3387,6 +3412,7 @@ Ext.define('Ext.panel.Panel', {
     },
 
     /**
+     * @method setBorder
      * @inheritdoc
      */
     setBorder: function(border, targetEl) {
@@ -3551,6 +3577,7 @@ Ext.define('Ext.panel.Panel', {
     },
 
     /**
+     * @method setUI
      * @inheritdoc
      */
     setUI: function(ui) {

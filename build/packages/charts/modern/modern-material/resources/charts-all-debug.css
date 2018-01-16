@@ -100,11 +100,8 @@
 .x-keyboard-mode .x-button-alt.x-button-confirm.x-focused .x-icon-el {
     color: #fff;
 }
-/* /mnt/web/www/extjs/ext-6.2.0/packages/charts/sass/src/draw/Surface.scss:1 */
-.x-surface {
-    position: absolute;
-}
-/* /mnt/web/www/extjs/ext-6.2.0/packages/charts/sass/src/draw/Surface.scss:5 */
+/* /mnt/web/www/extjs/ext-6.2.0/packages/charts/sass/src/draw/Surface.scss:2 */
+.x-surface,
 .x-surface-canvas {
     position: absolute;
 }

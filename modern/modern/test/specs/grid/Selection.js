@@ -881,6 +881,62 @@ function() {
                 expect(grid.getSelectable().getSelection().getCount()).toBe(0);
                 expect(count).toBe(0);
             });
+            it("should force rows selection", function () {
+                var checkbox, count, selectable;
+
+                makeGrid(null, {
+                    selectable: {
+                        checkbox: false,
+                        rows: false,
+                        listeners: {
+                            selectionchange: function (sm, selection) {
+                                count = selection.getCount();
+                            }
+                        }
+                    }
+                });
+
+                selectable = grid.getSelectable();
+                selectable.setCheckbox(true);
+                expect(selectable.getRows()).toBe(true);
+
+                colRef = grid.getVisibleColumns();
+                checkbox = colRef[1].el.down('.x-checkbox-el');
+                jasmine.fireMouseEvent(checkbox, 'click');
+                expect(selectable.getSelection().getCount()).toBe(grid.getStore().getCount());
+                expect(count).toBe(grid.getStore().getCount());
+                jasmine.fireMouseEvent(checkbox, 'click');
+                expect(selectable.getSelection().getCount()).toBe(0);
+                expect(count).toBe(0);
+            });
+            it("should be affected by rows selection", function () {
+                var checkbox, count, selectable;
+
+                makeGrid(null, {
+                    selectable: {
+                        checkbox: true,
+                        listeners: {
+                            selectionchange: function (sm, selection) {
+                                count = selection.getCount();
+                            }
+                        }
+                    }
+                });
+
+                selectable = grid.getSelectable();
+                colRef = grid.getVisibleColumns();
+                checkbox = colRef[1].el.down('.x-checkbox-el');
+
+                jasmine.fireMouseEvent(checkbox, 'click');
+                expect(selectable.getSelection().getCount()).toBe(grid.getStore().getCount());
+                expect(count).toBe(grid.getStore().getCount());
+
+                selectable.setRows(false);
+                expect(selectable.getCheckbox()).toBeFalsy();
+
+                expect(selectable.getSelection().getCount()).toBe(0);
+                expect(count).toBe(0);
+            });
         });
     });
 

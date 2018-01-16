@@ -360,9 +360,9 @@ Ext.define('Ext.util.Animate', {
     },
 
     /**
+     * @method hasActiveFx
      * @deprecated 4.0 Replaced by {@link #getActiveAnimation}
-     * @inheritdoc Ext.util.Animate#getActiveAnimation
-     * @method
+     * @inheritdoc Ext.util.Animate#method-getActiveAnimation
      */
     hasActiveFx: Ext.Function.alias(Ext.util.Animate, 'getActiveAnimation'),
 

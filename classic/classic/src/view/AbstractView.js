@@ -38,6 +38,10 @@ Ext.define('Ext.view.AbstractView', {
         }
     },
     
+    /**
+     * @property defaultBindProperty
+     * @inheritdoc
+     */
     defaultBindProperty: 'store',
 
     /**
@@ -203,10 +207,15 @@ Ext.define('Ext.view.AbstractView', {
     },
 
     /**
-     * @cfg
+     * @cfg publishes
      * @inheritdoc
      */
     publishes: ['selection'],
+    
+    /**
+     * @cfg twoWayBindable
+     * @inheritdoc
+     */
     twoWayBindable: ['selection'],
 
     /**
@@ -216,7 +225,7 @@ Ext.define('Ext.view.AbstractView', {
     selection: null,
 
     /**
-     * @cfg {Boolean} [throttledUpdate=false]
+     * @cfg {Boolean} throttledUpdate
      * Configure as `true` to have this view participate in the global throttled update queue which flushes store changes to the UI at a maximum rate
      * determined by the {@link #updateDelay} setting.
      */
@@ -232,7 +241,7 @@ Ext.define('Ext.view.AbstractView', {
      */
 
     /**
-     * @cfg {Boolean} [deferInitialRefresh=false]
+     * @cfg {Boolean} deferInitialRefresh
      * Configure as 'true` to defer the initial refresh of the view.
      *
      * This allows the View to execute its render and initial layout more quickly because the process will not be encumbered
@@ -385,7 +394,7 @@ Ext.define('Ext.view.AbstractView', {
     preserveScrollOnRefresh: false,
 
     /**
-     * @cfg {Boolean} [preserveScrollOnReload=false]
+     * @cfg {Boolean} preserveScrollOnReload
      * True to preserve scroll position when the store is reloaded.
      *
      * You may want to configure this as `true` if you are using a {@link Ext.data.BufferedStore buffered store}
@@ -395,8 +404,16 @@ Ext.define('Ext.view.AbstractView', {
      */
     preserveScrollOnReload: false,
 
+    /**
+     * @property autoDestroyBoundStore
+     * @inheritdoc
+     */
     autoDestroyBoundStore: true,
     
+    /**
+     * @property ariaRole
+     * @inheritdoc
+     */
     ariaRole: 'listbox',
     itemAriaRole: 'option',
 
@@ -404,7 +421,17 @@ Ext.define('Ext.view.AbstractView', {
      * @private
      */
     last: false,
+    
+    /**
+     * @property focusable
+     * @inheritdoc
+     */
     focusable: true,
+    
+    /**
+     * @cfg tabIndex
+     * @inheritdoc
+     */
     tabIndex: 0,
 
     triggerEvent: 'itemclick',
@@ -935,8 +962,11 @@ Ext.define('Ext.view.AbstractView', {
                 }
             }
 
-            if (refreshCounter) {
+            if (refreshCounter || me.emptyEl) {
                 me.clearViewEl();
+            }
+
+            if (refreshCounter) {
                 me.refreshCounter++;
             } else {
                 me.refreshCounter = 1;
@@ -1014,12 +1044,16 @@ Ext.define('Ext.view.AbstractView', {
         }
     },
 
-    addEmptyText: function() {       
+    addEmptyText: function() {
         var me = this,
             store = me.getStore();
 
         if (me.emptyText && !store.isLoading() && (!me.deferEmptyText || me.refreshCounter > 1 || store.isLoaded())) {
-            me.emptyEl = Ext.core.DomHelper.insertHtml('beforeEnd', me.getTargetEl().dom, me.emptyText);
+            if (!me.emptyEl) {
+                me.emptyEl = Ext.core.DomHelper.insertHtml('beforeEnd', me.getTargetEl().dom, me.emptyText);
+            } else {
+                Ext.fly(me.emptyEl).setHtml(me.emptyText);
+            }
         }
     },
 
@@ -2166,7 +2200,7 @@ Ext.define('Ext.view.AbstractView', {
             return me.loadMask;
         },
 
-        /*
+        /**
          * @private
          * This method returns the inner node containing element. This is useful for the bufferedRenderer
          * or for when the view contains extra elements and we need to point the exact element that will 

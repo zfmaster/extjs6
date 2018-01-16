@@ -231,6 +231,7 @@ Ext.define('Ext.draw.Container', {
      * @property {String} [defaultDownloadServerUrl="http://svg.sencha.io"]
      * The default URL used by the {@link #download} method if the {@link #downloadServerUrl}
      * config wasn't set.
+     * To override this globally, set the `Ext.draw.Container.prototype.defaultDownloadServerUrl`.
      */
     defaultDownloadServerUrl: 'http://svg.sencha.io',
 

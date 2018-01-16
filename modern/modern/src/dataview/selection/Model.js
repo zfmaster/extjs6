@@ -129,7 +129,7 @@ Ext.define('Ext.dataview.selection.Model', {
             type: 'records'
         }
     },
-    
+
     /**
      * @cfg [publishes='checked']
      * @inheritdoc Ext.mixin.Bindable#cfg-publishes
@@ -228,7 +228,13 @@ Ext.define('Ext.dataview.selection.Model', {
      * @private
      */
     applyMode: function(mode) {
+        var view = this.getView(),
+            el = view.getRenderTarget();
+
         mode = mode ? mode.toLowerCase() : 'single';
+
+        el.toggleCls(view.multiSelectCls, mode === 'multi');
+
         // set to mode specified unless it doesnt exist, in that case
         // use single.
         return this.modes[mode] ? mode : 'single';
@@ -252,11 +258,7 @@ Ext.define('Ext.dataview.selection.Model', {
             }, me.getStoreListeners());
 
         if (oldStore && Ext.isObject(oldStore) && oldStore.isStore) {
-            if (oldStore.autoDestroy) {
-                oldStore.destroy();
-            } else {
-                oldStore.un(bindEvents);
-            }
+            oldStore.un(bindEvents);
         }
 
         if (newStore) {
@@ -282,7 +284,6 @@ Ext.define('Ext.dataview.selection.Model', {
      */
     selectAll: function(suppressEvent) {
         this.select(this.getStore().getRange(), true, suppressEvent);
-        this.allSelected = true;
     },
 
     /**
@@ -363,18 +364,8 @@ Ext.define('Ext.dataview.selection.Model', {
             me.selectRange(start, record, ctrl);
         }
 
-        // CTRL+Navigate or single tap, toggle selected state
-        else if (ctrl || (e.pointerType === 'touch' && e.type === 'tap')) {
+        else {
             me[isSelected ? 'deselect' : 'select'](record, true);
-        }
-        // Simple click on a selected item.
-        // clears the selection
-        else if (isSelected && !shift && !ctrl) {
-            me.getSelection().clear();
-        }
-        // Replace the selection
-        else if (!isSelected) {
-            me.select(record, true);
         }
     },
 
@@ -496,7 +487,7 @@ Ext.define('Ext.dataview.selection.Model', {
             view = me.getView(),
             records = chunk.items;
 
-        me.getSelection().allSelected = false;
+        me.getSelection().allSelected = this.allSelected = false;
 
         // Keep selection up to date unless there's an upcoming add due.
         // If there's a replacement, onCollectionAdd will do it.
@@ -524,7 +515,7 @@ Ext.define('Ext.dataview.selection.Model', {
         if (view.destroyed) {
             return;
         }
-        selection.allSelected = selection.getCount() === view.getStore().getCount();
+        selection.allSelected = this.allSelected = selection.getCount() === view.getStore().getCount();
 
         // Keep selection up to date
         me.setSelectedRecord(selectedCollection.last() || null);

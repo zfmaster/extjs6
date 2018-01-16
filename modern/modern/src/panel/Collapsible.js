@@ -7,13 +7,13 @@ Ext.define('Ext.panel.Collapsible', {
 
     config: {
         /**
-         * @cfg {Boolean} [collapsed]
+         * @cfg {Boolean} collapsed
          * `true` to start collapsed.
          */
         collapsed: null,
 
         /**
-         * @cfg {'top'/'right'/'bottom'/'left'/Boolean/Object} [collapsible]
+         * @cfg {'top'/'right'/'bottom'/'left'/Boolean/Object} collapsible
          * A configuration for a {@link Ext.panel.Collapser Collapser}.
          *
          * True to make the panel collapsible and have an expand/collapse toggle Tool added into the header tool button
@@ -90,6 +90,7 @@ Ext.define('Ext.panel.Collapsible', {
     },
 
     /**
+     * @method collapse
      * @inheritdoc Ext.panel.Collapser#method-collapse
      */
     collapse: function(animation) {
@@ -97,6 +98,7 @@ Ext.define('Ext.panel.Collapsible', {
     },
 
     /**
+     * @method expand
      * @inheritdoc Ext.panel.Collapser#method-expand
      */
     expand: function(animation) {
@@ -104,6 +106,7 @@ Ext.define('Ext.panel.Collapsible', {
     },
 
     /**
+     * @method toggleCollapsed
      * @inheritdoc Ext.panel.Collapser#method-toggleCollapsed
      */
     toggleCollapsed: function(collapsed, animation) {
